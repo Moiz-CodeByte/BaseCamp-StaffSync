@@ -1,42 +1,38 @@
-import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-            <Button className="ml-2">Click me</Button>
-          </h1>
+    <div className="space-y-8">
+      <section className="rounded-xl border bg-card p-8">
+        <h1 className="text-3xl font-bold tracking-tight">QMCC StaffSync</h1>
+        <p className="mt-2 text-muted-foreground max-w-prose">
+          A modern HRMS for QMCC built with Next.js, MongoDB, and a clean component library.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Link href="/login">
+            <Button className="bg-primary text-primary-foreground">Login</Button>
+          </Link>
+          <Link href="/test">
+            <Button variant="outline">Test API</Button>
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border p-4">
+          <h3 className="font-semibold">Attendance</h3>
+          <p className="text-sm text-muted-foreground">Track daily attendance and shifts.</p>
         </div>
-      </main>
+        <div className="rounded-lg border p-4">
+          <h3 className="font-semibold">Leave</h3>
+          <p className="text-sm text-muted-foreground">Manage leave applications and approvals.</p>
+        </div>
+        <div className="rounded-lg border p-4">
+          <h3 className="font-semibold">Payroll</h3>
+          <p className="text-sm text-muted-foreground">Automate payroll with role-based controls.</p>
+        </div>
+      </section>
     </div>
   );
 }
