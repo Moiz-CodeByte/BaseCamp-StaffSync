@@ -48,9 +48,7 @@ export default function LoginPage() {
           {loading ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
-      <p className="text-center text-sm">
-        No account? <a className="text-primary hover:underline" href="/test">Test API</a>
-      </p>
+      {/* Placeholder for future signup or help link */}
     </div>
   );
 }

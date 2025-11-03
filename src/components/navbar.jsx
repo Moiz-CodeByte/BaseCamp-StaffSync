@@ -12,7 +12,6 @@ export default function Navbar() {
           <span>QMCC StaffSync</span>
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/test" className="text-sm hover:underline">Test API</Link>
           <Link href="/login" className="text-sm hover:underline">Login</Link>
           <ThemeToggle />
         </div>
