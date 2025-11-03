@@ -1,14 +1,14 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+import mongoose, { Schema, models, model } from 'mongoose';
+import bcrypt from 'bcrypt';
 
-const roles = ['Admin', 'HR', 'Employee'];
+export const rolesList = ['Admin', 'HR', 'Employee'];
 
-const UserSchema = new mongoose.Schema(
+const UserSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
-    role: { type: String, enum: roles, default: 'Employee' }
+    role: { type: String, enum: rolesList, default: 'Employee' },
   },
   { timestamps: true }
 );
@@ -24,5 +24,4 @@ UserSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema);
-module.exports.roles = roles;
+export const User = models.User || model('User', UserSchema);
