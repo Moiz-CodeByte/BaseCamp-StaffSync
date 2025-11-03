@@ -18,9 +18,10 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const { data } = await api.post('/api/auth/login', { email, password });
-      localStorage.setItem('token', data.token);
-      router.push('/');
+    const { data } = await api.post('/api/auth/login', { email, password });
+    localStorage.setItem('token', data.token);
+    router.push('/dashboard');
+    router.refresh();
     } catch (err) {
       setError(err?.response?.data?.message || err.message);
     } finally {

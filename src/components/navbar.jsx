@@ -46,7 +46,9 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {!loading && user && (
             <>
-              <Link href="/dashboard" className="text-sm hover:underline">Dashboard</Link>
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm">Dashboard</Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={signOut}>Logout</Button>
             </>
           )}

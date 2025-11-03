@@ -52,7 +52,7 @@ export default function AdminDashboard() {
 
   const generatePayroll = async () => {
     const now = new Date();
-    const body = { month: now.getMonth() + 1, year: now.getFullYear(), defaultBasic: 3000 };
+    const body = { month: now.getMonth() + 1, year: now.getFullYear(), defaultBasic: 60000 };
     setGenStatus('Generating payroll...');
     try {
       const { data } = await api.post('/api/payroll/generate', body);
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
           {genStatus && <p className="text-sm">{genStatus}</p>}
         </div>
         <p className="text-sm text-muted-foreground mt-3">
-          This will create/update payslips for all users for the current month with a default basic salary of $3000.
+          This will create/update payslips for all users for the current month with a default basic salary of RS.60000.
         </p>
       </section>
     </div>

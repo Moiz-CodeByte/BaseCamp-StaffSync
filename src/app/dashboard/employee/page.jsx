@@ -264,10 +264,10 @@ export default function EmployeeDashboard() {
                   </span>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Basic:</span><span>${p.basic}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Allowances:</span><span>${p.allowances}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Deductions:</span><span>-${p.deductions}</span></div>
-                  <div className="flex justify-between font-semibold border-t pt-1 mt-2"><span>Net Salary:</span><span className="text-green-600 dark:text-green-400">${p.net}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Basic:</span><span>Rs. {p.basic}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Allowances:</span><span>Rs. {p.allowances}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Deductions:</span><span>Rs. {p.deductions}</span></div>
+                  <div className="flex justify-between font-semibold border-t pt-1 mt-2"><span>Net Salary:</span><span className="text-green-600 dark:text-green-400">Rs. {p.net}</span></div>
                 </div>
               </div>
             ))}
