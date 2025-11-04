@@ -1,44 +1,58 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import * as React from "react";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ThemeToggle() {
-  const getInitialTheme = () => {
-    if (typeof window === 'undefined') return 'light';
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
-  };
+  const [theme, setThemeState] = React.useState("light");
 
-  const [theme, setTheme] = useState(getInitialTheme);
+  React.useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setThemeState(isDark ? "dark" : "light");
+  }, []);
 
-  const applyTheme = useCallback((next) => {
-    setTheme(next);
-    if (typeof document !== 'undefined') {
-      if (next === "dark") document.documentElement.classList.add("dark");
-      else document.documentElement.classList.remove("dark");
-    }
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem("theme", next);
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem("theme");
+    
+    if (savedTheme) {
+      if (savedTheme === "dark") {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+    } else {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (systemTheme === "dark") {
+        root.classList.add("dark");
+      }
     }
   }, []);
 
-  useEffect(() => {
-    // Sync the current theme to DOM and storage whenever it changes
-    if (typeof document !== 'undefined') {
-      if (theme === 'dark') document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
+  const toggleTheme = () => {
+    const root = document.documentElement;
+    const newTheme = theme === "dark" ? "light" : "dark";
+    
+    if (newTheme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
     }
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
+    
+    localStorage.setItem("theme", newTheme);
+    setThemeState(newTheme);
+  };
 
   return (
-    <Button variant="outline" size="sm" onClick={() => applyTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle theme">
-      {theme === "dark" ? "Light" : "Dark"}
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={toggleTheme}
+    >
+      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
     </Button>
   );
 }

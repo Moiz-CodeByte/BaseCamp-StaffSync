@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,9 +21,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
     const { data } = await api.post('/api/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
+    await login(data.token);
     router.push('/dashboard');
-    router.refresh();
     } catch (err) {
       setError(err?.response?.data?.message || err.message);
     } finally {
