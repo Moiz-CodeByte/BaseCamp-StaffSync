@@ -121,4 +121,49 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Custom scrollbar styling with brand color */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-900;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #f58327;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #e67420;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #f58327 #f3f4f6;
+  }
+  
+  .dark * {
+    scrollbar-color: #f58327 #111827;
+  }
+  
+  /* Calendar table fixes */
+  
+  
+  .rdp-weekdays {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 28px !important;
+    padding-left: 12px !important;
+    
+  }
 }
