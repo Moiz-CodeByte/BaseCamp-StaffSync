@@ -41,7 +41,7 @@ export default function Navbar() {
       <nav className="mx-auto max-w-5xl flex items-center justify-between py-3 px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <span className="inline-block size-2.5 rounded-full bg-primary" />
-          <span>QMCC StaffSync</span>
+          <span>BaseCamp StaffSync</span>
         </Link>
         <div className="flex items-center gap-3">
           {!loading && user && (

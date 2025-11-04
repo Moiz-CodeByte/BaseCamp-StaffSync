@@ -1,6 +1,6 @@
-# QMCC StaffSync
+# BaseCamp StaffSync
 
-A comprehensive Human Resource Management System (HRMS) built for QMCC, featuring role-based dashboards, attendance tracking, leave management, payroll automation, and corporate calendar.
+A comprehensive Human Resource Management System (HRMS) built for BaseCamp, featuring role-based dashboards, attendance tracking, leave management, payroll automation, and corporate calendar.
 
 ## 🚀 Features
 
@@ -62,8 +62,8 @@ A comprehensive Human Resource Management System (HRMS) built for QMCC, featurin
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Moiz-CodeByte/QMCC-StaffSync.git
-   cd QMCC-StaffSync
+   git clone https://github.com/Moiz-CodeByte/BaseCamp-StaffSync.git
+   cd BaseCamp-StaffSync
    ```
 
 2. **Install dependencies**
@@ -75,7 +75,7 @@ A comprehensive Human Resource Management System (HRMS) built for QMCC, featurin
    
    Create a `.env.local` file in the root directory:
    ```env
-   MONGODB_URI=mongodb://localhost:27017/qmcc_staffsync
+   MONGODB_URI=mongodb://localhost:27017/BaseCamp_staffsync
    JWT_SECRET=your-super-secret-jwt-key-change-this
    NEXT_PUBLIC_API_BASE_URL=
    ```
@@ -106,9 +106,9 @@ To quickly add test users, run the PowerShell seeding script:
 ```
 
 This creates three Employee users:
-- John Doe (john.doe@qmcc.com)
-- Jane Smith (jane.smith@qmcc.com)
-- Bob Lee (bob.lee@qmcc.com)
+- John Doe (john.doe@BaseCamp.com)
+- Jane Smith (jane.smith@BaseCamp.com)
+- Bob Lee (bob.lee@BaseCamp.com)
 
 Default password for all: `passw0rd`
 
@@ -118,18 +118,18 @@ Register users via API:
 
 ```powershell
 # Admin user
-$body = @{ name='Admin User'; email='admin@qmcc.com'; password='passw0rd'; role='Admin' } | ConvertTo-Json
+$body = @{ name='Admin User'; email='admin@BaseCamp.com'; password='passw0rd'; role='Admin' } | ConvertTo-Json
 Invoke-RestMethod -Method POST -Uri 'http://localhost:3000/api/auth/register' -ContentType 'application/json' -Body $body
 
 # HR user
-$body = @{ name='HR Manager'; email='hr@qmcc.com'; password='passw0rd'; role='HR' } | ConvertTo-Json
+$body = @{ name='HR Manager'; email='hr@BaseCamp.com'; password='passw0rd'; role='HR' } | ConvertTo-Json
 Invoke-RestMethod -Method POST -Uri 'http://localhost:3000/api/auth/register' -ContentType 'application/json' -Body $body
 ```
 
 ## 📂 Project Structure
 
 ```
-QMCC StaffSync/
+BaseCamp StaffSync/
 ├── src/
 │   ├── app/
 │   │   ├── api/
@@ -318,4 +318,4 @@ GitHub: [@Moiz-CodeByte](https://github.com/Moiz-CodeByte)
 
 ---
 
-**Built with ❤️ for QMCC**
+**Built with ❤️ for BaseCamp**

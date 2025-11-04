@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "QMCC StaffSync",
-  description: "HRMS for QMCC",
+  title: "BaseCamp StaffSync",
+  description: "HRMS for BaseCamp",
 };
 
 export default function RootLayout({ children }) {

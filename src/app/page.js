@@ -6,9 +6,9 @@ export default function Home() {
     <div className="space-y-16 pb-16">
       {/* Hero Section */}
       <section className="rounded-xl border bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">QMCC StaffSync</h1>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">BaseCamp StaffSync</h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          A comprehensive Human Resource Management System designed for QMCC. Streamline attendance, leave management, payroll, and corporate events—all in one place.
+          A comprehensive Human Resource Management System designed for BaseCamp. Streamline attendance, leave management, payroll, and corporate events—all in one place.
         </p>
         <div className="mt-8 flex gap-4 justify-center">
           <Link href="/login">
@@ -118,7 +118,7 @@ export default function Home() {
       <section className="rounded-xl border bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-950 dark:to-purple-950 p-12 text-center">
         <h2 className="text-3xl font-semibold">Ready to Get Started?</h2>
         <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
-          Join QMCC StaffSync today and transform your HR operations with our comprehensive management system.
+          Join BaseCamp StaffSync today and transform your HR operations with our comprehensive management system.
         </p>
         <div className="mt-8">
           <Link href="/login">
