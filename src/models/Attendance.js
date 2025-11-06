@@ -7,6 +7,8 @@ const AttendanceSchema = new Schema(
     checkInAt: { type: Date },
     checkOutAt: { type: Date },
     status: { type: String, enum: ['Present', 'Absent', 'Half-Day'], default: 'Present' },
+    leaveType: { type: String }, // Type of leave if status is Absent due to approved leave
+    remarks: { type: String }, // Additional notes (e.g., "Approved Sick leave")
   },
   { timestamps: true }
 );

@@ -66,4 +66,50 @@ PayrollSchema.pre('save', function(next) {
   next();
 });
 
+// Pre-update hook for findOneAndUpdate, findByIdAndUpdate, etc.
+PayrollSchema.pre('findOneAndUpdate', async function(next) {
+  const update = this.getUpdate();
+  
+  // Get the document being updated to access current values
+  const docToUpdate = await this.model.findOne(this.getQuery());
+  
+  if (!docToUpdate) {
+    return next();
+  }
+  
+  // Merge current values with updates
+  const data = update.$set || update;
+  
+  const basic_salary = data.basic_salary !== undefined ? data.basic_salary : (docToUpdate.basic_salary || 0);
+  const allowance = data.allowance !== undefined ? data.allowance : (docToUpdate.allowance || 0);
+  const bonus = data.bonus !== undefined ? data.bonus : (docToUpdate.bonus || 0);
+  const deductions = data.deductions !== undefined ? data.deductions : (docToUpdate.deductions || 0);
+  const leave_deduction = data.leave_deduction !== undefined ? data.leave_deduction : (docToUpdate.leave_deduction || 0);
+  
+  // Calculate total salary
+  const total_salary = basic_salary + allowance + bonus - deductions - leave_deduction;
+  
+  // Ensure $set exists
+  if (!update.$set) {
+    this.setUpdate({ ...update, $set: {} });
+  }
+  
+  // Set calculated values
+  update.$set.total_salary = total_salary;
+  update.$set.basic = basic_salary;
+  update.$set.allowances = allowance;
+  update.$set.net = total_salary;
+  
+  console.log('Payroll update calculation:', {
+    basic_salary,
+    allowance,
+    bonus,
+    deductions,
+    leave_deduction,
+    total_salary
+  });
+  
+  next();
+});
+
 export const Payroll = models.Payroll || model('Payroll', PayrollSchema);

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PayrollManagement from '@/components/dashboard/PayrollManagement';
+import UserManagementTable from '@/components/dashboard/UserManagementTable';
 
 export default function HRDashboard() {
   const [pending, setPending] = useState([]);
@@ -12,6 +14,22 @@ export default function HRDashboard() {
   const [users, setUsers] = useState([]);
   const [eventForm, setEventForm] = useState({ title: '', date: '', type: 'Event', description: '' });
   const [stats, setStats] = useState({ pendingLeaves: 0, totalEmployees: 0, upcomingEvents: 0 });
+
+  const loadUsers = async () => {
+    try {
+      const { data } = await api.get('/api/users/list');
+      const usersList = data.users || [];
+      // HR can only manage Employees (not Admin or HR users)
+      const employeesOnly = usersList.filter(u => u.role === 'Employee');
+      setUsers(employeesOnly);
+      setStats(prev => ({
+        ...prev,
+        totalEmployees: employeesOnly.length
+      }));
+    } catch {
+      setUsers([]);
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -26,13 +44,15 @@ export default function HRDashboard() {
           const pendingList = leaves.leaves || [];
           const eventsList = eventsData.events || [];
           const usersList = usersData.users || [];
+          // HR can only manage Employees (not Admin or HR users)
+          const employeesOnly = usersList.filter(u => u.role === 'Employee');
           setPending(pendingList);
           setAllLeaves(pendingList);
           setEvents(eventsList);
-          setUsers(usersList);
+          setUsers(employeesOnly);
           setStats({
             pendingLeaves: pendingList.length,
-            totalEmployees: usersList.filter(u => u.role === 'Employee').length,
+            totalEmployees: employeesOnly.length,
             upcomingEvents: eventsList.filter(e => new Date(e.date) >= new Date()).length,
           });
         }
@@ -169,15 +189,13 @@ export default function HRDashboard() {
 
       {/* Employee Directory */}
       <section className="rounded-lg border p-6 bg-card">
-        <h2 className="text-xl font-semibold mb-4">Employee Directory</h2>
-        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-          {users.filter(u => u.role === 'Employee').map(u => (
-            <div key={u._id} className="rounded border p-3 text-sm hover:bg-muted/50">
-              <div className="font-medium">{u.name}</div>
-              <div className="text-xs text-muted-foreground">{u.email}</div>
-            </div>
-          ))}
-        </div>
+        <h2 className="text-xl font-semibold mb-4">Employee Management</h2>
+        <UserManagementTable users={users} onUpdate={loadUsers} isAdmin={false} />
+      </section>
+
+      {/* Payroll Management Section */}
+      <section className="rounded-lg border p-6 bg-card">
+        <PayrollManagement isAdmin={false} />
       </section>
     </div>
   );

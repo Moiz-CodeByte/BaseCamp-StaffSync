@@ -9,7 +9,7 @@ export async function GET(req, { params }) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   await connectDB();
 
-  const { id } = params;
+  const { id } = await params;
   
   try {
     const payroll = await Payroll.findById(id).populate('user', 'name email department');
@@ -38,7 +38,7 @@ export async function PATCH(req, { params }) {
   }
   await connectDB();
 
-  const { id } = params;
+  const { id } = await params;
   const updates = await req.json();
   
   try {
@@ -72,7 +72,8 @@ export async function PATCH(req, { params }) {
     
     return NextResponse.json({ payroll, message: 'Payroll updated successfully' });
   } catch (e) {
-    return NextResponse.json({ message: e.message }, { status: 400 });
+    console.error('Payroll update error:', e);
+    return NextResponse.json({ message: e.message || 'Failed to update payroll' }, { status: 400 });
   }
 }
 
@@ -85,7 +86,7 @@ export async function DELETE(req, { params }) {
   }
   await connectDB();
 
-  const { id } = params;
+  const { id } = await params;
   
   try {
     const payroll = await Payroll.findByIdAndDelete(id);

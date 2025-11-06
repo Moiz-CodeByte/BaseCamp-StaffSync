@@ -1,0 +1,86 @@
+import { NextResponse } from 'next/server';
+import { connectDB } from '@/lib/db';
+import { authenticateRequest } from '@/lib/auth';
+import { User } from '@/models/User';
+
+// Update user salary information (HR/Admin only)
+export async function PATCH(req, { params }) {
+  const user = authenticateRequest(req);
+  if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  if (user.role !== 'Admin' && user.role !== 'HR') {
+    return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+  }
+  await connectDB();
+
+  const { id } = await params;
+  const updates = await req.json();
+  
+  try {
+    // Get the current user to check if role is actually changing
+    const existingUser = await User.findById(id);
+    if (!existingUser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+    
+    // Allowed fields to update
+    const allowedFields = [
+      'name', 'email', 'department', 'role', 
+      'basic_salary', 'allowance', 'leave_limit', 'assignedHR'
+    ];
+    
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        updateData[field] = updates[field];
+      }
+    });
+    
+    // Only Admin can change roles - check if role is actually being changed
+    if (updateData.role && updateData.role !== existingUser.role && user.role !== 'Admin') {
+      return NextResponse.json({ message: 'Only Admin can change user roles' }, { status: 403 });
+    }
+    
+    // HR cannot update Admin or HR users - only Employees
+    if (user.role === 'HR' && existingUser.role !== 'Employee') {
+      return NextResponse.json({ message: 'HR can only manage Employee accounts' }, { status: 403 });
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true, select: '-password' }
+    );
+    
+    return NextResponse.json({ user: updatedUser, message: 'User updated successfully' });
+  } catch (e) {
+    return NextResponse.json({ message: e.message }, { status: 400 });
+  }
+}
+
+// Get user details (HR/Admin can view all, employees can view themselves)
+export async function GET(req, { params }) {
+  const user = authenticateRequest(req);
+  if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  await connectDB();
+
+  const { id } = await params;
+  
+  try {
+    // Employees can only view their own profile
+    if (user.role === 'Employee' && id !== user.id) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+    
+    const targetUser = await User.findById(id)
+      .select('-password')
+      .populate('assignedHR', 'name email');
+    
+    if (!targetUser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json({ user: targetUser });
+  } catch (e) {
+    return NextResponse.json({ message: e.message }, { status: 400 });
+  }
+}

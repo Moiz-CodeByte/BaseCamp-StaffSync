@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PayrollManagement from '@/components/dashboard/PayrollManagement';
+import UserManagementTable from '@/components/dashboard/UserManagementTable';
+import { toast } from 'sonner';
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({ total: 0, admin: 0, hr: 0, employee: 0 });
-  const [genStatus, setGenStatus] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee' });
 
@@ -50,19 +52,6 @@ export default function AdminDashboard() {
     return () => { ignore = true; };
   }, []);
 
-  const generatePayroll = async () => {
-    const now = new Date();
-    const body = { month: now.getMonth() + 1, year: now.getFullYear(), defaultBasic: 60000 };
-    setGenStatus('Generating payroll...');
-    try {
-      const { data } = await api.post('/api/payroll/generate', body);
-      const success = data.results?.filter(r => r.ok).length || 0;
-      setGenStatus(`✓ Generated payroll for ${success} user(s)`);
-    } catch (e) {
-      setGenStatus('✗ ' + (e?.response?.data?.message || e.message));
-    }
-  };
-
   const addUser = async (e) => {
     e.preventDefault();
     try {
@@ -79,9 +68,12 @@ export default function AdminDashboard() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={() => setShowAddUser(!showAddUser)} className="bg-primary text-primary-foreground">
-          {showAddUser ? 'Cancel' : '+ Add User'}
-        </Button>
+        <div className="flex gap-2">
+         
+          <Button onClick={() => setShowAddUser(!showAddUser)} className="bg-primary text-primary-foreground">
+            {showAddUser ? 'Cancel' : '+ Add User'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -125,50 +117,12 @@ export default function AdminDashboard() {
       {/* User Management */}
       <section className="rounded-lg border p-6 bg-card">
         <h2 className="text-xl font-semibold mb-4">User Management</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">Name</th>
-                <th className="text-left p-2">Email</th>
-                <th className="text-left p-2">Role</th>
-                <th className="text-left p-2">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u._id} className="border-b hover:bg-muted/50">
-                  <td className="p-2 font-medium">{u.name}</td>
-                  <td className="p-2 text-muted-foreground">{u.email}</td>
-                  <td className="p-2">
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                      u.role === 'Admin' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
-                      u.role === 'HR' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                      'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                    }`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="p-2 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <UserManagementTable users={users} onUpdate={loadUsers} isAdmin={true} />
       </section>
 
       {/* Payroll Section */}
       <section className="rounded-lg border p-6 bg-card">
-        <h2 className="text-xl font-semibold mb-4">Payroll Management</h2>
-        <div className="flex items-center gap-4">
-          <Button onClick={generatePayroll} className="bg-primary text-primary-foreground">
-            Generate Payroll for Current Month
-          </Button>
-          {genStatus && <p className="text-sm">{genStatus}</p>}
-        </div>
-        <p className="text-sm text-muted-foreground mt-3">
-          This will create/update payslips for all users for the current month with a default basic salary of RS.60000.
-        </p>
+        <PayrollManagement isAdmin={true} />
       </section>
     </div>
   );

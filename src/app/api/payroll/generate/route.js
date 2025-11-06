@@ -31,20 +31,29 @@ export async function POST(req) {
       // Calculate leave deduction based on attendance
       const leave_deduction = await calculateLeaveDeduction(emp._id, month, emp.leave_limit || 12);
       
+      const basic_salary = emp.basic_salary || 0;
+      const allowance = emp.allowance || 0;
+      const bonusAmount = bonus || 0;
+      const deductionsAmount = deductions || 0;
+      
+      // Calculate total salary manually
+      const total_salary = basic_salary + allowance + bonusAmount - deductionsAmount - leave_deduction;
+      
       const payload = {
         user: emp._id,
         month,
-        basic_salary: emp.basic_salary || 0,
-        allowance: emp.allowance || 0,
-        bonus: bonus || 0,
-        deductions: deductions || 0,
+        basic_salary,
+        allowance,
+        bonus: bonusAmount,
+        deductions: deductionsAmount,
         leave_deduction,
+        total_salary, // Set it explicitly
         status: 'Pending',
       };
 
       const slip = await Payroll.findOneAndUpdate(
         { user: emp._id, month },
-        payload,
+        { $set: payload },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
       
@@ -52,6 +61,9 @@ export async function POST(req) {
         user: String(emp._id), 
         name: emp.name,
         ok: true, 
+        basic_salary,
+        allowance,
+        leave_deduction,
         total_salary: slip.total_salary 
       });
     } catch (e) {
@@ -67,7 +79,7 @@ export async function POST(req) {
   return NextResponse.json({ results });
 }
 
-// Helper function to calculate leave deduction
+// Helper function to calculate leave deduction based on working days (excluding weekends)
 async function calculateLeaveDeduction(userId, month, leaveLimit) {
   try {
     // Extract year and month number from month string
@@ -91,26 +103,62 @@ async function calculateLeaveDeduction(userId, month, leaveLimit) {
     
     if (!monthNum || monthNum < 1 || monthNum > 12) return 0;
     
-    // Get attendance records for the year up to this month
+    // Get attendance records for the ENTIRE YEAR up to this month
     const startOfYear = new Date(year, 0, 1);
-    const endOfMonth = new Date(year, monthNum, 0);
+    const endOfMonth = new Date(year, monthNum, 0); // Last day of current month
     
     const attendanceRecords = await Attendance.find({
       user: userId,
       date: { $gte: startOfYear, $lte: endOfMonth },
-      status: { $in: ['Absent', 'Leave'] }
+      status: 'Absent'
     });
     
-    const totalLeaveDays = attendanceRecords.length;
+    // Count total absent days in the year so far
+    const totalAbsentDays = attendanceRecords.length;
     
-    // Calculate excess leave days
-    const excessDays = Math.max(0, totalLeaveDays - leaveLimit);
+    // Calculate how much leave allowance the employee has used up to this month
+    // (Proportional to the number of months elapsed)
+    const leaveAllowanceUsed = (leaveLimit / 12) * monthNum;
     
-    // Calculate deduction (e.g., deduct proportional salary per excess day)
-    // Assuming 30 days per month for calculation
-    const user = await User.findById(userId).select('basic_salary');
-    const dailySalary = (user.basic_salary || 0) / 30;
+    // Calculate excess leave days beyond annual allowance
+    const excessDays = Math.max(0, totalAbsentDays - leaveAllowanceUsed);
+    
+    // If no excess days, no deduction
+    if (excessDays === 0) {
+      return 0;
+    }
+    
+    // Count working days in the current month (excluding Saturdays and Sundays)
+    const startOfMonth = new Date(year, monthNum - 1, 1);
+    let workingDays = 0;
+    const currentDate = new Date(startOfMonth);
+    
+    while (currentDate <= endOfMonth) {
+      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday or Saturday
+        workingDays++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Calculate deduction based on working days (not calendar days)
+    const user = await User.findById(userId).select('basic_salary allowance');
+    const monthlySalary = (user.basic_salary || 0) + (user.allowance || 0);
+    const dailySalary = workingDays > 0 ? monthlySalary / workingDays : 0;
     const leave_deduction = dailySalary * excessDays;
+    
+    console.log(`Leave calculation for user ${userId}:`, {
+      month,
+      year,
+      monthNum,
+      totalAbsentDays,
+      leaveAllowanceUsed: leaveAllowanceUsed.toFixed(2),
+      excessDays: excessDays.toFixed(2),
+      workingDays,
+      monthlySalary,
+      dailySalary: dailySalary.toFixed(2),
+      leave_deduction: leave_deduction.toFixed(2)
+    });
     
     return Math.round(leave_deduction * 100) / 100; // Round to 2 decimal places
   } catch (e) {

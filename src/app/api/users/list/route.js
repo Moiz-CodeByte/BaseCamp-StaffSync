@@ -8,6 +8,6 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
-  const users = await User.find({}, 'name email role createdAt');
+  const users = await User.find({}, 'name email role department basic_salary allowance leave_limit createdAt');
   return NextResponse.json({ users });
 }
