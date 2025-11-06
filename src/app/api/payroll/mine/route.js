@@ -8,6 +8,9 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   await connectDB();
 
-  const payslips = await Payroll.find({ user: user.id }).sort({ year: -1, month: -1 });
+  const payslips = await Payroll.find({ user: user.id })
+    .sort({ createdAt: -1 })
+    .select('month basic_salary allowance bonus deductions leave_deduction total_salary status payment_date payslip_url createdAt');
+  
   return NextResponse.json({ payslips });
 }

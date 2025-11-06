@@ -11,6 +11,11 @@ const UserSchema = new Schema(
     role: { type: String, enum: rolesList, default: 'Employee' },
     department: { type: String, trim: true, default: '' },
     assignedHR: { type: Schema.Types.ObjectId, ref: 'User' },
+    
+    // Salary Information (set by HR/Admin)
+    basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
+    allowance: { type: Number, default: 0 }, // Default monthly allowance
+    leave_limit: { type: Number, default: 12 }, // Annual leave limit (in days)
   },
   { timestamps: true }
 );
