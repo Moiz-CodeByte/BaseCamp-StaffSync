@@ -148,7 +148,7 @@
   
   /* Firefox scrollbar */
   * {
-    scrollbar-width: thin;
+    scrollbar-width: inherit;
     scrollbar-color: #f58327 #f3f4f6;
   }
   

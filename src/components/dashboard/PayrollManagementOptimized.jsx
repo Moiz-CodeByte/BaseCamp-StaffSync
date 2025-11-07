@@ -23,8 +23,8 @@ export default function PayrollManagement({ isAdmin = false }) {
     setFilterMonth,
     filterStatus,
     setFilterStatus,
-    filterUser,
-    setFilterUser,
+    searchQuery,
+    setSearchQuery,
     filteredPayrolls,
     availableMonths
   } = usePayrollFilters(payrolls);
@@ -130,10 +130,9 @@ export default function PayrollManagement({ isAdmin = false }) {
           setFilterMonth={setFilterMonth}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
-          filterUser={filterUser}
-          setFilterUser={setFilterUser}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
           availableMonths={availableMonths}
-          users={users}
         />
       </Card>
 

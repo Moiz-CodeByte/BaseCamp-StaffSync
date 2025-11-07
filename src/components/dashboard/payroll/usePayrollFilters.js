@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 export function usePayrollFilters(payrolls) {
   const [filterMonth, setFilterMonth] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterUser, setFilterUser] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Get unique months from payrolls
   const availableMonths = useMemo(() => {
@@ -23,20 +23,24 @@ export function usePayrollFilters(payrolls) {
     if (filterStatus && filterStatus !== 'all') {
       filtered = filtered.filter(p => p.status === filterStatus);
     }
-    if (filterUser && filterUser !== 'all') {
-      filtered = filtered.filter(p => p.user && String(p.user._id) === filterUser);
+    if (searchQuery && searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(p => 
+        p.user?.name?.toLowerCase().includes(query) ||
+        p.user?.email?.toLowerCase().includes(query)
+      );
     }
     
     return filtered;
-  }, [payrolls, filterMonth, filterStatus, filterUser]);
+  }, [payrolls, filterMonth, filterStatus, searchQuery]);
 
   return {
     filterMonth,
     setFilterMonth,
     filterStatus,
     setFilterStatus,
-    filterUser,
-    setFilterUser,
+    searchQuery,
+    setSearchQuery,
     filteredPayrolls,
     availableMonths
   };

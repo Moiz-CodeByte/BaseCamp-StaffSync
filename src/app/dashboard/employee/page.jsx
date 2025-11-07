@@ -170,7 +170,7 @@ export default function EmployeeDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-50 dark:bg-black/50">
       <EmployeeSidebar 
         sidebarOpen={sidebarOpen}
         activeTab={activeTab}

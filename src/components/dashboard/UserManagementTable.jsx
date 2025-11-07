@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X } from 'lucide-react';
+import { Edit, Save, X, Search } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function UserManagementTable({ users, onUpdate, isAdmin = false }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   const startEdit = (user) => {
     setEditingId(user._id);
@@ -57,8 +59,68 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
     return <Badge variant={variants[role] || 'default'}>{role}</Badge>;
   };
 
+  // Get unique departments from users
+  const departments = useMemo(() => {
+    const depts = [...new Set(users.map(u => u.department).filter(Boolean))];
+    return depts.sort();
+  }, [users]);
+
+  // Filter users based on search and department
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Search filter (name, email, department)
+      const matchesSearch = searchQuery === '' || 
+        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.department?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Department filter
+      const matchesDepartment = departmentFilter === 'all' || user.department === departmentFilter;
+      
+      return matchesSearch && matchesDepartment;
+    });
+  }, [users, searchQuery, departmentFilter]);
+
   return (
-    <div className="overflow-x-auto">
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex gap-4 items-end">
+        <div className="flex-1">
+          <Label htmlFor="search">Search</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="search"
+              placeholder="Search by name, email, or department..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div className="w-64">
+          <Label htmlFor="department">Department</Label>
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger id="department">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Results count */}
+      <div className="text-sm text-muted-foreground">
+        Showing {filteredUsers.length} of {users.length} employees
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b">
@@ -73,7 +135,7 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
           </tr>
         </thead>
         <tbody>
-          {users.map(user => (
+          {filteredUsers.map(user => (
             <tr key={user._id} className="border-b hover:bg-muted/50">
               {editingId === user._id ? (
                 <>
@@ -170,6 +232,7 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
