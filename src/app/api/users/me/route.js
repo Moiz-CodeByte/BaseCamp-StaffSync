@@ -56,3 +56,8 @@ export async function PATCH(req) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
+// Support PUT method as well (alias to PATCH)
+export async function PUT(req) {
+  return PATCH(req);
+}

@@ -9,7 +9,8 @@ export default function HRHeader({ sidebarOpen, setSidebarOpen, activeTab }) {
     leaves: 'Leave Requests',
     calendar: 'Calendar',
     employees: 'Employees',
-    payroll: 'Payroll'
+    payroll: 'Payroll',
+    profile: 'Profile'
   };
 
   return (

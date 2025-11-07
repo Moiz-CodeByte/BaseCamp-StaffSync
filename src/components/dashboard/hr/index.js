@@ -6,3 +6,4 @@ export { default as LeavesTab } from './LeavesTab';
 export { default as CalendarTab } from './CalendarTab';
 export { default as EmployeesTab } from './EmployeesTab';
 export { default as PayrollTab } from './PayrollTab';
+export { default as HRProfileTab } from './HRProfileTab';

@@ -10,8 +10,80 @@ export async function GET(req) {
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
 
-  const leaves = await Leave.find({ status: 'Pending' }).populate('user', 'name email role').sort({ createdAt: -1 });
-  return NextResponse.json({ leaves });
+  const leaves = await Leave.find({ status: 'Pending' })
+    .populate('user', 'name email role leave_limit')
+    .sort({ createdAt: -1 });
+  
+  // Calculate leave statistics for each employee
+  const leavesWithStats = await Promise.all(leaves.map(async (leave) => {
+    const userId = leave.user._id;
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const previousMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    
+    // Helper function to calculate days between dates
+    const calculateDays = (startDate, endDate) => {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    };
+    
+    // Get approved leaves for this year and calculate total days
+    const yearlyLeaves = await Leave.find({
+      user: userId,
+      status: 'Approved',
+      startDate: {
+        $gte: new Date(currentYear, 0, 1),
+        $lte: new Date(currentYear, 11, 31)
+      }
+    });
+    const yearlyApprovedLeaves = yearlyLeaves.reduce((total, leave) => {
+      return total + calculateDays(leave.startDate, leave.endDate);
+    }, 0);
+    
+    // Get approved leaves for current month and calculate total days
+    const monthlyLeaves = await Leave.find({
+      user: userId,
+      status: 'Approved',
+      startDate: {
+        $gte: new Date(currentYear, currentMonth - 1, 1),
+        $lt: new Date(currentYear, currentMonth, 1)
+      }
+    });
+    const monthlyApprovedLeaves = monthlyLeaves.reduce((total, leave) => {
+      return total + calculateDays(leave.startDate, leave.endDate);
+    }, 0);
+    
+    // Get approved leaves for previous month and calculate total days
+    const prevMonthLeaves = await Leave.find({
+      user: userId,
+      status: 'Approved',
+      startDate: {
+        $gte: new Date(previousMonthYear, previousMonth - 1, 1),
+        $lt: new Date(previousMonthYear, previousMonth, 1)
+      }
+    });
+    const previousMonthLeaves = prevMonthLeaves.reduce((total, leave) => {
+      return total + calculateDays(leave.startDate, leave.endDate);
+    }, 0);
+    
+    const leaveLimit = leave.user.leave_limit || 12;
+    const remaining = leaveLimit - yearlyApprovedLeaves;
+    
+    return {
+      ...leave.toObject(),
+      leaveStats: {
+        leaveLimit,
+        yearlyTaken: yearlyApprovedLeaves,
+        remaining: remaining > 0 ? remaining : 0,
+        currentMonth: monthlyApprovedLeaves,
+        previousMonth: previousMonthLeaves
+      }
+    };
+  }));
+  
+  return NextResponse.json({ leaves: leavesWithStats });
 }
 
 export async function POST(req) {

@@ -33,6 +33,7 @@ export default function LeavesTab({ leaves, onAction }) {
                     <th className="text-left p-3 font-semibold">Type</th>
                     <th className="text-left p-3 font-semibold">Duration</th>
                     <th className="text-left p-3 font-semibold">Dates</th>
+                    <th className="text-left p-3 font-semibold">Leave Stats</th>
                     <th className="text-left p-3 font-semibold">Reason</th>
                     <th className="text-right p-3 font-semibold">Actions</th>
                   </tr>
@@ -42,6 +43,7 @@ export default function LeavesTab({ leaves, onAction }) {
                     const startDate = new Date(leave.startDate);
                     const endDate = new Date(leave.endDate);
                     const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    const stats = leave.leaveStats || {};
                     
                     return (
                       <tr key={leave._id} className="border-b hover:bg-muted/50">
@@ -62,6 +64,32 @@ export default function LeavesTab({ leaves, onAction }) {
                           <div className="text-xs">to</div>
                           <div className="text-xs">
                             {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Limit:</span>
+                              <span className="font-medium">{stats.leaveLimit || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Remaining:</span>
+                              <span className={`font-medium ${stats.remaining <= 2 ? 'text-red-600' : 'text-green-600'}`}>
+                                {stats.remaining !== undefined ? stats.remaining : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Yearly:</span>
+                              <span className="font-medium">{stats.yearlyTaken !== undefined ? stats.yearlyTaken : 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">This Month:</span>
+                              <span className="font-medium">{stats.currentMonth !== undefined ? stats.currentMonth : 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Last Month:</span>
+                              <span className="font-medium">{stats.previousMonth !== undefined ? stats.previousMonth : 'N/A'}</span>
+                            </div>
                           </div>
                         </td>
                         <td className="p-3 text-muted-foreground max-w-xs truncate">

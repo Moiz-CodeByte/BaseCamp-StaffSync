@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import HRSidebar from '@/components/dashboard/hr/HRSidebar';
 import HRHeader from '@/components/dashboard/hr/HRHeader';
 import OverviewTab from '@/components/dashboard/hr/OverviewTab';
@@ -9,6 +10,7 @@ import LeavesTab from '@/components/dashboard/hr/LeavesTab';
 import CalendarTab from '@/components/dashboard/hr/CalendarTab';
 import EmployeesTab from '@/components/dashboard/hr/EmployeesTab';
 import PayrollTab from '@/components/dashboard/hr/PayrollTab';
+import HRProfileTab from '@/components/dashboard/hr/HRProfileTab';
 
 export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -17,6 +19,8 @@ export default function HRDashboard() {
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({ pendingLeaves: 0, totalEmployees: 0, upcomingEvents: 0 });
+  const [me, setMe] = useState(null);
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
 
   const loadUsers = async () => {
     try {
@@ -38,20 +42,25 @@ export default function HRDashboard() {
     let ignore = false;
     (async () => {
       try {
-        const [{ data: leaves }, { data: eventsData }, { data: usersData }] = await Promise.all([
+        const [{ data: leaves }, { data: eventsData }, { data: usersData }, { data: meData }] = await Promise.all([
           api.get('/api/leaves/manage'),
           api.get('/api/calendar/events'),
           api.get('/api/users/list'),
+          api.get('/api/users/me'),
         ]);
         if (!ignore) {
           const pendingList = leaves.leaves || [];
           const eventsList = eventsData.events || [];
           const usersList = usersData.users || [];
+          const userData = meData.user;
+          
           // HR can only manage Employees (not Admin or HR users)
           const employeesOnly = usersList.filter(u => u.role === 'Employee');
           setPending(pendingList);
           setEvents(eventsList);
           setUsers(employeesOnly);
+          setMe(userData);
+          setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
           setStats({
             pendingLeaves: pendingList.length,
             totalEmployees: employeesOnly.length,
@@ -96,6 +105,19 @@ export default function HRDashboard() {
     } catch {}
   };
 
+  const updateProfile = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put('/api/users/me', profileForm);
+      toast.success('Profile updated successfully');
+      const { data } = await api.get('/api/users/me');
+      setMe(data.user);
+      setProfileForm({ ...profileForm, currentPassword: '', password: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <HRSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} />
@@ -116,6 +138,14 @@ export default function HRDashboard() {
             )}
             {activeTab === 'employees' && <EmployeesTab users={users} onUpdate={loadUsers} />}
             {activeTab === 'payroll' && <PayrollTab />}
+            {activeTab === 'profile' && (
+              <HRProfileTab 
+                me={me} 
+                profileForm={profileForm} 
+                setProfileForm={setProfileForm} 
+                updateProfile={updateProfile}
+              />
+            )}
           </div>
         </div>
       </div>
