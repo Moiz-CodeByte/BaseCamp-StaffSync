@@ -156,8 +156,8 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
                   <td className="p-2 text-muted-foreground">{user.email}</td>
                   <td className="p-2">{user.department || '-'}</td>
                   <td className="p-2">{getRoleBadge(user.role)}</td>
-                  <td className="p-2 text-right">${(user.basic_salary || 0).toLocaleString()}</td>
-                  <td className="p-2 text-right text-green-600">+${(user.allowance || 0).toLocaleString()}</td>
+                  <td className="p-2 text-right">Rs. {(user.basic_salary || 0).toLocaleString()}</td>
+                  <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td>
                   <td className="p-2 text-right">{user.leave_limit || 12} days</td>
                   <td className="p-2 text-right">
                     <Button size="sm" variant="outline" onClick={() => startEdit(user)}>

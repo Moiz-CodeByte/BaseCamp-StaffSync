@@ -400,7 +400,7 @@ export default function PayrollManagement({ isAdmin = false }) {
                             />
                           </td>
                           <td className="p-2 text-right font-bold">
-                            ${((editForm.basic_salary || 0) + (editForm.allowance || 0) + (editForm.bonus || 0) - (editForm.deductions || 0) - (editForm.leave_deduction || 0)).toLocaleString()}
+                            Rs. {((editForm.basic_salary || 0) + (editForm.allowance || 0) + (editForm.bonus || 0) - (editForm.deductions || 0) - (editForm.leave_deduction || 0)).toLocaleString()}
                           </td>
                           <td className="p-2 text-center">
                             <Select value={editForm.status} onValueChange={(val) => setEditForm({...editForm, status: val})}>
@@ -427,12 +427,12 @@ export default function PayrollManagement({ isAdmin = false }) {
                         </>
                       ) : (
                         <>
-                          <td className="p-2 text-right">${payroll.basic_salary?.toLocaleString() || 0}</td>
-                          <td className="p-2 text-right text-green-600">+${payroll.allowance?.toLocaleString() || 0}</td>
-                          <td className="p-2 text-right text-green-600">{payroll.bonus > 0 ? `+$${payroll.bonus.toLocaleString()}` : '-'}</td>
-                          <td className="p-2 text-right text-red-600">{payroll.deductions > 0 ? `-$${payroll.deductions.toLocaleString()}` : '-'}</td>
-                          <td className="p-2 text-right text-red-600">{payroll.leave_deduction > 0 ? `-$${payroll.leave_deduction.toLocaleString()}` : '-'}</td>
-                          <td className="p-2 text-right font-bold">${payroll.total_salary?.toLocaleString() || 0}</td>
+                          <td className="p-2 text-right">Rs. {payroll.basic_salary?.toLocaleString() || 0}</td>
+                          <td className="p-2 text-right text-green-600">+Rs. {payroll.allowance?.toLocaleString() || 0}</td>
+                          <td className="p-2 text-right text-green-600">{payroll.bonus > 0 ? `+Rs. ${payroll.bonus.toLocaleString()}` : '-'}</td>
+                          <td className="p-2 text-right text-red-600">{payroll.deductions > 0 ? `-Rs. ${payroll.deductions.toLocaleString()}` : '-'}</td>
+                          <td className="p-2 text-right text-red-600">{payroll.leave_deduction > 0 ? `-Rs. ${payroll.leave_deduction.toLocaleString()}` : '-'}</td>
+                          <td className="p-2 text-right font-bold">Rs. {payroll.total_salary?.toLocaleString() || 0}</td>
                           <td className="p-2 text-center">{getStatusBadge(payroll.status)}</td>
                           <td className="p-2 text-right">
                             <div className="flex gap-1 justify-end">

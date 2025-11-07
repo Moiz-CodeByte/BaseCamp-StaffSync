@@ -60,15 +60,26 @@ export async function PATCH(req, { params }) {
       updateData.payment_date = new Date();
     }
     
+    console.log('Payroll PATCH - Update Data:', updateData);
+    
     const payroll = await Payroll.findByIdAndUpdate(
       id,
-      updateData,
+      { $set: updateData },
       { new: true, runValidators: true }
     ).populate('user', 'name email department');
     
     if (!payroll) {
       return NextResponse.json({ message: 'Payroll record not found' }, { status: 404 });
     }
+    
+    console.log('Payroll PATCH - Result:', {
+      total_salary: payroll.total_salary,
+      basic_salary: payroll.basic_salary,
+      allowance: payroll.allowance,
+      bonus: payroll.bonus,
+      deductions: payroll.deductions,
+      leave_deduction: payroll.leave_deduction
+    });
     
     return NextResponse.json({ payroll, message: 'Payroll updated successfully' });
   } catch (e) {

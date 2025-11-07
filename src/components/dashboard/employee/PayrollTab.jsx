@@ -34,7 +34,7 @@ export default function PayrollTab({ payslips }) {
                   <div className="text-right flex items-center gap-3">
                     <div>
                       <p className="text-2xl font-bold text-green-600">
-                        ${slip.total_salary?.toLocaleString() || slip.net?.toLocaleString() || '0'}
+                        Rs.{slip.total_salary?.toLocaleString() || slip.net?.toLocaleString() || '0'}
                       </p>
                       <p className="text-xs text-gray-500">Net Salary</p>
                     </div>
@@ -46,28 +46,28 @@ export default function PayrollTab({ payslips }) {
                 <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500 text-xs">Basic Salary</p>
-                    <p className="font-semibold">${(slip.basic_salary || slip.basic || 0).toLocaleString()}</p>
+                    <p className="font-semibold">Rs. {(slip.basic_salary || slip.basic || 0).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs">Allowance</p>
-                    <p className="font-semibold text-green-600">+${(slip.allowance || slip.allowances || 0).toLocaleString()}</p>
+                    <p className="font-semibold text-green-600">+Rs. {(slip.allowance || slip.allowances || 0).toLocaleString()}</p>
                   </div>
                   {slip.bonus > 0 && (
                     <div>
                       <p className="text-gray-500 text-xs">Bonus</p>
-                      <p className="font-semibold text-green-600">+${slip.bonus.toLocaleString()}</p>
+                      <p className="font-semibold text-green-600">+Rs. {slip.bonus.toLocaleString()}</p>
                     </div>
                   )}
                   {slip.deductions > 0 && (
                     <div>
                       <p className="text-gray-500 text-xs">Deductions</p>
-                      <p className="font-semibold text-red-600">-${slip.deductions.toLocaleString()}</p>
+                      <p className="font-semibold text-red-600">-Rs. {slip.deductions.toLocaleString()}</p>
                     </div>
                   )}
                   {slip.leave_deduction > 0 && (
                     <div>
                       <p className="text-gray-500 text-xs">Leave Deduction</p>
-                      <p className="font-semibold text-red-600">-${slip.leave_deduction.toLocaleString()}</p>
+                      <p className="font-semibold text-red-600">-Rs. {slip.leave_deduction.toLocaleString()}</p>
                     </div>
                   )}
                   {slip.payment_date && (

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import PayrollManagement from '@/components/dashboard/PayrollManagement';
+import PayrollManagement from '@/components/dashboard/PayrollManagementOptimized';
 import UserManagementTable from '@/components/dashboard/UserManagementTable';
 
 export default function HRDashboard() {

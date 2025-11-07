@@ -30,9 +30,9 @@ const PayrollSchema = new Schema(
     payslip_url: { type: String, default: '' }, // Link to generated payslip (PDF)
     
     // Legacy fields (for backward compatibility)
-    basic: { type: Number }, // Deprecated - use basic_salary
-    allowances: { type: Number }, // Deprecated - use allowance
-    net: { type: Number }, // Deprecated - use total_salary
+    // basic: { type: Number }, // Deprecated - use basic_salary
+    // allowances: { type: Number }, // Deprecated - use allowance
+    // net: { type: Number }, // Deprecated - use total_salary
     generatedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
@@ -77,28 +77,33 @@ PayrollSchema.pre('findOneAndUpdate', async function(next) {
     return next();
   }
   
-  // Merge current values with updates
-  const data = update.$set || update;
+  // Get the update data - handle both $set and direct updates
+  let updateData = {};
+  if (update.$set) {
+    updateData = update.$set;
+  } else {
+    // If no $set, create one from the update object
+    updateData = { ...update };
+  }
   
-  const basic_salary = data.basic_salary !== undefined ? data.basic_salary : (docToUpdate.basic_salary || 0);
-  const allowance = data.allowance !== undefined ? data.allowance : (docToUpdate.allowance || 0);
-  const bonus = data.bonus !== undefined ? data.bonus : (docToUpdate.bonus || 0);
-  const deductions = data.deductions !== undefined ? data.deductions : (docToUpdate.deductions || 0);
-  const leave_deduction = data.leave_deduction !== undefined ? data.leave_deduction : (docToUpdate.leave_deduction || 0);
+  // Merge current values with updates
+  const basic_salary = updateData.basic_salary !== undefined ? updateData.basic_salary : (docToUpdate.basic_salary || 0);
+  const allowance = updateData.allowance !== undefined ? updateData.allowance : (docToUpdate.allowance || 0);
+  const bonus = updateData.bonus !== undefined ? updateData.bonus : (docToUpdate.bonus || 0);
+  const deductions = updateData.deductions !== undefined ? updateData.deductions : (docToUpdate.deductions || 0);
+  const leave_deduction = updateData.leave_deduction !== undefined ? updateData.leave_deduction : (docToUpdate.leave_deduction || 0);
   
   // Calculate total salary
   const total_salary = basic_salary + allowance + bonus - deductions - leave_deduction;
   
-  // Ensure $set exists
-  if (!update.$set) {
-    this.setUpdate({ ...update, $set: {} });
-  }
+  // Update the $set object with calculated values
+  updateData.total_salary = total_salary;
+  updateData.basic = basic_salary;
+  updateData.allowances = allowance;
+  updateData.net = total_salary;
   
-  // Set calculated values
-  update.$set.total_salary = total_salary;
-  update.$set.basic = basic_salary;
-  update.$set.allowances = allowance;
-  update.$set.net = total_salary;
+  // Set the update back to the query
+  this.setUpdate({ $set: updateData });
   
   console.log('Payroll update calculation:', {
     basic_salary,
