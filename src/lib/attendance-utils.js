@@ -28,7 +28,7 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
       date: { $gte: startDate, $lt: today }
     });
 
-    console.log(`Found ${existingRecords.length} existing records for user ${userId}`);
+    // console.log(`Found ${existingRecords.length} existing records for user ${userId}`);
 
     // Create a Set of dates that already have records
     // Normalize dates to local date strings for comparison
@@ -37,7 +37,7 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
         const date = new Date(record.date);
         date.setHours(0, 0, 0, 0);
         const dateStr = date.toISOString().split('T')[0];
-        console.log(`  Existing record: ${dateStr} (${record.status})`);
+        // console.log(  Existing record: ${dateStr} (${record.status}));
         return dateStr;
       })
     );
@@ -54,18 +54,12 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
       checkDate.setHours(0, 0, 0, 0);
       const dateString = checkDate.toISOString().split('T')[0];
       
-      // Debug logging
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      console.log(`Checking ${dayNames[dayOfWeek]} ${dateString}: dayOfWeek=${dayOfWeek}, exists=${existingDates.has(dateString)}`);
-      
       // Only check working days (Monday-Friday) and dates without existing records
       // Saturday (6) and Sunday (0) are excluded
       if (dayOfWeek >= 1 && dayOfWeek <= 5 && !existingDates.has(dateString)) {
         // Create date at start of day for storage
         const recordDate = new Date(currentDate);
         recordDate.setHours(0, 0, 0, 0);
-        
-        console.log(`  -> Marking ${dayNames[dayOfWeek]} ${dateString} as absent`);
         
         absentRecords.push({
           user: userId,

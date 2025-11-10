@@ -21,20 +21,32 @@ export default function CalendarTab({ attendance, leaves }) {
                   modifiers={{
                     present: attendance
                       .filter(a => a.status === 'Present')
-                      .map(a => parseISO(a.date.split('T')[0])),
+                      .map(a => {
+                        const date = new Date(a.date);
+                        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                      }),
                     absent: attendance
                       .filter(a => a.status === 'Absent')
-                      .map(a => parseISO(a.date.split('T')[0])),
+                      .map(a => {
+                        const date = new Date(a.date);
+                        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                      }),
                     halfDay: attendance
                       .filter(a => a.status === 'Half-Day')
-                      .map(a => parseISO(a.date.split('T')[0])),
+                      .map(a => {
+                        const date = new Date(a.date);
+                        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                      }),
                     leave: leaves
                       .filter(l => l.status === 'Approved')
                       .flatMap(l => {
                         const dates = [];
-                        const start = parseISO(l.startDate.split('T')[0]);
-                        const end = parseISO(l.endDate.split('T')[0]);
-                        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        const start = new Date(l.startDate);
+                        const end = new Date(l.endDate);
+                        const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+                        
+                        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
                           dates.push(new Date(d));
                         }
                         return dates;
