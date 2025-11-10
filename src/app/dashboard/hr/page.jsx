@@ -7,6 +7,7 @@ import HRSidebar from '@/components/dashboard/hr/HRSidebar';
 import HRHeader from '@/components/dashboard/hr/HRHeader';
 import OverviewTab from '@/components/dashboard/hr/OverviewTab';
 import LeavesTab from '@/components/dashboard/hr/LeavesTab';
+import HRLeaveRequestForm from '@/components/dashboard/hr/HRLeaveRequestForm';
 import CalendarTab from '@/components/dashboard/hr/CalendarTab';
 import EmployeesTab from '@/components/dashboard/hr/EmployeesTab';
 import PayrollTab from '@/components/dashboard/hr/PayrollTab';
@@ -128,7 +129,11 @@ export default function HRDashboard() {
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto">
             {activeTab === 'overview' && <OverviewTab stats={stats} />}
-            {activeTab === 'leaves' && <LeavesTab leaves={pending} onAction={handleLeaveAction} />}
+            {activeTab === 'leaves' && <LeavesTab 
+              leaves={pending}
+              onAction={handleLeaveAction} 
+              me={me}
+            />}
             {activeTab === 'calendar' && (
               <CalendarTab 
                 events={events} 
@@ -137,7 +142,7 @@ export default function HRDashboard() {
               />
             )}
             {activeTab === 'employees' && <EmployeesTab users={users} onUpdate={loadUsers} />}
-            {activeTab === 'payroll' && <PayrollTab />}
+            {/* {activeTab === 'payroll' && <PayrollTab />} */}
             {activeTab === 'profile' && (
               <HRProfileTab 
                 me={me} 

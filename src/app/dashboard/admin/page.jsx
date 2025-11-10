@@ -121,9 +121,9 @@ export default function AdminDashboard() {
       </section>
 
       {/* Payroll Section */}
-      <section className="rounded-lg border p-6 bg-card">
+      {/* <section className="rounded-lg border p-6 bg-card">
         <PayrollManagement isAdmin={true} />
-      </section>
+      </section> */}
     </div>
   );
 }

@@ -13,16 +13,25 @@ export async function POST(req) {
   }
   await connectDB();
 
-  const { month, bonus = 0, deductions = 0 } = await req.json();
+  const { month, bonus = 0, deductions = 0, userId = null } = await req.json();
   
   // Validate month format (e.g., "October 2025" or "2025-10")
   if (!month) {
     return NextResponse.json({ message: 'Month is required (e.g., "October 2025" or "2025-10")' }, { status: 400 });
   }
 
-  const employees = await User.find({ 
-    role: { $in: ['Employee', 'HR', 'Admin'] } 
-  }).select('_id name basic_salary allowance leave_limit');
+  // Build query - if userId is provided, generate for single employee, otherwise all
+  const query = userId 
+    ? { _id: userId, role: { $in: ['Employee', 'HR', 'Admin'] } }
+    : { role: { $in: ['Employee', 'HR', 'Admin'] } };
+
+  const employees = await User.find(query).select('_id name basic_salary allowance leave_limit');
+  
+  if (employees.length === 0) {
+    return NextResponse.json({ 
+      message: userId ? 'Employee not found' : 'No employees found' 
+    }, { status: 404 });
+  }
   
   const results = [];
   

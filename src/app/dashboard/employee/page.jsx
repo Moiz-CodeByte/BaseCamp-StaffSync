@@ -11,7 +11,7 @@ import AttendanceTab from '@/components/dashboard/employee/AttendanceTab';
 import CalendarTab from '@/components/dashboard/employee/CalendarTab';
 import LeavesTab from '@/components/dashboard/employee/LeavesTab';
 import ProfileTab from '@/components/dashboard/employee/ProfileTab';
-import PayrollTab from '@/components/dashboard/employee/PayrollTab';
+// import PayrollTab from '@/components/dashboard/employee/PayrollTab';
 
 export default function EmployeeDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -166,7 +166,7 @@ export default function EmployeeDashboard() {
     { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
     { id: 'leaves', label: 'Leave Requests', icon: FileText },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'payroll', label: 'Payroll', icon: DollarSign },
+    // { id: 'payroll', label: 'Payroll', icon: DollarSign },
   ];
 
   return (
@@ -220,6 +220,7 @@ export default function EmployeeDashboard() {
               requestLeave={requestLeave}
               leaves={leaves}
               deleteLeaveRequest={deleteLeaveRequest}
+              me={me}
             />
           )}
 
@@ -232,9 +233,9 @@ export default function EmployeeDashboard() {
             />
           )}
 
-          {activeTab === 'payroll' && (
+          {/* {activeTab === 'payroll' && (
             <PayrollTab payslips={payslips} />
-          )}
+          )} */}
         </div>
       </main>
     </div>

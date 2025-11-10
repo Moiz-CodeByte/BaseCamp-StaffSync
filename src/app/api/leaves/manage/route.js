@@ -10,12 +10,31 @@ export async function GET(req) {
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
 
-  const leaves = await Leave.find({ status: 'Pending' })
+  // Build query based on user role
+  // HR can only see Employee leave requests, not their own or other HR/Admin requests
+  // Admin can see both Employee and HR leave requests
+  let query = { status: 'Pending' };
+  if (user.role === 'HR') {
+    // HR only sees Employee requests
+    query = { status: 'Pending', user: { $exists: true } };
+  }
+
+  const leaves = await Leave.find(query)
     .populate('user', 'name email role leave_limit')
     .sort({ createdAt: -1 });
   
+  // Filter out leaves based on user role after population
+  const filteredLeaves = leaves.filter(leave => {
+    if (user.role === 'HR') {
+      // HR should only see Employee leaves, not their own or other HR/Admin leaves
+      return leave.user && leave.user.role === 'Employee';
+    }
+    // Admin sees Employee and HR leaves (but not other Admin leaves)
+    return leave.user && (leave.user.role === 'Employee' || leave.user.role === 'HR');
+  });
+  
   // Calculate leave statistics for each employee
-  const leavesWithStats = await Promise.all(leaves.map(async (leave) => {
+  const leavesWithStats = await Promise.all(filteredLeaves.map(async (leave) => {
     const userId = leave.user._id;
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;

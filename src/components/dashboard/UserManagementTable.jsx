@@ -128,8 +128,8 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
             <th className="text-left p-2">Email</th>
             <th className="text-left p-2">Department</th>
             <th className="text-left p-2">Role</th>
-            <th className="text-right p-2">Basic Salary</th>
-            <th className="text-right p-2">Allowance</th>
+            {/* <th className="text-right p-2">Basic Salary</th>
+            <th className="text-right p-2">Allowance</th> */}
             <th className="text-right p-2">Leave Limit</th>
             <th className="text-right p-2">Actions</th>
           </tr>
@@ -177,22 +177,22 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
                       getRoleBadge(editForm.role)
                     )}
                   </td>
-                  <td className="p-2">
+                  {/* <td className="p-2">
                     <Input 
                       type="number"
                       value={editForm.basic_salary}
                       onChange={(e) => setEditForm({...editForm, basic_salary: parseFloat(e.target.value) || 0})}
                       className="w-28"
                     />
-                  </td>
-                  <td className="p-2">
+                  </td> */}
+                  {/* <td className="p-2">
                     <Input 
                       type="number"
                       value={editForm.allowance}
                       onChange={(e) => setEditForm({...editForm, allowance: parseFloat(e.target.value) || 0})}
                       className="w-28"
                     />
-                  </td>
+                  </td> */}
                   <td className="p-2">
                     <Input 
                       type="number"
@@ -218,8 +218,8 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
                   <td className="p-2 text-muted-foreground">{user.email}</td>
                   <td className="p-2">{user.department || '-'}</td>
                   <td className="p-2">{getRoleBadge(user.role)}</td>
-                  <td className="p-2 text-right">Rs. {(user.basic_salary || 0).toLocaleString()}</td>
-                  <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td>
+                  {/* <td className="p-2 text-right">Rs. {(user.basic_salary || 0).toLocaleString()}</td>
+                  <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td> */}
                   <td className="p-2 text-right">{user.leave_limit || 12} days</td>
                   <td className="p-2 text-right">
                     <Button size="sm" variant="outline" onClick={() => startEdit(user)}>

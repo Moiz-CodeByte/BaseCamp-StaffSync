@@ -66,6 +66,16 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
             <Label className="text-gray-500">Role</Label>
             <p className="text-lg font-medium mt-1">{me.role}</p>
           </div>
+           <div>
+            <Label className="text-gray-500">Account Created</Label>
+            <p className="text-lg font-medium mt-1">
+              {new Date(me.createdAt).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

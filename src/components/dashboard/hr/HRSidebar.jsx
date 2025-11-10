@@ -5,10 +5,10 @@ import { LayoutDashboard, UserCheck, Calendar, Users, DollarSign, User } from 'l
 export default function HRSidebar({ sidebarOpen, activeTab, onTabChange }) {
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'leaves', label: 'Leave Requests', icon: UserCheck },
+    { id: 'leaves', label: 'Leaves', icon: UserCheck },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'employees', label: 'Employees', icon: Users },
-    { id: 'payroll', label: 'Payroll', icon: DollarSign },
+    // { id: 'payroll', label: 'Payroll', icon: DollarSign },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

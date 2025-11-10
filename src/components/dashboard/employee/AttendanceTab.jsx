@@ -4,6 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import StatusBadge from './StatusBadge';
 
 export default function AttendanceTab({ checkIn, checkOut, todayAttendance, attendance }) {
+  // Check if attendance was marked by HR/Admin (Present/Absent status without check-in time)
+  // If there's a checkInAt time, it means employee checked in normally
+  const isMarkedByAdmin = todayAttendance && 
+                          (todayAttendance.status === 'Present' || todayAttendance.status === 'Absent') && 
+                          !todayAttendance.checkInAt;
+  
+  // Disable check-in if: already checked in OR manually marked by admin
+  const isCheckInDisabled = todayAttendance?.checkInAt || isMarkedByAdmin;
+  
+  // Disable check-out if: not checked in OR already checked out OR manually marked by admin
+  const isCheckOutDisabled = !todayAttendance?.checkInAt || todayAttendance?.checkOutAt || isMarkedByAdmin;
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Attendance</h1>
@@ -15,15 +27,30 @@ export default function AttendanceTab({ checkIn, checkOut, todayAttendance, atte
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
-            <Button onClick={checkIn} disabled={todayAttendance?.checkInAt} className="flex-1">
+            <Button onClick={checkIn} disabled={isCheckInDisabled} className="flex-1">
               <Clock className="w-4 h-4 mr-2" />
-              {todayAttendance?.checkInAt ? 'Already Checked In' : 'Check In'}
+              {isMarkedByAdmin 
+                ? `Marked as ${todayAttendance.status}` 
+                : todayAttendance?.checkInAt 
+                  ? 'Already Checked In' 
+                  : 'Check In'}
             </Button>
-            <Button onClick={checkOut} disabled={!todayAttendance?.checkInAt || todayAttendance?.checkOutAt} variant="outline" className="flex-1">
+            <Button onClick={checkOut} disabled={isCheckOutDisabled} variant="outline" className="flex-1">
               <Clock className="w-4 h-4 mr-2" />
-              {todayAttendance?.checkOutAt ? 'Already Checked Out' : 'Check Out'}
+              {isMarkedByAdmin 
+                ? `Marked as ${todayAttendance.status}` 
+                : todayAttendance?.checkOutAt 
+                  ? 'Already Checked Out' 
+                  : 'Check Out'}
             </Button>
           </div>
+          {isMarkedByAdmin && (
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                <strong>Note:</strong> Today&apos;s attendance has been marked as <strong>{todayAttendance.status}</strong> by HR/Admin. Check-in and check-out are disabled.
+              </p>
+            </div>
+          )}
           {todayAttendance && (
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-sm font-medium mb-2">Today&apos;s Record:</p>
