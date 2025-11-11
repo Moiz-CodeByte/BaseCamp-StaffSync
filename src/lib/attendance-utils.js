@@ -2,9 +2,38 @@ import { Attendance } from '@/models/Attendance';
 import { User } from '@/models/User';
 
 /**
+ * Convert to Pakistan Time (PKT) - UTC+5
+ * @param {Date} date - Date to convert
+ * @returns {Date} Date in PKT
+ */
+function toPKT(date) {
+  // Get UTC time
+  const utcTime = date.getTime();
+  // PKT is UTC+5 (5 hours * 60 minutes * 60 seconds * 1000 milliseconds)
+  const pktOffset = 5 * 60 * 60 * 1000;
+  // Create new date in PKT
+  const pktDate = new Date(utcTime + pktOffset);
+  return pktDate;
+}
+
+/**
+ * Create a date at midnight in PKT
+ * @param {number} year - Year
+ * @param {number} month - Month (0-11)
+ * @param {number} day - Day
+ * @returns {Date} Date at midnight PKT
+ */
+function createPKTDate(year, month, day) {
+  // Create date string in PKT format
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000+05:00`;
+  return new Date(dateStr);
+}
+
+/**
  * Automatically marks attendance as "Absent" for past dates where user forgot to check in
  * Only marks working days (Monday-Friday) that have passed
  * Saturday and Sunday are excluded as weekend/non-working days
+ * Uses Pakistan Time (PKT/UTC+5) for date calculations
  * @param {string} userId - The user ID to check
  * @param {Date} userCreatedAt - When the user account was created
  * @param {number} daysToCheck - How many days back to check (default: 30)
@@ -12,54 +41,56 @@ import { User } from '@/models/User';
  */
 export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCheck = 30) {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Get current date in PKT
+    const nowPKT = toPKT(new Date());
+    const today = createPKTDate(nowPKT.getFullYear(), nowPKT.getMonth(), nowPKT.getDate());
 
     // Start from user creation date or X days ago, whichever is more recent
-    const daysAgo = new Date(today);
-    daysAgo.setDate(daysAgo.getDate() - daysToCheck);
+    const userCreatedPKT = toPKT(new Date(userCreatedAt));
+    const daysAgo = new Date(today.getTime() - (daysToCheck * 24 * 60 * 60 * 1000));
     
-    const startDate = new Date(Math.max(new Date(userCreatedAt).getTime(), daysAgo.getTime()));
-    startDate.setHours(0, 0, 0, 0);
+    const startDate = new Date(Math.max(userCreatedPKT.getTime(), daysAgo.getTime()));
+    // Normalize to midnight PKT
+    const startPKT = toPKT(startDate);
+    const normalizedStart = createPKTDate(startPKT.getFullYear(), startPKT.getMonth(), startPKT.getDate());
 
     // Get all existing attendance records for this user in date range
     const existingRecords = await Attendance.find({
       user: userId,
-      date: { $gte: startDate, $lt: today }
+      date: { $gte: normalizedStart, $lt: today }
     });
 
-    // console.log(`Found ${existingRecords.length} existing records for user ${userId}`);
-
-    // Create a Set of dates that already have records
-    // Normalize dates to local date strings for comparison
+    // Create a Set of dates that already have records (using PKT date strings)
     const existingDates = new Set(
       existingRecords.map(record => {
-        const date = new Date(record.date);
-        date.setHours(0, 0, 0, 0);
-        const dateStr = date.toISOString().split('T')[0];
-        // console.log(  Existing record: ${dateStr} (${record.status}));
+        const pktDate = toPKT(new Date(record.date));
+        // Format as YYYY-MM-DD in PKT
+        const dateStr = `${pktDate.getFullYear()}-${String(pktDate.getMonth() + 1).padStart(2, '0')}-${String(pktDate.getDate()).padStart(2, '0')}`;
         return dateStr;
       })
     );
 
     // Check each day from start date to yesterday
     const absentRecords = [];
-    let currentDate = new Date(startDate);
+    let currentDate = new Date(normalizedStart.getTime());
     
     while (currentDate < today) {
-      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+      const pktCurrentDate = toPKT(currentDate);
+      const year = pktCurrentDate.getFullYear();
+      const month = pktCurrentDate.getMonth();
+      const day = pktCurrentDate.getDate();
       
-      // Create a normalized date for comparison
-      const checkDate = new Date(currentDate);
-      checkDate.setHours(0, 0, 0, 0);
-      const dateString = checkDate.toISOString().split('T')[0];
+      // Get day of week in PKT
+      const dayOfWeek = pktCurrentDate.getDay(); // 0 = Sunday, 6 = Saturday
+      
+      // Create normalized date string for comparison (YYYY-MM-DD in PKT)
+      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
       // Only check working days (Monday-Friday) and dates without existing records
       // Saturday (6) and Sunday (0) are excluded
       if (dayOfWeek >= 1 && dayOfWeek <= 5 && !existingDates.has(dateString)) {
-        // Create date at start of day for storage
-        const recordDate = new Date(currentDate);
-        recordDate.setHours(0, 0, 0, 0);
+        // Create date at midnight PKT for storage
+        const recordDate = createPKTDate(year, month, day);
         
         absentRecords.push({
           user: userId,
@@ -70,7 +101,7 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
       }
       
       // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate = new Date(currentDate.getTime() + (24 * 60 * 60 * 1000));
     }
 
     // Insert all absent records in bulk
