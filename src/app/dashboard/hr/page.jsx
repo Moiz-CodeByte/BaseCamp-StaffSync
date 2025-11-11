@@ -17,6 +17,8 @@ export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [pending, setPending] = useState([]);
+  const [recentlyApproved, setRecentlyApproved] = useState([]);
+  const [allRecentLeaves, setAllRecentLeaves] = useState([]);
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({ pendingLeaves: 0, totalEmployees: 0, upcomingEvents: 0 });
@@ -43,14 +45,18 @@ export default function HRDashboard() {
     let ignore = false;
     (async () => {
       try {
-        const [{ data: leaves }, { data: eventsData }, { data: usersData }, { data: meData }] = await Promise.all([
+        const [{ data: leaves }, { data: recentData }, { data: allRecentData }, { data: eventsData }, { data: usersData }, { data: meData }] = await Promise.all([
           api.get('/api/leaves/manage'),
+          api.get('/api/leaves/recent'),
+          api.get('/api/leaves/all-recent'),
           api.get('/api/calendar/events'),
           api.get('/api/users/list'),
           api.get('/api/users/me'),
         ]);
         if (!ignore) {
           const pendingList = leaves.leaves || [];
+          const recentList = recentData.leaves || [];
+          const allRecentList = allRecentData.leaves || [];
           const eventsList = eventsData.events || [];
           const usersList = usersData.users || [];
           const userData = meData.user;
@@ -58,6 +64,8 @@ export default function HRDashboard() {
           // HR can only manage Employees (not Admin or HR users)
           const employeesOnly = usersList.filter(u => u.role === 'Employee');
           setPending(pendingList);
+          setRecentlyApproved(recentList);
+          setAllRecentLeaves(allRecentList);
           setEvents(eventsList);
           setUsers(employeesOnly);
           setMe(userData);
@@ -69,7 +77,7 @@ export default function HRDashboard() {
           });
         }
       } catch {
-        if (!ignore) { setPending([]); setEvents([]); setUsers([]); }
+        if (!ignore) { setPending([]); setRecentlyApproved([]); setAllRecentLeaves([]); setEvents([]); setUsers([]); }
       }
     })();
     return () => { ignore = true; };
@@ -128,9 +136,10 @@ export default function HRDashboard() {
         
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto">
-            {activeTab === 'overview' && <OverviewTab stats={stats} />}
+            {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} />}
             {activeTab === 'leaves' && <LeavesTab 
               leaves={pending}
+              allRecentLeaves={allRecentLeaves}
               onAction={handleLeaveAction} 
               me={me}
             />}

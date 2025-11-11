@@ -1,8 +1,9 @@
 "use client";
 
-import { UserCheck, Users, Calendar } from 'lucide-react';
+import { UserCheck, Users, Calendar, CheckCircle } from 'lucide-react';
+import { format } from 'date-fns';
 
-export default function OverviewTab({ stats }) {
+export default function OverviewTab({ stats, recentlyApproved }) {
   return (
     <div className="space-y-6">
       <div>
@@ -63,6 +64,61 @@ export default function OverviewTab({ stats }) {
               ? `${stats.upcomingEvents} upcoming event(s) scheduled`
               : 'No upcoming events'}
           </p>
+        </div>
+      </div>
+
+      {/* Recently Approved Leaves */}
+      <div className="rounded-lg border bg-card">
+        <div className="p-6 border-b">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div>
+              <h3 className="text-lg font-semibold">Recently Approved Leaves</h3>
+              <p className="text-sm text-muted-foreground">Last 10 approved leave requests</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {recentlyApproved && recentlyApproved.length > 0 ? (
+            <div className="space-y-4">
+              {recentlyApproved.map((leave) => (
+                <div key={leave._id} className="flex items-start gap-4 p-4 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-semibold">{leave.user?.name || 'Unknown'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {leave.user?.department || 'N/A'} • {leave.user?.role || 'Employee'}
+                        </p>
+                      </div>
+                      <span className="text-xs bg-green-600 dark:bg-green-700 text-white px-2 py-1 rounded-full whitespace-nowrap">
+                        {leave.leaveType}
+                      </span>
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <p className="text-muted-foreground">
+                        <span className="font-medium">Duration:</span> {format(new Date(leave.startDate), 'MMM dd')} - {format(new Date(leave.endDate), 'MMM dd, yyyy')} ({leave.days} {leave.days === 1 ? 'day' : 'days'})
+                      </p>
+                      {leave.reason && (
+                        <p className="text-muted-foreground">
+                          <span className="font-medium">Reason:</span> {leave.reason}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Approved on {format(new Date(leave.updatedAt), 'MMM dd, yyyy h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No recently approved leaves
+            </p>
+          )}
         </div>
       </div>
     </div>
