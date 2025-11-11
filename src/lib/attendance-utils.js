@@ -45,14 +45,16 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
     const nowPKT = toPKT(new Date());
     const today = createPKTDate(nowPKT.getFullYear(), nowPKT.getMonth(), nowPKT.getDate());
 
-    // Start from user creation date or X days ago, whichever is more recent
+    // Convert user creation date to PKT and normalize to start of that day
     const userCreatedPKT = toPKT(new Date(userCreatedAt));
+    const userStartDate = createPKTDate(userCreatedPKT.getFullYear(), userCreatedPKT.getMonth(), userCreatedPKT.getDate());
+    
+    // Calculate X days ago from today
     const daysAgo = new Date(today.getTime() - (daysToCheck * 24 * 60 * 60 * 1000));
     
-    const startDate = new Date(Math.max(userCreatedPKT.getTime(), daysAgo.getTime()));
-    // Normalize to midnight PKT
-    const startPKT = toPKT(startDate);
-    const normalizedStart = createPKTDate(startPKT.getFullYear(), startPKT.getMonth(), startPKT.getDate());
+    // Start from the LATER of: user creation date OR X days ago
+    // This ensures we never create records before user joined
+    const normalizedStart = new Date(Math.max(userStartDate.getTime(), daysAgo.getTime()));
 
     // Get all existing attendance records for this user in date range
     const existingRecords = await Attendance.find({

@@ -68,18 +68,26 @@ export default function AttendanceTab({ checkIn, checkOut, todayAttendance, atte
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {attendance.map((att, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex-1">
-                  <p className="font-medium">{new Date(att.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                  <p className="text-sm text-gray-500">
-                    {att.checkInAt && `In: ${new Date(att.checkInAt).toLocaleTimeString()}`}
-                    {att.checkOutAt && ` | Out: ${new Date(att.checkOutAt).toLocaleTimeString()}`}
-                  </p>
+            {attendance.map((att) => {
+              // Parse the date from DB and convert to PKT (UTC+5)
+              const dbDate = new Date(att.date);
+              const utcTime = dbDate.getTime();
+              const pktOffset = 5 * 60 * 60 * 1000; // PKT is UTC+5
+              const pktDate = new Date(utcTime + pktOffset);
+              
+              return (
+                <div key={att._id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium">{pktDate.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })}</p>
+                    <p className="text-sm text-gray-500">
+                      {att.checkInAt && `In: ${new Date(att.checkInAt).toLocaleTimeString()}`}
+                      {att.checkOutAt && ` | Out: ${new Date(att.checkOutAt).toLocaleTimeString()}`}
+                    </p>
+                  </div>
+                  <StatusBadge status={att.status} />
                 </div>
-                <StatusBadge status={att.status} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
