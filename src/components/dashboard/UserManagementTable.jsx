@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search } from 'lucide-react';
+import { Edit, Save, X, Search, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -47,6 +47,30 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || 'Failed to update user');
+    }
+  };
+
+  const deleteUser = async (id, userName) => {
+    if (!isAdmin) {
+      toast.error('Only admins can delete users');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete user "${userName}"?\n\nThis action cannot be undone and will remove all associated data including:\n- Attendance records\n- Leave requests\n- Payroll history`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/api/users/${id}`);
+      toast.success(`User "${userName}" deleted successfully`);
+      // Call parent's onUpdate to refresh the users list
+      if (onUpdate) {
+        await onUpdate();
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Failed to delete user');
     }
   };
 
@@ -222,9 +246,21 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
                   <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td> */}
                   <td className="p-2 text-right">{user.leave_limit || 12} days</td>
                   <td className="p-2 text-right">
-                    <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      {isAdmin && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => deleteUser(user._id, user.name)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </>
               )}

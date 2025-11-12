@@ -10,12 +10,12 @@ export default function HRProfileTab({ me, profileForm, setProfileForm, updatePr
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold">Profile</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Manage your personal information
         </p>
-      </div>
+      </div> */}
       
       <Card>
         <CardHeader>

@@ -84,3 +84,43 @@ export async function GET(req, { params }) {
     return NextResponse.json({ message: e.message }, { status: 400 });
   }
 }
+
+// Delete user (Admin only)
+export async function DELETE(req, { params }) {
+  const user = authenticateRequest(req);
+  if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  if (user.role !== 'Admin') {
+    return NextResponse.json({ message: 'Forbidden: Admin access required' }, { status: 403 });
+  }
+
+  await connectDB();
+
+  try {
+    const { id } = await params;
+
+    // Prevent admin from deleting themselves
+    if (user.id === id) {
+      return NextResponse.json(
+        { message: 'You cannot delete your own account' },
+        { status: 400 }
+      );
+    }
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `User ${deletedUser.name} deleted successfully`,
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json(
+      { message: 'Failed to delete user', error: error.message },
+      { status: 500 }
+    );
+  }
+}

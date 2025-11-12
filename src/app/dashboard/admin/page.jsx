@@ -214,7 +214,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex h-screen bg-background">
-      <AdminSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} />
+      <AdminSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} me={me} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} />

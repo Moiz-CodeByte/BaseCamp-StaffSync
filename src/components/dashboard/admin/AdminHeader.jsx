@@ -15,30 +15,18 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen, activeTab }) 
   };
 
   return (
-    <header className="bg-card border-b p-4 flex items-center justify-between sticky top-0 z-10">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden"
-        >
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{tabLabels[activeTab]}</h1>
-          <p className="text-sm text-muted-foreground">Admin Dashboard</p>
-        </div>
-      </div>
-      
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-4">
       <Button
-        variant="outline"
+        variant="ghost"
         size="icon"
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden md:flex"
+        className="text-gray-700 dark:text-gray-300"
       >
-        <Menu className="w-5 h-5" />
+        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </Button>
-    </header>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+        {tabLabels[activeTab] || 'Dashboard'}
+      </h1>
+    </div>
   );
 }
