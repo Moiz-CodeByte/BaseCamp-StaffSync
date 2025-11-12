@@ -20,6 +20,7 @@ export default function EmployeeDashboard() {
   const [attendance, setAttendance] = useState([]);
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [leaves, setLeaves] = useState([]);
+  const [events, setEvents] = useState([]);
   const [payslips, setPayslips] = useState([]);
   const [leaveForm, setLeaveForm] = useState({ type: 'Annual', startDate: '', endDate: '', reason: '' });
   const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
@@ -28,10 +29,11 @@ export default function EmployeeDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [{ data: meData }, { data: attData }, { data: leaveData }, { data: payData }] = await Promise.all([
+      const [{ data: meData }, { data: attData }, { data: leaveData }, { data: eventsData }, { data: payData }] = await Promise.all([
         api.get('/api/users/me'),
         api.get('/api/attendance/my'),
         api.get('/api/leaves/my'),
+        api.get('/api/calendar/events'),
         api.get('/api/payroll/mine'),
       ]);
       
@@ -45,6 +47,7 @@ export default function EmployeeDashboard() {
       
       const attRecords = attData.records || [];
       const leaveList = leaveData.leaves || [];
+      const eventsList = eventsData.events || [];
       
       // Apply date filter
       const filterDate = dateFilter === 'all' ? null : new Date(Date.now() - parseInt(dateFilter) * 24 * 60 * 60 * 1000);
@@ -53,6 +56,7 @@ export default function EmployeeDashboard() {
       
       setAttendance(filteredAtt);
       setLeaves(filteredLeaves);
+      setEvents(eventsList);
       setPayslips(payData.payslips || []);
       
       const today = new Date();
@@ -187,7 +191,7 @@ export default function EmployeeDashboard() {
           menuItems={menuItems}
         />
 
-        <div className="p-8">
+        <div className="p-8 [@media(max-width:396px)]:p-0">
           {activeTab === 'overview' && (
             <OverviewTab 
               dateFilter={dateFilter}
@@ -210,6 +214,7 @@ export default function EmployeeDashboard() {
             <CalendarTab 
               attendance={attendance}
               leaves={leaves}
+              events={events}
             />
           )}
 

@@ -166,4 +166,18 @@
     padding-left: 12px !important;
     
   }
+  @media screen and (max-width: 640px) {
+    .rdp-weekdays {
+      gap: 12px !important;
+      padding-left: 12px !important;
+    }
+  }
+  @media screen and (max-width: 1023px) and (min-width: 640px) {
+    .rdp-weekdays {
+      gap: 20px !important;
+      padding-left: 12px !important;
+    
+  }
+    
+  }
 }

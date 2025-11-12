@@ -1,5 +1,6 @@
 import { Attendance } from '@/models/Attendance';
 import { User } from '@/models/User';
+import { CalendarEvent } from '@/models/CalendarEvent';
 
 /**
  * Convert to Pakistan Time (PKT) - UTC+5
@@ -62,11 +63,26 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
       date: { $gte: normalizedStart, $lt: today }
     });
 
+    // Get all holidays in date range
+    const holidays = await CalendarEvent.find({
+      type: 'Holiday',
+      date: { $gte: normalizedStart, $lt: today }
+    });
+
     // Create a Set of dates that already have records (using PKT date strings)
     const existingDates = new Set(
       existingRecords.map(record => {
         const pktDate = toPKT(new Date(record.date));
         // Format as YYYY-MM-DD in PKT
+        const dateStr = `${pktDate.getFullYear()}-${String(pktDate.getMonth() + 1).padStart(2, '0')}-${String(pktDate.getDate()).padStart(2, '0')}`;
+        return dateStr;
+      })
+    );
+
+    // Create a Set of holiday dates (using PKT date strings)
+    const holidayDates = new Set(
+      holidays.map(holiday => {
+        const pktDate = toPKT(new Date(holiday.date));
         const dateStr = `${pktDate.getFullYear()}-${String(pktDate.getMonth() + 1).padStart(2, '0')}-${String(pktDate.getDate()).padStart(2, '0')}`;
         return dateStr;
       })
@@ -90,7 +106,8 @@ export async function autoMarkAbsentForPastDates(userId, userCreatedAt, daysToCh
       
       // Only check working days (Monday-Friday) and dates without existing records
       // Saturday (6) and Sunday (0) are excluded
-      if (dayOfWeek >= 1 && dayOfWeek <= 5 && !existingDates.has(dateString)) {
+      // Also exclude holidays - no attendance counted on holidays
+      if (dayOfWeek >= 1 && dayOfWeek <= 5 && !existingDates.has(dateString) && !holidayDates.has(dateString)) {
         // Create date at midnight PKT for storage
         const recordDate = createPKTDate(year, month, day);
         
