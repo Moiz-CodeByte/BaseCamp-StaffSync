@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     pendingLeaves: 0,
     upcomingEvents: 0,
     presentToday: 0,
-    monthlyLeaves: 0,
+    absentToday: 0,
   });
 
   const loadUsers = async () => {
@@ -85,12 +85,32 @@ export default function AdminDashboard() {
     let ignore = false;
     (async () => {
       try {
-        const [{ data: usersData }, { data: leavesData }, { data: pastLeavesData }, { data: eventsData }, { data: meData }] = await Promise.all([
+        // Get today's date in PKT (UTC+5)
+        const pktOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+        const nowUTC = Date.now();
+        const nowPKT = new Date(nowUTC + pktOffset);
+        
+        // Format date as YYYY-MM-DD in PKT
+        const todayStr = `${nowPKT.getUTCFullYear()}-${String(nowPKT.getUTCMonth() + 1).padStart(2, '0')}-${String(nowPKT.getUTCDate()).padStart(2, '0')}`;
+        
+        const startOfMonth = new Date(nowPKT.getUTCFullYear(), nowPKT.getUTCMonth(), 1).toISOString().split('T')[0];
+        const endOfMonth = new Date(nowPKT.getUTCFullYear(), nowPKT.getUTCMonth() + 1, 0).toISOString().split('T')[0];
+
+        const [
+          { data: usersData }, 
+          { data: leavesData }, 
+          { data: pastLeavesData }, 
+          { data: eventsData }, 
+          { data: meData },
+          { data: todayAttendanceData }
+        ] = await Promise.all([
           api.get('/api/users/list'),
           api.get('/api/leaves/manage'),
           api.get('/api/leaves/manage?status=past'),
           api.get('/api/calendar/events'),
           api.get('/api/users/me'),
+          // Fetch today's attendance
+          api.get(`/api/attendance/all?startDate=${todayStr}&endDate=${todayStr}`)
         ]);
 
         if (!ignore) {
@@ -99,6 +119,25 @@ export default function AdminDashboard() {
           const pastLeavesList = pastLeavesData.leaves || [];
           const eventsList = eventsData.events || [];
           const userData = meData.user;
+
+          // Calculate presentToday (count Present and Half-Day as present)
+          const todayAttendance = todayAttendanceData.attendance || [];
+          
+          console.log('Today\'s Date:', todayStr);
+          console.log('Today\'s Attendance Records:', todayAttendance);
+          console.log('Total Records:', todayAttendance.length);
+          
+          const presentToday = todayAttendance.filter(a => 
+            a.status === 'Present' || a.status === 'Half-Day'
+          ).length;
+
+          // Calculate absentToday (count Absent status)
+          const absentToday = todayAttendance.filter(a => 
+            a.status === 'Absent'
+          ).length;
+          
+          console.log('Present Today:', presentToday);
+          console.log('Absent Today:', absentToday);
 
           setUsers(userList);
           setLeaves(leavesList);
@@ -114,8 +153,8 @@ export default function AdminDashboard() {
             employees: userList.filter(u => u.role === 'Employee').length,
             pendingLeaves: leavesList.length,
             upcomingEvents: eventsList.filter(e => new Date(e.date) >= new Date()).length,
-            presentToday: 0, // Can be calculated from attendance data
-            monthlyLeaves: 0, // Can be calculated from leave data
+            presentToday: presentToday,
+            absentToday: absentToday,
           });
         }
       } catch (error) {
@@ -185,7 +224,7 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && <OverviewTab stats={stats} />}
             {activeTab === 'users' && <UsersTab users={users} onUpdate={loadUsers} />}
             {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
-            {activeTab === 'attendance' && <AttendanceTab />}
+            {activeTab === 'attendance' && <AttendanceTab users={users} />}
             {activeTab === 'calendar' && (
               <CalendarTab 
                 events={events} 

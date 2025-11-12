@@ -8,12 +8,12 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
   const [statusFilter, setStatusFilter] = useState('All');
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold">Leave Management</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Review and manage all leave requests (Employee + HR)
         </p>
-      </div>
+      </div> */}
 
       {/* Leave Requests Section */}
       <div className="rounded-lg border bg-card">

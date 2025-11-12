@@ -27,13 +27,13 @@ export default function CalendarTab({ events, onEventCreate, onEventDelete }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-end">
+        {/* <div>
           <h2 className="text-2xl font-bold">Corporate Calendar</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Manage company-wide events and holidays
           </p>
-        </div>
+        </div> */}
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
           {showForm ? 'Cancel' : 'Add Event'}

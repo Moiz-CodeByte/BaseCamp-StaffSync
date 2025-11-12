@@ -5,12 +5,12 @@ import { Users, UserCheck, FileText, Calendar, TrendingUp } from 'lucide-react';
 export default function OverviewTab({ stats }) {
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold">Dashboard Overview</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Complete system statistics and insights
-        </p>
-      </div>
+        </p> 
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -62,20 +62,22 @@ export default function OverviewTab({ stats }) {
           <div className="text-3xl font-bold">{stats.upcomingEvents}</div>
         </div>
 
-        <div className="rounded-lg border bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 p-6">
+        <div className="rounded-lg border bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-6">
           <div className="flex items-center gap-3 mb-3">
-            <TrendingUp className="w-8 h-8 text-pink-600 dark:text-pink-400" />
-            <div className="text-sm text-muted-foreground">Present Today</div>
+            <UserCheck className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <div className="text-sm text-muted-foreground">Present Employees</div>
           </div>
           <div className="text-3xl font-bold">{stats.presentToday}</div>
+          <div className="text-xs text-muted-foreground mt-2">Today (including half-day)</div>
         </div>
 
-        <div className="rounded-lg border bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 p-6">
+        <div className="rounded-lg border bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-6">
           <div className="flex items-center gap-3 mb-3">
-            <FileText className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-            <div className="text-sm text-muted-foreground">Total Leaves (Month)</div>
+            <UserCheck className="w-8 h-8 text-red-600 dark:text-red-400" />
+            <div className="text-sm text-muted-foreground">Absent Employees</div>
           </div>
-          <div className="text-3xl font-bold">{stats.monthlyLeaves}</div>
+          <div className="text-3xl font-bold">{stats.absentToday}</div>
+          <div className="text-xs text-muted-foreground mt-2">Today</div>
         </div>
       </div>
 
@@ -105,7 +107,7 @@ export default function OverviewTab({ stats }) {
               : 'No upcoming events'}
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            {stats.presentToday} employee(s) marked present today
+            Today&apos;s attendance: {stats.presentToday} present, {stats.absentToday} absent
           </p>
         </div>
       </div>

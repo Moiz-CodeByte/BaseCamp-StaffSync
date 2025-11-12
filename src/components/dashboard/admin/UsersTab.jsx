@@ -24,13 +24,13 @@ export default function UsersTab({ users, onUpdate }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-end">
+        {/* <div>
           <h2 className="text-2xl font-bold">User Management</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Manage all system users and their roles
           </p>
-        </div>
+        </div> */}
         <Button onClick={() => setShowAddUser(!showAddUser)}>
           {showAddUser ? 'Cancel' : '+ Add User'}
         </Button>
