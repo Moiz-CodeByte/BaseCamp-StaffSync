@@ -17,6 +17,16 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "BaseCamp StaffSync",
   description: "HRMS for BaseCamp",
+  icons: {
+    icon: [
+      // { url: '/favicon.svg', type: 'image/svg+xml' },
+      // { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.jpeg', type: 'image/jpeg' },
+    ],
+    apple: [
+      { url: '/icon.jpeg', type: 'image/jpeg' },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
