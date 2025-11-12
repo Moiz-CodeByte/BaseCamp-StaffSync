@@ -10,13 +10,25 @@ export async function GET(req) {
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
 
+  // Get status filter from query params
+  const { searchParams } = new URL(req.url);
+  const statusFilter = searchParams.get('status') || 'Pending';
+
   // Build query based on user role
   // HR can only see Employee leave requests, not their own or other HR/Admin requests
   // Admin can see both Employee and HR leave requests
-  let query = { status: 'Pending' };
+  let query = {};
+  
+  // Handle status filter
+  if (statusFilter === 'past') {
+    query.status = { $in: ['Approved', 'Rejected'] };
+  } else {
+    query.status = statusFilter;
+  }
+  
   if (user.role === 'HR') {
     // HR only sees Employee requests
-    query = { status: 'Pending', user: { $exists: true } };
+    query.user = { $exists: true };
   }
 
   const leaves = await Leave.find(query)

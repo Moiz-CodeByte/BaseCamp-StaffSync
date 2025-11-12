@@ -135,7 +135,7 @@ export default function HRDashboard() {
         <HRHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} />
         
         <div className="flex-1 overflow-auto">
-          <div className="p-6 max-w-7xl mx-auto">
+          <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
             {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} />}
             {activeTab === 'leaves' && <LeavesTab 
               leaves={pending}

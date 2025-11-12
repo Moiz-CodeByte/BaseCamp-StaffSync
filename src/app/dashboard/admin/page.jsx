@@ -2,31 +2,82 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import PayrollManagement from '@/components/dashboard/PayrollManagementOptimized';
-import UserManagementTable from '@/components/dashboard/UserManagementTable';
 import { toast } from 'sonner';
+import AdminSidebar from '@/components/dashboard/admin/AdminSidebar';
+import AdminHeader from '@/components/dashboard/admin/AdminHeader';
+import OverviewTab from '@/components/dashboard/admin/OverviewTab';
+import UsersTab from '@/components/dashboard/admin/UsersTab';
+import LeavesTab from '@/components/dashboard/admin/LeavesTab';
+import AttendanceTab from '@/components/dashboard/admin/AttendanceTab';
+import CalendarTab from '@/components/dashboard/admin/CalendarTab';
+import PayrollTab from '@/components/dashboard/admin/PayrollTab';
+import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState({ total: 0, admin: 0, hr: 0, employee: 0 });
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee' });
+  const [leaves, setLeaves] = useState([]);
+  const [pastLeaves, setPastLeaves] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [me, setMe] = useState(null);
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    admins: 0,
+    hrStaff: 0,
+    employees: 0,
+    pendingLeaves: 0,
+    upcomingEvents: 0,
+    presentToday: 0,
+    monthlyLeaves: 0,
+  });
 
   const loadUsers = async () => {
     try {
       const { data } = await api.get('/api/users/list');
       const userList = data.users || [];
       setUsers(userList);
-      setStats({
-        total: userList.length,
-        admin: userList.filter(u => u.role === 'Admin').length,
-        hr: userList.filter(u => u.role === 'HR').length,
-        employee: userList.filter(u => u.role === 'Employee').length,
-      });
+      setStats(prev => ({
+        ...prev,
+        totalUsers: userList.length,
+        admins: userList.filter(u => u.role === 'Admin').length,
+        hrStaff: userList.filter(u => u.role === 'HR').length,
+        employees: userList.filter(u => u.role === 'Employee').length,
+      }));
     } catch {
       setUsers([]);
+    }
+  };
+
+  const loadLeaves = async () => {
+    try {
+      const [{ data: pendingData }, { data: pastData }] = await Promise.all([
+        api.get('/api/leaves/manage'),
+        api.get('/api/leaves/manage?status=past'),
+      ]);
+      const leavesList = pendingData.leaves || [];
+      const pastLeavesList = pastData.leaves || [];
+      setLeaves(leavesList);
+      setPastLeaves(pastLeavesList);
+      setStats(prev => ({ ...prev, pendingLeaves: leavesList.length }));
+    } catch {
+      setLeaves([]);
+      setPastLeaves([]);
+    }
+  };
+
+  const loadEvents = async () => {
+    try {
+      const { data } = await api.get('/api/calendar/events');
+      const eventsList = data.events || [];
+      setEvents(eventsList);
+      setStats(prev => ({
+        ...prev,
+        upcomingEvents: eventsList.filter(e => new Date(e.date) >= new Date()).length
+      }));
+    } catch {
+      setEvents([]);
     }
   };
 
@@ -34,96 +85,126 @@ export default function AdminDashboard() {
     let ignore = false;
     (async () => {
       try {
-        const { data } = await api.get('/api/users/list');
-        const userList = data.users || [];
+        const [{ data: usersData }, { data: leavesData }, { data: pastLeavesData }, { data: eventsData }, { data: meData }] = await Promise.all([
+          api.get('/api/users/list'),
+          api.get('/api/leaves/manage'),
+          api.get('/api/leaves/manage?status=past'),
+          api.get('/api/calendar/events'),
+          api.get('/api/users/me'),
+        ]);
+
         if (!ignore) {
+          const userList = usersData.users || [];
+          const leavesList = leavesData.leaves || [];
+          const pastLeavesList = pastLeavesData.leaves || [];
+          const eventsList = eventsData.events || [];
+          const userData = meData.user;
+
           setUsers(userList);
+          setLeaves(leavesList);
+          setPastLeaves(pastLeavesList);
+          setEvents(eventsList);
+          setMe(userData);
+          setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
+
           setStats({
-            total: userList.length,
-            admin: userList.filter(u => u.role === 'Admin').length,
-            hr: userList.filter(u => u.role === 'HR').length,
-            employee: userList.filter(u => u.role === 'Employee').length,
+            totalUsers: userList.length,
+            admins: userList.filter(u => u.role === 'Admin').length,
+            hrStaff: userList.filter(u => u.role === 'HR').length,
+            employees: userList.filter(u => u.role === 'Employee').length,
+            pendingLeaves: leavesList.length,
+            upcomingEvents: eventsList.filter(e => new Date(e.date) >= new Date()).length,
+            presentToday: 0, // Can be calculated from attendance data
+            monthlyLeaves: 0, // Can be calculated from leave data
           });
         }
-      } catch {
-        if (!ignore) setUsers([]);
+      } catch (error) {
+        if (!ignore) {
+          setUsers([]);
+          setLeaves([]);
+          setPastLeaves([]);
+          setEvents([]);
+        }
       }
     })();
     return () => { ignore = true; };
   }, []);
 
-  const addUser = async (e) => {
+  const handleLeaveAction = async (leaveId, action) => {
+    try {
+      await api.put(`/api/leaves/${leaveId}`, { status: action === 'approve' ? 'Approved' : 'Rejected' });
+      toast.success(`Leave ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      loadLeaves();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update leave');
+    }
+  };
+
+  const handleEventCreate = async (eventData) => {
+    try {
+      await api.post('/api/calendar/events', eventData);
+      toast.success('Event created successfully');
+      loadEvents();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create event');
+    }
+  };
+
+  const handleEventDelete = async (eventId) => {
+    try {
+      await api.delete(`/api/calendar/events/${eventId}`);
+      toast.success('Event deleted successfully');
+      loadEvents();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete event');
+    }
+  };
+
+  const updateProfile = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/auth/register', newUser);
-      setNewUser({ name: '', email: '', password: '', role: 'Employee' });
-      setShowAddUser(false);
-      loadUsers();
-    } catch (e) {
-      alert(e?.response?.data?.message || e.message);
+      await api.put('/api/users/me', profileForm);
+      toast.success('Profile updated successfully');
+      const { data } = await api.get('/api/users/me');
+      setMe(data.user);
+      setProfileForm({ ...profileForm, currentPassword: '', password: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
     }
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <div className="flex gap-2">
-         
-          <Button onClick={() => setShowAddUser(!showAddUser)} className="bg-primary text-primary-foreground">
-            {showAddUser ? 'Cancel' : '+ Add User'}
-          </Button>
+    <div className="flex h-screen bg-background">
+      <AdminSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AdminHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} />
+        
+        <div className="flex-1 overflow-auto">
+          <div className="p-6 max-w-7xl mx-auto">
+            {activeTab === 'overview' && <OverviewTab stats={stats} />}
+            {activeTab === 'users' && <UsersTab users={users} onUpdate={loadUsers} />}
+            {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
+            {activeTab === 'attendance' && <AttendanceTab />}
+            {activeTab === 'calendar' && (
+              <CalendarTab 
+                events={events} 
+                onEventCreate={handleEventCreate}
+                onEventDelete={handleEventDelete}
+              />
+            )}
+            {/* {activeTab === 'payroll' && <PayrollTab />} */}
+            {activeTab === 'profile' && (
+              <ProfileTab 
+                me={me} 
+                profileForm={profileForm} 
+                setProfileForm={setProfileForm} 
+                updateProfile={updateProfile}
+              />
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-6">
-          <div className="text-sm text-muted-foreground">Total Users</div>
-          <div className="text-3xl font-bold mt-2">{stats.total}</div>
-        </div>
-        <div className="rounded-lg border bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-6">
-          <div className="text-sm text-muted-foreground">Admins</div>
-          <div className="text-3xl font-bold mt-2">{stats.admin}</div>
-        </div>
-        <div className="rounded-lg border bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-6">
-          <div className="text-sm text-muted-foreground">HR</div>
-          <div className="text-3xl font-bold mt-2">{stats.hr}</div>
-        </div>
-        <div className="rounded-lg border bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-6">
-          <div className="text-sm text-muted-foreground">Employees</div>
-          <div className="text-3xl font-bold mt-2">{stats.employee}</div>
-        </div>
-      </div>
-
-      {/* Add User Form */}
-      {showAddUser && (
-        <div className="rounded-lg border p-6 bg-card">
-          <h2 className="text-lg font-semibold mb-4">Add New User</h2>
-          <form onSubmit={addUser} className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <Input placeholder="Name" value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} required />
-            <Input type="email" placeholder="Email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} required />
-            <Input type="password" placeholder="Password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} required />
-            <select className="px-3 py-2 rounded-md border bg-background" value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
-              <option value="Employee">Employee</option>
-              <option value="HR">HR</option>
-              <option value="Admin">Admin</option>
-            </select>
-            <Button type="submit" className="bg-primary text-primary-foreground">Create User</Button>
-          </form>
-        </div>
-      )}
-
-      {/* User Management */}
-      <section className="rounded-lg border p-6 bg-card">
-        <h2 className="text-xl font-semibold mb-4">User Management</h2>
-        <UserManagementTable users={users} onUpdate={loadUsers} isAdmin={true} />
-      </section>
-
-      {/* Payroll Section */}
-      {/* <section className="rounded-lg border p-6 bg-card">
-        <PayrollManagement isAdmin={true} />
-      </section> */}
     </div>
   );
 }
