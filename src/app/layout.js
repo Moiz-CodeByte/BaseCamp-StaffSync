@@ -19,8 +19,8 @@ export const metadata = {
   description: "HRMS for BaseCamp",
   icons: {
     icon: [
-      // { url: '/favicon.svg', type: 'image/svg+xml' },
-      // { url: '/icon.svg', type: 'image/svg+xml' },
+      // { url: '/favicon.svg', type: 'image/svg+xml'},
+      // { url: '/icon.svg', type: 'image/svg+xml'},
       { url: '/icon.jpeg', type: 'image/jpeg' },
     ],
     apple: [
