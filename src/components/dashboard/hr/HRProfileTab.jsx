@@ -82,8 +82,23 @@ export default function HRProfileTab({ me, profileForm, setProfileForm, updatePr
           </div>
           <div>
             <Label className="text-gray-500">Department</Label>
-            <p className="text-lg font-medium mt-1">{me.department || 'Not assigned'}</p>
+            <p className="text-lg font-medium mt-1">{me.department?.name || 'Not assigned'}</p>
             <p className="text-xs text-gray-500 mt-1">Contact Admin to update</p>
+          </div>
+          <div>
+            <Label className="text-gray-500">Reporting Manager</Label>
+            {me.department?.reportingManagerName ? (
+              <div className="mt-1">
+                <p className="text-lg font-medium">{me.department.reportingManagerName}</p>
+                <p className="text-sm text-gray-500">{me.department.reportingManagerEmail || 'Email not provided'}</p>
+              </div>
+            ) : (
+              <p className="text-lg font-medium mt-1">Not assigned</p>
+            )}
+          </div>
+          <div>
+            <Label className="text-gray-500">Leave Limit</Label>
+            <p className="text-lg font-medium mt-1">{me.leave_limit || 12} days per year</p>
           </div>
           <div>
             <Label className="text-gray-500">Account Created</Label>

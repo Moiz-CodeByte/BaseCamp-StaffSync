@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth';
 import { User } from '@/models/User';
+import { Department } from '@/models/Department';
 import { connectDB } from '@/lib/db';
 
 export async function GET(req) {
@@ -9,8 +10,21 @@ export async function GET(req) {
   if (!decoded) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   
   try {
-    const user = await User.findById(decoded.id).populate('assignedHR', 'name email').select('-password');
+    const user = await User.findById(decoded.id)
+      .populate({
+        path: 'assignedHR',
+        select: 'name email'
+      })
+      .select('-password')
+      .lean();
+    
     if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    
+    // Manually populate department
+    if (user.department) {
+      const department = await Department.findById(user.department);
+      user.department = department;
+    }
     
     return NextResponse.json({ user });
   } catch (error) {

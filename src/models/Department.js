@@ -25,7 +25,8 @@ const DepartmentSchema = new mongoose.Schema({
     required: [true, 'HR is required']
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'departments'
 });
 
 export const Department = mongoose.models.Department || mongoose.model('Department', DepartmentSchema);

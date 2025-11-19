@@ -1,5 +1,6 @@
 import mongoose, { Schema, models, model } from 'mongoose';
 import bcrypt from 'bcrypt';
+import './Department'; // Ensure Department model is loaded
 
 export const rolesList = ['Admin', 'HR', 'Employee'];
 

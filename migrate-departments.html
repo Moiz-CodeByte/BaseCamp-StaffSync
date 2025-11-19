@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Run Department Migration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fix Department References Migration</h1>
+    <p>This will convert all department string IDs to proper ObjectId references.</p>
+    <p><strong>Note:</strong> You must be logged in as Admin to run this migration.</p>
+    
+    <button onclick="runMigration()">Run Migration</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function runMigration() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Running migration...';
+            resultDiv.className = '';
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    resultDiv.innerHTML = 'Error: No authentication token found. Please login first.';
+                    resultDiv.className = 'error';
+                    return;
+                }
+                
+                const response = await fetch('http://localhost:3000/api/migrate/fix-departments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<strong>Success!</strong><br>${data.message}<br><br>Updated: ${data.updated}<br>Errors: ${data.errors}`;
+                    resultDiv.className = 'success';
+                } else {
+                    resultDiv.innerHTML = `<strong>Error:</strong><br>${data.message}`;
+                    resultDiv.className = 'error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong><br>${error.message}`;
+                resultDiv.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

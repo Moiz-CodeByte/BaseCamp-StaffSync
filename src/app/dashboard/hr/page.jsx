@@ -7,6 +7,7 @@ import HRSidebar from '@/components/dashboard/hr/HRSidebar';
 import HRHeader from '@/components/dashboard/hr/HRHeader';
 import OverviewTab from '@/components/dashboard/hr/OverviewTab';
 import LeavesTab from '@/components/dashboard/hr/LeavesTab';
+import UsersTab from '@/components/dashboard/hr/UsersTab';
 import HRProfileTab from '@/components/dashboard/hr/HRProfileTab';
 
 export default function HRDashboard() {
@@ -15,6 +16,8 @@ export default function HRDashboard() {
   const [pending, setPending] = useState([]);
   const [recentlyApproved, setRecentlyApproved] = useState([]);
   const [allRecentLeaves, setAllRecentLeaves] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [stats, setStats] = useState({ 
     pendingLeaves: 0,
     totalEmployees: 0,
@@ -28,21 +31,27 @@ export default function HRDashboard() {
     let ignore = false;
     (async () => {
       try {
-        const [{ data: leaves }, { data: recentData }, { data: allRecentData }, { data: meData }] = await Promise.all([
+        const [{ data: leaves }, { data: recentData }, { data: allRecentData }, { data: usersData }, { data: departmentsData }, { data: meData }] = await Promise.all([
           api.get('/api/leaves/manage'),
           api.get('/api/leaves/recent'),
           api.get('/api/leaves/all-recent'),
+          api.get('/api/users/list'),
+          api.get('/api/departments'),
           api.get('/api/users/me'),
         ]);
         if (!ignore) {
           const pendingList = leaves.leaves || [];
           const recentList = recentData.leaves || [];
           const allRecentList = allRecentData.leaves || [];
+          const usersList = usersData.users || [];
+          const deptList = departmentsData.departments || [];
           const userData = meData.user;
           
           setPending(pendingList);
           setRecentlyApproved(recentList);
           setAllRecentLeaves(allRecentList);
+          setUsers(usersList);
+          setDepartments(deptList);
           setMe(userData);
           setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
           
@@ -64,7 +73,7 @@ export default function HRDashboard() {
           });
         }
       } catch {
-        if (!ignore) { setPending([]); setRecentlyApproved([]); setAllRecentLeaves([]); }
+        if (!ignore) { setPending([]); setRecentlyApproved([]); setAllRecentLeaves([]); setUsers([]); setDepartments([]); }
       }
     })();
     return () => { ignore = true; };
@@ -79,6 +88,15 @@ export default function HRDashboard() {
       setPending(pendingList);
       setStats(prev => ({ ...prev, pendingLeaves: pendingList.length }));
     } catch {}
+  };
+
+  const loadUsers = async () => {
+    try {
+      const { data } = await api.get('/api/users/list');
+      setUsers(data.users || []);
+    } catch (error) {
+      toast.error('Failed to load users');
+    }
   };
 
   const updateProfile = async (e) => {
@@ -104,6 +122,7 @@ export default function HRDashboard() {
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
             {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} />}
+            {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
             {activeTab === 'leaves' && <LeavesTab 
               leaves={pending}
               allRecentLeaves={allRecentLeaves}

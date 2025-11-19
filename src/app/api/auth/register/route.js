@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models/User';
+import { Department } from '@/models/Department';
 import { signToken } from '@/lib/auth';
 
 export async function POST(req) {
@@ -13,7 +14,7 @@ export async function POST(req) {
   }
 
   try {
-    const user = await User.create({ name, email, password, role, department: department || '' });
+    const user = await User.create({ name, email, password, role, department: department || undefined });
     const token = signToken(user);
     return NextResponse.json(
       { token, user: { id: user._id, name, email, role: user.role, department: user.department } },

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { User } from '@/models/User';
+import { Department } from '@/models/Department';
 
 // Update user salary information (HR/Admin only)
 export async function PATCH(req, { params }) {
@@ -31,7 +32,12 @@ export async function PATCH(req, { params }) {
     const updateData = {};
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {
-        updateData[field] = updates[field];
+        // Convert empty string to null for ObjectId fields
+        if ((field === 'department' || field === 'assignedHR') && updates[field] === '') {
+          updateData[field] = null;
+        } else {
+          updateData[field] = updates[field];
+        }
       }
     });
     
@@ -73,7 +79,13 @@ export async function GET(req, { params }) {
     
     const targetUser = await User.findById(id)
       .select('-password')
-      .populate('assignedHR', 'name email');
+      .populate('assignedHR', 'name email')
+      .lean();
+    
+    // Manually populate department
+    if (targetUser && targetUser.department) {
+      targetUser.department = await Department.findById(targetUser.department);
+    }
     
     if (!targetUser) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });

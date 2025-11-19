@@ -83,12 +83,15 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
     return <Badge variant={variants[role] || 'default'}>{role}</Badge>;
   };
 
-  // Get department name by ID
+  // Get department name by ID or object
   const getDepartmentName = useMemo(() => {
-    return (deptId) => {
-      if (!deptId) return '-';
-      const dept = departments.find(d => d._id === deptId);
-      return dept ? dept.name : deptId;
+    return (dept) => {
+      if (!dept) return '-';
+      // If it's already populated with name
+      if (typeof dept === 'object' && dept.name) return dept.name;
+      // If it's an ID, find in departments list
+      const deptObj = departments.find(d => d._id === dept);
+      return deptObj ? deptObj.name : (typeof dept === 'string' ? dept : '-');
     };
   }, [departments]);
 
@@ -102,8 +105,9 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
         user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deptName?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Department filter
-      const matchesDepartment = departmentFilter === 'all' || user.department === departmentFilter;
+      // Department filter - handle both ID and populated object
+      const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
+      const matchesDepartment = departmentFilter === 'all' || userDeptId === departmentFilter;
       
       return matchesSearch && matchesDepartment;
     });
