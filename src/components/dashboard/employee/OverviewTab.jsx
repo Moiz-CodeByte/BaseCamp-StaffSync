@@ -1,60 +1,120 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import StatCard from './StatCard';
-import StatusBadge from './StatusBadge';
+"use client";
 
-export default function OverviewTab({ dateFilter, setDateFilter, stats, attendance }) {
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+export default function OverviewTab({ stats, leaves }) {
+  const statCards = [
+    { 
+      label: 'Total Leave Days', 
+      value: stats.totalLeaveDays || 0, 
+      icon: Calendar,
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-100 dark:bg-blue-900/20'
+    },
+    { 
+      label: 'Pending Requests', 
+      value: stats.pendingLeaves || 0, 
+      icon: Clock,
+      color: 'text-yellow-600 dark:text-yellow-400',
+      bg: 'bg-yellow-100 dark:bg-yellow-900/20'
+    },
+    { 
+      label: 'Approved Leaves', 
+      value: stats.approvedLeaves || 0, 
+      icon: CheckCircle,
+      color: 'text-green-600 dark:text-green-400',
+      bg: 'bg-green-100 dark:bg-green-900/20'
+    },
+    { 
+      label: 'Rejected Leaves', 
+      value: stats.rejectedLeaves || 0, 
+      icon: XCircle,
+      color: 'text-red-600 dark:text-red-400',
+      bg: 'bg-red-100 dark:bg-red-900/20'
+    },
+  ];
+
+  const recentLeaves = leaves?.slice(0, 5) || [];
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard Overview</h1>
-          <p className="text-gray-500 mt-1">View your attendance and leave statistics</p>
-        </div>
-        <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30">Last 30 Days</SelectItem>
-            <SelectItem value="60">Last 60 Days</SelectItem>
-            <SelectItem value="all">All Time</SelectItem>
-          </SelectContent>
-        </Select>
+      <div>
+        <h1 className="text-3xl font-bold">My Overview</h1>
+        <p className="text-muted-foreground mt-1">Your leave statistics and recent activity</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Days" value={stats.totalDays} description="Days recorded" />
-        <StatCard title="Present Days" value={stats.presentDays} description="Days present" valueColor="text-green-600" />
-        <StatCard title="Absent Days" value={stats.absentDays} description="Days absent" valueColor="text-red-600" />
-        <StatCard title="Half Days" value={stats.halfDays} description="Half-day attendance" valueColor="text-orange-600" />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat, idx) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={idx} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <div className={`p-2 rounded-lg ${stat.bg}`}>
+                  <Icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Pending Leaves" value={stats.pendingLeaves} description="Awaiting approval" valueColor="text-yellow-600" />
-        <StatCard title="Leave Days Taken" value={stats.totalLeaveDays} description="Days on approved leave" valueColor="text-blue-600" />
-        <StatCard title="Rejected Leaves" value={stats.rejectedLeaves} description="Requests denied" valueColor="text-red-600" />
-      </div>
+      {recentLeaves.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Leave Requests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentLeaves.map((leave) => (
+                <div key={leave._id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium">{leave.type} Leave</div>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <Badge variant={
+                    leave.status === 'Approved' ? 'default' :
+                    leave.status === 'Rejected' ? 'destructive' :
+                    'secondary'
+                  }>
+                    {leave.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Your latest attendance records</CardDescription>
+          <CardTitle>Leave Summary</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {attendance.slice(0, 5).map((att, idx) => (
-              <div key={idx} className="flex items-center justify-between border-b pb-2 last:border-0">
-                <div>
-                  <p className="font-medium">{new Date(att.date).toLocaleDateString()}</p>
-                  <p className="text-sm text-gray-500">
-                    {att.checkInAt && `In: ${new Date(att.checkInAt).toLocaleTimeString()}`}
-                    {att.checkOutAt && ` | Out: ${new Date(att.checkOutAt).toLocaleTimeString()}`}
-                  </p>
-                </div>
-                <StatusBadge status={att.status} />
-              </div>
-            ))}
+        <CardContent className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Total Approved Days</span>
+            <span className="font-semibold text-lg">{stats.totalLeaveDays || 0}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Pending Approval</span>
+            <span className="font-semibold text-lg text-yellow-600">{stats.pendingLeaves || 0}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Success Rate</span>
+            <span className="font-semibold text-lg text-green-600">
+              {(stats.approvedLeaves + stats.rejectedLeaves) > 0 
+                ? `${Math.round((stats.approvedLeaves / (stats.approvedLeaves + stats.rejectedLeaves)) * 100)}%` 
+                : '0%'}
+            </span>
           </div>
         </CardContent>
       </Card>

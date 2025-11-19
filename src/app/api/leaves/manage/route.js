@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
-import { Attendance } from '@/models/Attendance';
-
 export async function GET(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -133,62 +131,8 @@ export async function POST(req) {
   leave.approver = user.id;
   await leave.save();
   
-  // If approved, automatically mark all days as absent in attendance
-  if (action === 'approve') {
-    try {
-      const startDate = new Date(leave.startDate);
-      const endDate = new Date(leave.endDate);
-      
-      // Create attendance records for each day in the leave period
-      const attendanceRecords = [];
-      const currentDate = new Date(startDate);
-      
-      while (currentDate <= endDate) {
-        const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-        
-        // Check if attendance already exists for this date
-        const existingAttendance = await Attendance.findOne({
-          user: leave.user,
-          date: {
-            $gte: new Date(dateString),
-            $lt: new Date(new Date(dateString).getTime() + 24 * 60 * 60 * 1000)
-          }
-        });
-        
-        // Only create if doesn't exist
-        if (!existingAttendance) {
-          attendanceRecords.push({
-            user: leave.user,
-            date: new Date(dateString),
-            status: 'Absent',
-            leaveType: leave.type, // Store leave type for reference
-            remarks: `Approved ${leave.type} leave`
-          });
-        }
-        
-        // Move to next day
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      // Bulk insert attendance records
-      if (attendanceRecords.length > 0) {
-        await Attendance.insertMany(attendanceRecords);
-      }
-      
-      return NextResponse.json({ 
-        leave, 
-        message: `Leave approved and ${attendanceRecords.length} attendance records created` 
-      });
-    } catch (e) {
-      console.error('Error creating attendance records:', e);
-      // Leave is still approved even if attendance creation fails
-      return NextResponse.json({ 
-        leave, 
-        warning: 'Leave approved but failed to create some attendance records',
-        error: e.message 
-      });
-    }
-  }
-  
-  return NextResponse.json({ leave });
+  return NextResponse.json({ 
+    leave,
+    message: `Leave ${action === 'approve' ? 'approved' : 'rejected'} successfully` 
+  });
 }

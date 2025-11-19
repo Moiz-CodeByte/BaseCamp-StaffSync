@@ -1,14 +1,11 @@
 "use client";
 
-import { LayoutDashboard, UserCheck, Calendar, Users, DollarSign, User } from 'lucide-react';
+import { FileText, User, LayoutDashboard } from 'lucide-react';
 
 export default function HRSidebar({ sidebarOpen, activeTab, onTabChange }) {
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'leaves', label: 'Leaves', icon: UserCheck },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'employees', label: 'Employees', icon: Users },
-    // { id: 'payroll', label: 'Payroll', icon: DollarSign },
+    { id: 'leaves', label: 'Leave Management', icon: FileText },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

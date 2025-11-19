@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import StatusBadge from './StatusBadge';
 import { useState, useMemo } from 'react';
 
 export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leaves, deleteLeaveRequest, me }) {
@@ -204,7 +203,13 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                           {leave.reason || '-'}
                         </td>
                         <td className="p-3">
-                          <StatusBadge status={leave.status} />
+                          <Badge variant={
+                            leave.status === 'Approved' ? 'default' :
+                            leave.status === 'Rejected' ? 'destructive' :
+                            'secondary'
+                          }>
+                            {leave.status}
+                          </Badge>
                         </td>
                         <td className="p-3 text-right">
                           {leave.status === 'Pending' && (

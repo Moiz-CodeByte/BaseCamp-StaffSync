@@ -1,15 +1,12 @@
 "use client";
 
-import { LayoutDashboard, Users, UserCheck, Calendar, FileText, ClipboardList, User } from 'lucide-react';
+import { FileText, User, Users, LayoutDashboard } from 'lucide-react';
 
 export default function AdminSidebar({ sidebarOpen, activeTab, onTabChange, me }) {
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'leaves', label: 'Leave Management', icon: FileText },
-    { id: 'attendance', label: 'Attendance', icon: ClipboardList },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    // { id: 'payroll', label: 'Payroll', icon: UserCheck },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

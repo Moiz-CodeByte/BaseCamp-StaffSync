@@ -8,9 +8,6 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen, activeTab }) 
     overview: 'Overview',
     users: 'User Management',
     leaves: 'Leave Management',
-    attendance: 'Attendance Management',
-    calendar: 'Calendar & Events',
-    payroll: 'Payroll Management',
     profile: 'Profile Settings',
   };
 

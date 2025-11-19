@@ -1,28 +1,15 @@
 # BaseCamp StaffSync
 
-A comprehensive Human Resource Management System (HRMS) built for BaseCamp, featuring role-based dashboards, attendance tracking, leave management, payroll automation, and corporate calendar.
+A streamlined Leave Management System built for BaseCamp, featuring role-based dashboards, leave request workflows, and profile management.
 
 ## 🚀 Features
 
 ### Role-Based Access Control
-- **Admin**: Full system control with user management and payroll generation
-- **HR**: Leave approval, employee management, and corporate calendar
-- **Employee**: Personal dashboard with attendance, leaves, and payslips
+- **Admin**: Full leave management control with approval capabilities
+- **HR**: Leave approval and recent leave tracking
+- **Employee**: Submit leave requests and track status
 
 ### Core Modules
-
-#### 👥 User Management (Admin)
-- View all users with role-based filtering
-- Add new users with email and role assignment
-- Real-time statistics (Total users, Admins, HR, Employees)
-- User activity tracking
-
-#### ⏰ Attendance System (All Roles)
-- Real-time check-in/check-out functionality
-- Attendance history with date and time logs
-- Daily status tracking (Present, Absent, Half-Day)
-- Employee: View personal attendance records
-- HR/Admin: Access to all attendance data
 
 #### 📅 Leave Management
 - **Employees**: Submit leave requests (Annual, Sick, Casual, Unpaid)
@@ -30,18 +17,14 @@ A comprehensive Human Resource Management System (HRMS) built for BaseCamp, feat
 - Leave status tracking (Pending, Approved, Rejected)
 - Leave balance calculation
 - Multi-level approval workflow
+- View past leave history
+- Delete pending leave requests
 
-#### 💰 Payroll System (Admin)
-- Automated payroll generation for current month
-- Detailed payslip breakdown (Basic, Allowances, Deductions, Net)
-- Employee access to personal payslips
-- Monthly salary reports
-
-#### 🗓️ Corporate Calendar (HR/Admin)
-- Create and manage events (Holidays, Meetings, Events)
-- Public calendar view for all employees
-- Event categorization and color coding
-- Upcoming events tracking
+#### 👤 Profile Management (All Roles)
+- View and update personal information
+- Change password securely
+- Update email and name
+- Profile settings control
 
 ## 🛠️ Tech Stack
 

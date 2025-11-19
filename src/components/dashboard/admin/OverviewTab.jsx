@@ -1,116 +1,95 @@
 "use client";
 
-import { Users, UserCheck, FileText, Calendar, TrendingUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function OverviewTab({ stats }) {
+  const statCards = [
+    { 
+      label: 'Pending Leaves', 
+      value: stats.pendingLeaves || 0, 
+      icon: Clock,
+      color: 'text-yellow-600 dark:text-yellow-400',
+      bg: 'bg-yellow-100 dark:bg-yellow-900/20'
+    },
+    { 
+      label: 'Approved Leaves', 
+      value: stats.approvedLeaves || 0, 
+      icon: CheckCircle,
+      color: 'text-green-600 dark:text-green-400',
+      bg: 'bg-green-100 dark:bg-green-900/20'
+    },
+    { 
+      label: 'Rejected Leaves', 
+      value: stats.rejectedLeaves || 0, 
+      icon: XCircle,
+      color: 'text-red-600 dark:text-red-400',
+      bg: 'bg-red-100 dark:bg-red-900/20'
+    },
+    { 
+      label: 'Total Requests', 
+      value: stats.totalRequests || 0, 
+      icon: FileText,
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-100 dark:bg-blue-900/20'
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* <div>
-        <h2 className="text-2xl font-bold">Dashboard Overview</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Complete system statistics and insights
-        </p> 
-      </div> */}
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            <div className="text-sm text-muted-foreground">Total Users</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.totalUsers}</div>
-        </div>
-        
-        <div className="rounded-lg border bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <UserCheck className="w-8 h-8 text-red-600 dark:text-red-400" />
-            <div className="text-sm text-muted-foreground">Admins</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.admins}</div>
-        </div>
-        
-        <div className="rounded-lg border bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <UserCheck className="w-8 h-8 text-green-600 dark:text-green-400" />
-            <div className="text-sm text-muted-foreground">HR Staff</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.hrStaff}</div>
-        </div>
-        
-        <div className="rounded-lg border bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <Users className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-            <div className="text-sm text-muted-foreground">Employees</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.employees}</div>
-        </div>
-
-        <div className="rounded-lg border bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <FileText className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-            <div className="text-sm text-muted-foreground">Pending Leaves</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.pendingLeaves}</div>
-        </div>
-
-        <div className="rounded-lg border bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950 dark:to-cyan-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <Calendar className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
-            <div className="text-sm text-muted-foreground">Upcoming Events</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.upcomingEvents}</div>
-        </div>
-
-        <div className="rounded-lg border bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <UserCheck className="w-8 h-8 text-green-600 dark:text-green-400" />
-            <div className="text-sm text-muted-foreground">Present Employees</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.presentToday}</div>
-          <div className="text-xs text-muted-foreground mt-2">Today (including half-day)</div>
-        </div>
-
-        <div className="rounded-lg border bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <UserCheck className="w-8 h-8 text-red-600 dark:text-red-400" />
-            <div className="text-sm text-muted-foreground">Absent Employees</div>
-          </div>
-          <div className="text-3xl font-bold">{stats.absentToday}</div>
-          <div className="text-xs text-muted-foreground mt-2">Today</div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Overview</h1>
+        <p className="text-muted-foreground mt-1">Leave management statistics and insights</p>
       </div>
 
-      {/* Quick Info */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border p-6 bg-card">
-          <h3 className="text-lg font-semibold mb-2">Quick Actions</h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Add new users to the system</li>
-            <li>• Review and approve pending leave requests</li>
-            <li>• Manage attendance records</li>
-            <li>• Create calendar events and holidays</li>
-            <li>• Generate payroll for all employees</li>
-          </ul>
-        </div>
-
-        <div className="rounded-lg border p-6 bg-card">
-          <h3 className="text-lg font-semibold mb-2">System Status</h3>
-          <p className="text-sm text-muted-foreground">
-            {stats.pendingLeaves > 0 
-              ? `${stats.pendingLeaves} leave request(s) require your attention`
-              : 'All leave requests have been processed'}
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            {stats.upcomingEvents > 0
-              ? `${stats.upcomingEvents} upcoming event(s) scheduled`
-              : 'No upcoming events'}
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Today&apos;s attendance: {stats.presentToday} present, {stats.absentToday} absent
-          </p>
-        </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat, idx) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={idx} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <div className={`p-2 rounded-lg ${stat.bg}`}>
+                  <Icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Stats</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Total Leave Requests</span>
+            <span className="font-semibold text-lg">{stats.totalRequests || 0}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Pending Approval</span>
+            <span className="font-semibold text-lg text-yellow-600">{stats.pendingLeaves || 0}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Approved This Month</span>
+            <span className="font-semibold text-lg text-green-600">{stats.approvedThisMonth || 0}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Rejection Rate</span>
+            <span className="font-semibold text-lg text-red-600">
+              {stats.totalRequests > 0 
+                ? `${Math.round((stats.rejectedLeaves / stats.totalRequests) * 100)}%` 
+                : '0%'}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

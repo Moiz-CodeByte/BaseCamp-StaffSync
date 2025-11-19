@@ -6,11 +6,8 @@ import { Button } from '@/components/ui/button';
 export default function HRHeader({ sidebarOpen, setSidebarOpen, activeTab }) {
   const tabLabels = {
     overview: 'Overview',
-    leaves: 'Leaves',
-    calendar: 'Calendar',
-    employees: 'Employees',
-    payroll: 'Payroll',
-    profile: 'Profile'
+    leaves: 'Leave Management',
+    profile: 'Profile Settings'
   };
 
   return (

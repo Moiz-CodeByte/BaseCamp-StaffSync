@@ -8,9 +8,6 @@ import AdminHeader from '@/components/dashboard/admin/AdminHeader';
 import OverviewTab from '@/components/dashboard/admin/OverviewTab';
 import UsersTab from '@/components/dashboard/admin/UsersTab';
 import LeavesTab from '@/components/dashboard/admin/LeavesTab';
-import AttendanceTab from '@/components/dashboard/admin/AttendanceTab';
-import CalendarTab from '@/components/dashboard/admin/CalendarTab';
-import PayrollTab from '@/components/dashboard/admin/PayrollTab';
 import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
 export default function AdminDashboard() {
@@ -19,18 +16,14 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [pastLeaves, setPastLeaves] = useState([]);
-  const [events, setEvents] = useState([]);
   const [me, setMe] = useState(null);
   const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    admins: 0,
-    hrStaff: 0,
-    employees: 0,
     pendingLeaves: 0,
-    upcomingEvents: 0,
-    presentToday: 0,
-    absentToday: 0,
+    approvedLeaves: 0,
+    rejectedLeaves: 0,
+    totalRequests: 0,
+    approvedThisMonth: 0,
   });
 
   const loadUsers = async () => {
@@ -67,94 +60,54 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadEvents = async () => {
-    try {
-      const { data } = await api.get('/api/calendar/events');
-      const eventsList = data.events || [];
-      setEvents(eventsList);
-      setStats(prev => ({
-        ...prev,
-        upcomingEvents: eventsList.filter(e => new Date(e.date) >= new Date()).length
-      }));
-    } catch {
-      setEvents([]);
-    }
-  };
-
   useEffect(() => {
     let ignore = false;
     (async () => {
       try {
-        // Get today's date in PKT (UTC+5)
-        const pktOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-        const nowUTC = Date.now();
-        const nowPKT = new Date(nowUTC + pktOffset);
-        
-        // Format date as YYYY-MM-DD in PKT
-        const todayStr = `${nowPKT.getUTCFullYear()}-${String(nowPKT.getUTCMonth() + 1).padStart(2, '0')}-${String(nowPKT.getUTCDate()).padStart(2, '0')}`;
-        
-        const startOfMonth = new Date(nowPKT.getUTCFullYear(), nowPKT.getUTCMonth(), 1).toISOString().split('T')[0];
-        const endOfMonth = new Date(nowPKT.getUTCFullYear(), nowPKT.getUTCMonth() + 1, 0).toISOString().split('T')[0];
-
         const [
           { data: usersData }, 
           { data: leavesData }, 
           { data: pastLeavesData }, 
-          { data: eventsData }, 
-          { data: meData },
-          { data: todayAttendanceData }
+          { data: meData }
         ] = await Promise.all([
           api.get('/api/users/list'),
           api.get('/api/leaves/manage'),
           api.get('/api/leaves/manage?status=past'),
-          api.get('/api/calendar/events'),
-          api.get('/api/users/me'),
-          // Fetch today's attendance
-          api.get(`/api/attendance/all?startDate=${todayStr}&endDate=${todayStr}`)
+          api.get('/api/users/me')
         ]);
 
         if (!ignore) {
           const userList = usersData.users || [];
           const leavesList = leavesData.leaves || [];
           const pastLeavesList = pastLeavesData.leaves || [];
-          const eventsList = eventsData.events || [];
           const userData = meData.user;
 
-          // Calculate presentToday (count Present and Half-Day as present)
-          const todayAttendance = todayAttendanceData.attendance || [];
           
-          console.log('Today\'s Date:', todayStr);
-          console.log('Today\'s Attendance Records:', todayAttendance);
-          console.log('Total Records:', todayAttendance.length);
           
-          const presentToday = todayAttendance.filter(a => 
-            a.status === 'Present' || a.status === 'Half-Day'
-          ).length;
-
-          // Calculate absentToday (count Absent status)
-          const absentToday = todayAttendance.filter(a => 
-            a.status === 'Absent'
-          ).length;
-          
-          console.log('Present Today:', presentToday);
-          console.log('Absent Today:', absentToday);
 
           setUsers(userList);
           setLeaves(leavesList);
           setPastLeaves(pastLeavesList);
-          setEvents(eventsList);
           setMe(userData);
           setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
 
+          const allLeaves = [...leavesList, ...pastLeavesList];
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          
           setStats({
             totalUsers: userList.length,
             admins: userList.filter(u => u.role === 'Admin').length,
             hrStaff: userList.filter(u => u.role === 'HR').length,
             employees: userList.filter(u => u.role === 'Employee').length,
             pendingLeaves: leavesList.length,
-            upcomingEvents: eventsList.filter(e => new Date(e.date) >= new Date()).length,
-            presentToday: presentToday,
-            absentToday: absentToday,
+            approvedLeaves: pastLeavesList.filter(l => l.status === 'Approved').length,
+            rejectedLeaves: pastLeavesList.filter(l => l.status === 'Rejected').length,
+            totalRequests: allLeaves.length,
+            approvedThisMonth: allLeaves.filter(l => {
+              const date = new Date(l.createdAt);
+              return l.status === 'Approved' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            }).length,
           });
         }
       } catch (error) {
@@ -162,7 +115,6 @@ export default function AdminDashboard() {
           setUsers([]);
           setLeaves([]);
           setPastLeaves([]);
-          setEvents([]);
         }
       }
     })();
@@ -176,26 +128,6 @@ export default function AdminDashboard() {
       loadLeaves();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update leave');
-    }
-  };
-
-  const handleEventCreate = async (eventData) => {
-    try {
-      await api.post('/api/calendar/events', eventData);
-      toast.success('Event created successfully');
-      loadEvents();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create event');
-    }
-  };
-
-  const handleEventDelete = async (eventId) => {
-    try {
-      await api.delete(`/api/calendar/events/${eventId}`);
-      toast.success('Event deleted successfully');
-      loadEvents();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete event');
     }
   };
 
@@ -224,15 +156,6 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && <OverviewTab stats={stats} />}
             {activeTab === 'users' && <UsersTab users={users} onUpdate={loadUsers} />}
             {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
-            {activeTab === 'attendance' && <AttendanceTab users={users} />}
-            {activeTab === 'calendar' && (
-              <CalendarTab 
-                events={events} 
-                onEventCreate={handleEventCreate}
-                onEventDelete={handleEventDelete}
-              />
-            )}
-            {/* {activeTab === 'payroll' && <PayrollTab />} */}
             {activeTab === 'profile' && (
               <ProfileTab 
                 me={me} 
