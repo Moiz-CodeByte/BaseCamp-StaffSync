@@ -7,6 +7,7 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen, activeTab }) 
   const tabLabels = {
     overview: 'Overview',
     users: 'User Management',
+    departments: 'Department Management',
     leaves: 'Leave Management',
     profile: 'Profile Settings',
   };

@@ -9,7 +9,7 @@ const UserSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: rolesList, default: 'Employee' },
-    department: { type: String, trim: true, default: '' },
+    department: { type: Schema.Types.ObjectId, ref: 'Department' },
     assignedHR: { type: Schema.Types.ObjectId, ref: 'User' },
     
     // Salary Information (set by HR/Admin)

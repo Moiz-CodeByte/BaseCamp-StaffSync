@@ -7,6 +7,7 @@ import AdminSidebar from '@/components/dashboard/admin/AdminSidebar';
 import AdminHeader from '@/components/dashboard/admin/AdminHeader';
 import OverviewTab from '@/components/dashboard/admin/OverviewTab';
 import UsersTab from '@/components/dashboard/admin/UsersTab';
+import DepartmentsTab from '@/components/dashboard/admin/DepartmentsTab';
 import LeavesTab from '@/components/dashboard/admin/LeavesTab';
 import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
@@ -14,6 +15,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [hrUsers, setHrUsers] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [pastLeaves, setPastLeaves] = useState([]);
   const [me, setMe] = useState(null);
@@ -43,6 +46,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadDepartments = async () => {
+    try {
+      const { data } = await api.get('/api/departments');
+      setDepartments(data.departments || []);
+    } catch {
+      setDepartments([]);
+    }
+  };
+
   const loadLeaves = async () => {
     try {
       const [{ data: pendingData }, { data: pastData }] = await Promise.all([
@@ -66,11 +78,13 @@ export default function AdminDashboard() {
       try {
         const [
           { data: usersData }, 
+          { data: departmentsData },
           { data: leavesData }, 
           { data: pastLeavesData }, 
           { data: meData }
         ] = await Promise.all([
           api.get('/api/users/list'),
+          api.get('/api/departments'),
           api.get('/api/leaves/manage'),
           api.get('/api/leaves/manage?status=past'),
           api.get('/api/users/me')
@@ -78,14 +92,17 @@ export default function AdminDashboard() {
 
         if (!ignore) {
           const userList = usersData.users || [];
+          const deptList = departmentsData.departments || [];
           const leavesList = leavesData.leaves || [];
           const pastLeavesList = pastLeavesData.leaves || [];
           const userData = meData.user;
 
-          
-          
+          // Filter HR users for department assignment
+          const hrList = userList.filter(u => u.role === 'HR');
 
           setUsers(userList);
+          setDepartments(deptList);
+          setHrUsers(hrList);
           setLeaves(leavesList);
           setPastLeaves(pastLeavesList);
           setMe(userData);
@@ -154,7 +171,8 @@ export default function AdminDashboard() {
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto">
             {activeTab === 'overview' && <OverviewTab stats={stats} />}
-            {activeTab === 'users' && <UsersTab users={users} onUpdate={loadUsers} />}
+            {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
+            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
             {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
             {activeTab === 'profile' && (
               <ProfileTab 

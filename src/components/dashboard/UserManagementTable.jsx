@@ -11,7 +11,7 @@ import { Edit, Save, X, Search, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
-export default function UserManagementTable({ users, onUpdate, isAdmin = false }) {
+export default function UserManagementTable({ users, departments = [], onUpdate, isAdmin = false }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,27 +83,31 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
     return <Badge variant={variants[role] || 'default'}>{role}</Badge>;
   };
 
-  // Get unique departments from users
-  const departments = useMemo(() => {
-    const depts = [...new Set(users.map(u => u.department).filter(Boolean))];
-    return depts.sort();
-  }, [users]);
+  // Get department name by ID
+  const getDepartmentName = useMemo(() => {
+    return (deptId) => {
+      if (!deptId) return '-';
+      const dept = departments.find(d => d._id === deptId);
+      return dept ? dept.name : deptId;
+    };
+  }, [departments]);
 
   // Filter users based on search and department
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       // Search filter (name, email, department)
+      const deptName = getDepartmentName(user.department);
       const matchesSearch = searchQuery === '' || 
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.department?.toLowerCase().includes(searchQuery.toLowerCase());
+        deptName?.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Department filter
       const matchesDepartment = departmentFilter === 'all' || user.department === departmentFilter;
       
       return matchesSearch && matchesDepartment;
     });
-  }, [users, searchQuery, departmentFilter]);
+  }, [users, searchQuery, departmentFilter, getDepartmentName]);
 
   return (
     <div className="space-y-4">
@@ -131,7 +135,7 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
             <SelectContent>
               <SelectItem value="all">All Departments</SelectItem>
               {departments.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -179,11 +183,17 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
                     />
                   </td>
                   <td className="p-2">
-                    <Input 
-                      value={editForm.department}
-                      onChange={(e) => setEditForm({...editForm, department: e.target.value})}
-                      className="w-full"
-                    />
+                    <Select value={editForm.department || 'none'} onValueChange={(val) => setEditForm({...editForm, department: val === 'none' ? '' : val})}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Department</SelectItem>
+                        {departments.map(dept => (
+                          <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td className="p-2">
                     {isAdmin ? (
@@ -240,7 +250,7 @@ export default function UserManagementTable({ users, onUpdate, isAdmin = false }
                 <>
                   <td className="p-2 font-medium">{user.name}</td>
                   <td className="p-2 text-muted-foreground">{user.email}</td>
-                  <td className="p-2">{user.department || '-'}</td>
+                  <td className="p-2">{getDepartmentName(user.department)}</td>
                   <td className="p-2">{getRoleBadge(user.role)}</td>
                   {/* <td className="p-2 text-right">Rs. {(user.basic_salary || 0).toLocaleString()}</td>
                   <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td> */}

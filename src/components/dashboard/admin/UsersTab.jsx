@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import UserManagementTable from '@/components/dashboard/UserManagementTable';
 
-export default function UsersTab({ users, onUpdate }) {
+export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '' });
 
@@ -85,11 +85,16 @@ export default function UsersTab({ users, onUpdate }) {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Department</label>
-                <Input 
-                  placeholder="Department" 
+                <select 
+                  className="w-full px-3 py-2 rounded-md border bg-background" 
                   value={newUser.department} 
-                  onChange={e => setNewUser({ ...newUser, department: e.target.value })} 
-                />
+                  onChange={e => setNewUser({ ...newUser, department: e.target.value })}
+                >
+                  <option value="">Select Department</option>
+                  {departments.map(dept => (
+                    <option key={dept._id} value={dept._id}>{dept.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <Button type="submit" className="w-full md:w-auto">Create User</Button>
@@ -99,7 +104,7 @@ export default function UsersTab({ users, onUpdate }) {
 
       {/* User Management Table */}
       <div className="rounded-lg border bg-card p-6">
-        <UserManagementTable users={users} onUpdate={onUpdate} isAdmin={true} />
+        <UserManagementTable users={users} departments={departments} onUpdate={onUpdate} isAdmin={true} />
       </div>
     </div>
   );
