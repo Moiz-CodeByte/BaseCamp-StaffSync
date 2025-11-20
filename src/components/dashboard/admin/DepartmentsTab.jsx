@@ -16,18 +16,18 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
   const [editingDept, setEditingDept] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    reportingManagerName: '',
-    reportingManagerEmail: '',
+    reportingManagers: [],
     hr: ''
   });
+  const [newManager, setNewManager] = useState({ name: '', email: '' });
 
   const resetForm = () => {
     setFormData({
       name: '',
-      reportingManagerName: '',
-      reportingManagerEmail: '',
+      reportingManagers: [],
       hr: ''
     });
+    setNewManager({ name: '', email: '' });
     setEditingDept(null);
     setShowForm(false);
   };
@@ -35,12 +35,34 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
   const handleEdit = (dept) => {
     setFormData({
       name: dept.name,
-      reportingManagerName: dept.reportingManagerName,
-      reportingManagerEmail: dept.reportingManagerEmail,
+      reportingManagers: dept.reportingManagers || [],
       hr: dept.hr._id
     });
     setEditingDept(dept);
     setShowForm(true);
+  };
+
+  const addManager = () => {
+    if (!newManager.name.trim() || !newManager.email.trim()) {
+      toast.error('Please enter both name and email');
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(newManager.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    setFormData({
+      ...formData,
+      reportingManagers: [...formData.reportingManagers, { ...newManager }]
+    });
+    setNewManager({ name: '', email: '' });
+  };
+
+  const removeManager = (index) => {
+    setFormData({
+      ...formData,
+      reportingManagers: formData.reportingManagers.filter((_, i) => i !== index)
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -129,27 +151,53 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="managerName">Reporting Manager Name *</Label>
+              <div className="space-y-3">
+                <Label>Reporting Managers</Label>
+                
+                {/* List of added managers */}
+                {formData.reportingManagers.length > 0 && (
+                  <div className="space-y-2">
+                    {formData.reportingManagers.map((manager, index) => (
+                      <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{manager.name}</p>
+                          <p className="text-xs text-muted-foreground">{manager.email}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeManager(index)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new manager form */}
+                <div className="grid gap-2 md:grid-cols-2 p-3 border rounded-lg">
                   <Input
-                    id="managerName"
-                    value={formData.reportingManagerName}
-                    onChange={(e) => setFormData({ ...formData, reportingManagerName: e.target.value })}
-                    placeholder="Manager's full name"
-                    required
+                    placeholder="Manager name"
+                    value={newManager.name}
+                    onChange={(e) => setNewManager({ ...newManager, name: e.target.value })}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="managerEmail">Reporting Manager Email *</Label>
                   <Input
-                    id="managerEmail"
                     type="email"
-                    value={formData.reportingManagerEmail}
-                    onChange={(e) => setFormData({ ...formData, reportingManagerEmail: e.target.value })}
-                    placeholder="manager@example.com"
-                    required
+                    placeholder="Manager email"
+                    value={newManager.email}
+                    onChange={(e) => setNewManager({ ...newManager, email: e.target.value })}
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addManager}
+                    className="md:col-span-2"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Manager
+                  </Button>
                 </div>
               </div>
 
@@ -203,19 +251,22 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2">
-                <div className="flex items-start gap-2 text-sm">
-                  <User className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium">Reporting Manager</p>
-                    <p className="text-muted-foreground">{dept.reportingManagerName}</p>
+                <p className="text-xs text-muted-foreground font-medium">Reporting Managers</p>
+                {dept.reportingManagers && dept.reportingManagers.length > 0 ? (
+                  <div className="space-y-2">
+                    {dept.reportingManagers.map((manager, index) => (
+                      <div key={index} className="flex items-start gap-2 text-sm p-2 bg-muted/50 rounded">
+                        <User className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">{manager.name}</p>
+                          <p className="text-muted-foreground text-xs break-all">{manager.email}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div className="flex items-start gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-muted-foreground break-all">{dept.reportingManagerEmail}</p>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No managers assigned</p>
+                )}
               </div>
               
               <div className="pt-2 border-t">

@@ -9,13 +9,24 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
-  const users = await User.find({}, 'name email role department basic_salary allowance leave_limit createdAt')
+  const users = await User.find({}, 'name email role department reportingManagers basic_salary allowance leave_limit createdAt')
     .lean();
   
-  // Manually populate departments
+  // Manually populate departments and set reporting managers
   for (const user of users) {
     if (user.department) {
       user.department = await Department.findById(user.department);
+      
+      // If user has no reportingManagers field at all (undefined), use department managers
+      // If it's an empty array [], that means explicitly set to zero managers
+      if (user.reportingManagers === undefined || user.reportingManagers === null) {
+        user.reportingManagers = user.department?.reportingManagers || [];
+      }
+    } else {
+      // Ensure reportingManagers field exists (for backward compatibility)
+      if (user.reportingManagers === undefined || user.reportingManagers === null) {
+        user.reportingManagers = [];
+      }
     }
   }
   

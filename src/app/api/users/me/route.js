@@ -24,6 +24,17 @@ export async function GET(req) {
     if (user.department) {
       const department = await Department.findById(user.department);
       user.department = department;
+      
+      // If user has no reportingManagers field at all (undefined), use department managers
+      // If it's an empty array [], that means explicitly set to zero managers
+      if (user.reportingManagers === undefined || user.reportingManagers === null) {
+        user.reportingManagers = department?.reportingManagers || [];
+      }
+    } else {
+      // Ensure reportingManagers field exists (for backward compatibility)
+      if (user.reportingManagers === undefined || user.reportingManagers === null) {
+        user.reportingManagers = [];
+      }
     }
     
     return NextResponse.json({ user });

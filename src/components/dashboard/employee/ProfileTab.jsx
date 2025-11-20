@@ -52,11 +52,15 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
             <p className="text-xs text-gray-500 mt-1">Contact HR to update</p>
           </div>
           <div>
-            <Label className="text-gray-500">Reporting Manager</Label>
-            {me.department?.reportingManagerName ? (
-              <div className="mt-1">
-                <p className="text-lg font-medium">{me.department.reportingManagerName}</p>
-                <p className="text-sm text-gray-500">{me.department.reportingManagerEmail || 'Email not provided'}</p>
+            <Label className="text-gray-500">Reporting Managers</Label>
+            {me.reportingManagers && me.reportingManagers.length > 0 ? (
+              <div className="mt-2 space-y-3">
+                {me.reportingManagers.map((manager, index) => (
+                  <div key={index} className="p-3 bg-muted rounded-lg">
+                    <p className="text-lg font-medium">{manager.name}</p>
+                    <p className="text-sm text-gray-500">{manager.email}</p>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-lg font-medium mt-1">Not assigned</p>

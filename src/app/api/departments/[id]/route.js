@@ -49,11 +49,19 @@ export async function PUT(req, { params }) {
 
   try {
     const { id } = await params;
-    const { name, reportingManagerName, reportingManagerEmail, hr } = await req.json();
+    const { name, reportingManagers, hr } = await req.json();
 
     const department = await Department.findById(id);
     if (!department) {
       return NextResponse.json({ message: 'Department not found' }, { status: 404 });
+    }
+
+    // Validate reporting managers array
+    if (reportingManagers !== undefined && !Array.isArray(reportingManagers)) {
+      return NextResponse.json(
+        { message: 'Reporting managers must be an array' },
+        { status: 400 }
+      );
     }
 
     // If HR is being updated, verify the user exists and has HR role
@@ -80,8 +88,7 @@ export async function PUT(req, { params }) {
 
     // Update fields
     if (name) department.name = name;
-    if (reportingManagerName) department.reportingManagerName = reportingManagerName;
-    if (reportingManagerEmail) department.reportingManagerEmail = reportingManagerEmail;
+    if (reportingManagers !== undefined) department.reportingManagers = reportingManagers;
     if (hr) department.hr = hr;
 
     await department.save();

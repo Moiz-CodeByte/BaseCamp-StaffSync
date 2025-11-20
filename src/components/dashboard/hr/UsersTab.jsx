@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search } from 'lucide-react';
+import { Edit, Save, X, Search, UserPlus, UserMinus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -19,7 +19,8 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
   const startEdit = (user) => {
     setEditingId(user._id);
     setEditForm({
-      leave_limit: user.leave_limit || 12
+      leave_limit: user.leave_limit || 12,
+      reportingManagers: user.reportingManagers || []
     });
   };
 
@@ -30,7 +31,12 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
 
   const saveEdit = async (id) => {
     try {
-      await api.patch(`/api/users/${id}`, editForm);
+      // Ensure reportingManagers is always included, even if empty
+      const updatePayload = {
+        ...editForm,
+        reportingManagers: editForm.reportingManagers || []
+      };
+      await api.patch(`/api/users/${id}`, updatePayload);
       toast.success('User updated successfully');
       setEditingId(null);
       setEditForm({});
@@ -40,6 +46,32 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
     } catch (e) {
       toast.error(e?.response?.data?.message || 'Failed to update user');
     }
+  };
+
+  const toggleManager = (manager) => {
+    const currentManagers = editForm.reportingManagers || [];
+    const exists = currentManagers.find(m => m.email === manager.email);
+    
+    if (exists) {
+      setEditForm({
+        ...editForm,
+        reportingManagers: currentManagers.filter(m => m.email !== manager.email)
+      });
+    } else {
+      setEditForm({
+        ...editForm,
+        reportingManagers: [...currentManagers, { name: manager.name, email: manager.email }]
+      });
+    }
+  };
+
+  const getAvailableManagers = (user) => {
+    // Get managers from user's department
+    const userDept = departments.find(d => {
+      const deptId = typeof user.department === 'object' ? user.department?._id : user.department;
+      return d._id === deptId;
+    });
+    return userDept?.reportingManagers || [];
   };
 
   const getRoleBadge = (role) => {
@@ -122,8 +154,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
               <th className="text-left p-2">Email</th>
               <th className="text-left p-2">Department</th>
               <th className="text-left p-2">Role</th>
-              <th className="text-left p-2">Reporting Manager</th>
-              <th className="text-left p-2">Manager Email</th>
+              <th className="text-left p-2">Reporting Managers</th>
               <th className="text-right p-2">Leave Limit</th>
               <th className="text-right p-2">Actions</th>
             </tr>
@@ -137,8 +168,32 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
                     <td className="p-2 text-muted-foreground">{user.email}</td>
                     <td className="p-2">{getDepartmentName(user.department)}</td>
                     <td className="p-2">{getRoleBadge(user.role)}</td>
-                    <td className="p-2 text-muted-foreground">{user.department?.reportingManagerName || '-'}</td>
-                    <td className="p-2 text-muted-foreground">{user.department?.reportingManagerEmail || '-'}</td>
+                    <td className="p-2">
+                      <div className="space-y-1 max-w-xs">
+                        {getAvailableManagers(user).length > 0 ? (
+                          getAvailableManagers(user).map((manager, idx) => {
+                            const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => toggleManager(manager)}
+                                className={`flex items-center gap-2 px-2 py-1 rounded text-xs w-full transition-colors ${
+                                  isSelected 
+                                    ? 'bg-primary text-primary-foreground' 
+                                    : 'bg-muted hover:bg-muted/70'
+                                }`}
+                              >
+                                {isSelected ? <UserMinus className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
+                                <span className="truncate">{manager.name}</span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">No managers in department</p>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-2">
                       <Input 
                         type="number"
@@ -164,8 +219,19 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
                     <td className="p-2 text-muted-foreground">{user.email}</td>
                     <td className="p-2">{getDepartmentName(user.department)}</td>
                     <td className="p-2">{getRoleBadge(user.role)}</td>
-                    <td className="p-2">{user.department?.reportingManagerName || '-'}</td>
-                    <td className="p-2 text-muted-foreground">{user.department?.reportingManagerEmail || '-'}</td>
+                    <td className="p-2">
+                      {user.reportingManagers && user.reportingManagers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {user.reportingManagers.map((manager, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
+                              {manager.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
                     <td className="p-2 text-right">{user.leave_limit || 12} days</td>
                     <td className="p-2 text-right">
                       <Button size="sm" variant="outline" onClick={() => startEdit(user)}>

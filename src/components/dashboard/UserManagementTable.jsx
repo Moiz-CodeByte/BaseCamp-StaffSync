@@ -19,15 +19,42 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
   const startEdit = (user) => {
     setEditingId(user._id);
+    // Extract department ID if it's an object
+    const deptId = typeof user.department === 'object' ? user.department?._id : user.department;
     setEditForm({
       name: user.name || '',
       email: user.email || '',
-      department: user.department || '',
+      department: deptId || '',
       role: user.role || 'Employee',
       basic_salary: user.basic_salary || 0,
       allowance: user.allowance || 0,
-      leave_limit: user.leave_limit || 12
+      leave_limit: user.leave_limit || 12,
+      reportingManagers: user.reportingManagers || []
     });
+  };
+
+  const getAvailableManagers = (user) => {
+    // Get managers from user's department
+    const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
+    const userDept = departments.find(d => d._id === userDeptId);
+    return userDept?.reportingManagers || [];
+  };
+
+  const toggleManager = (manager) => {
+    const currentManagers = editForm.reportingManagers || [];
+    const exists = currentManagers.find(m => m.email === manager.email);
+    
+    if (exists) {
+      setEditForm({
+        ...editForm,
+        reportingManagers: currentManagers.filter(m => m.email !== manager.email)
+      });
+    } else {
+      setEditForm({
+        ...editForm,
+        reportingManagers: [...currentManagers, { name: manager.name, email: manager.email }]
+      });
+    }
   };
 
   const cancelEdit = () => {
@@ -37,7 +64,12 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
   const saveEdit = async (id) => {
     try {
-      const response = await api.patch(`/api/users/${id}`, editForm);
+      // Ensure reportingManagers is always included, even if empty
+      const updatePayload = {
+        ...editForm,
+        reportingManagers: editForm.reportingManagers || []
+      };
+      const response = await api.patch(`/api/users/${id}`, updatePayload);
       toast.success('User updated successfully');
       setEditingId(null);
       setEditForm({});
@@ -160,6 +192,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
             <th className="text-left p-2">Email</th>
             <th className="text-left p-2">Department</th>
             <th className="text-left p-2">Role</th>
+            <th className="text-left p-2">Reporting Managers</th>
             {/* <th className="text-right p-2">Basic Salary</th>
             <th className="text-right p-2">Allowance</th> */}
             <th className="text-right p-2">Leave Limit</th>
@@ -187,7 +220,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     />
                   </td>
                   <td className="p-2">
-                    <Select value={editForm.department || 'none'} onValueChange={(val) => setEditForm({...editForm, department: val === 'none' ? '' : val})}>
+                    <Select value={editForm.department } onValueChange={(val) => setEditForm({...editForm, department: val === 'none' ? '' : val})}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select Department" />
                       </SelectTrigger>
@@ -214,6 +247,31 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     ) : (
                       getRoleBadge(editForm.role)
                     )}
+                  </td>
+                  <td className="p-2">
+                    <div className="space-y-1 max-w-xs">
+                      {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
+                        getAvailableManagers(users.find(u => u._id === editingId) || {}).map((manager, idx) => {
+                          const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => toggleManager(manager)}
+                              className={`flex items-center gap-2 px-2 py-1 rounded text-xs w-full transition-colors ${
+                                isSelected 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'bg-muted hover:bg-muted/70'
+                              }`}
+                            >
+                              {isSelected ? '✓' : '+'} <span className="truncate">{manager.name}</span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">No managers in dept</p>
+                      )}
+                    </div>
                   </td>
                   {/* <td className="p-2">
                     <Input 
@@ -256,6 +314,19 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                   <td className="p-2 text-muted-foreground">{user.email}</td>
                   <td className="p-2">{getDepartmentName(user.department)}</td>
                   <td className="p-2">{getRoleBadge(user.role)}</td>
+                  <td className="p-2">
+                    {user.reportingManagers && user.reportingManagers.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {user.reportingManagers.map((manager, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
+                            {manager.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </td>
                   {/* <td className="p-2 text-right">Rs. {(user.basic_salary || 0).toLocaleString()}</td>
                   <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td> */}
                   <td className="p-2 text-right">{user.leave_limit || 12} days</td>

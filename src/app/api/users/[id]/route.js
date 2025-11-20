@@ -23,10 +23,15 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
     
+    // HR cannot update Admin or HR users - only Employees (check early)
+    if (user.role === 'HR' && existingUser.role !== 'Employee') {
+      return NextResponse.json({ message: 'HR can only manage Employee accounts' }, { status: 403 });
+    }
+    
     // Allowed fields to update
     const allowedFields = [
       'name', 'email', 'department', 'role', 
-      'basic_salary', 'allowance', 'leave_limit', 'assignedHR'
+      'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers'
     ];
     
     const updateData = {};
@@ -35,6 +40,9 @@ export async function PATCH(req, { params }) {
         // Convert empty string to null for ObjectId fields
         if ((field === 'department' || field === 'assignedHR') && updates[field] === '') {
           updateData[field] = null;
+        } else if (field === 'reportingManagers') {
+          // Allow empty array or array of managers
+          updateData[field] = Array.isArray(updates[field]) ? updates[field] : [];
         } else {
           updateData[field] = updates[field];
         }
@@ -44,11 +52,6 @@ export async function PATCH(req, { params }) {
     // Only Admin can change roles - check if role is actually being changed
     if (updateData.role && updateData.role !== existingUser.role && user.role !== 'Admin') {
       return NextResponse.json({ message: 'Only Admin can change user roles' }, { status: 403 });
-    }
-    
-    // HR cannot update Admin or HR users - only Employees
-    if (user.role === 'HR' && existingUser.role !== 'Employee') {
-      return NextResponse.json({ message: 'HR can only manage Employee accounts' }, { status: 403 });
     }
     
     const updatedUser = await User.findByIdAndUpdate(
@@ -82,13 +85,24 @@ export async function GET(req, { params }) {
       .populate('assignedHR', 'name email')
       .lean();
     
-    // Manually populate department
-    if (targetUser && targetUser.department) {
-      targetUser.department = await Department.findById(targetUser.department);
-    }
-    
     if (!targetUser) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+    
+    // Manually populate department
+    if (targetUser.department) {
+      targetUser.department = await Department.findById(targetUser.department);
+      
+      // If user has no reportingManagers field at all (undefined), use department managers
+      // If it's an empty array [], that means explicitly set to zero managers
+      if (targetUser.reportingManagers === undefined || targetUser.reportingManagers === null) {
+        targetUser.reportingManagers = targetUser.department?.reportingManagers || [];
+      }
+    } else {
+      // Ensure reportingManagers field exists (for backward compatibility)
+      if (targetUser.reportingManagers === undefined || targetUser.reportingManagers === null) {
+        targetUser.reportingManagers = [];
+      }
     }
     
     return NextResponse.json({ user: targetUser });

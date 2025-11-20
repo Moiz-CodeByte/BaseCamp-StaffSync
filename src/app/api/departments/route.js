@@ -47,12 +47,20 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const { name, reportingManagerName, reportingManagerEmail, hr } = await req.json();
+    const { name, reportingManagers, hr } = await req.json();
 
     // Validate required fields
-    if (!name || !reportingManagerName || !reportingManagerEmail || !hr) {
+    if (!name || !hr) {
       return NextResponse.json(
-        { message: 'All fields are required' },
+        { message: 'Name and HR are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate reporting managers array
+    if (reportingManagers && !Array.isArray(reportingManagers)) {
+      return NextResponse.json(
+        { message: 'Reporting managers must be an array' },
         { status: 400 }
       );
     }
@@ -77,8 +85,7 @@ export async function POST(req) {
 
     const department = await Department.create({
       name,
-      reportingManagerName,
-      reportingManagerEmail,
+      reportingManagers: reportingManagers || [],
       hr
     });
 

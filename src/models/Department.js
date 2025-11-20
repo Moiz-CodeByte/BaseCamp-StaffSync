@@ -7,18 +7,20 @@ const DepartmentSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  reportingManagerName: {
-    type: String,
-    required: [true, 'Reporting manager name is required'],
-    trim: true
-  },
-  reportingManagerEmail: {
-    type: String,
-    required: [true, 'Reporting manager email is required'],
-    trim: true,
-    lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
-  },
+  reportingManagers: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
+    }
+  }],
   hr: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -12,6 +12,10 @@ const UserSchema = new Schema(
     role: { type: String, enum: rolesList, default: 'Employee' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     assignedHR: { type: Schema.Types.ObjectId, ref: 'User' },
+    reportingManagers: [{
+      name: { type: String, required: true },
+      email: { type: String, required: true }
+    }],
     
     // Salary Information (set by HR/Admin)
     basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
