@@ -9,6 +9,14 @@ const LeaveSchema = new Schema(
     reason: { type: String, trim: true },
     status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
     approver: { type: Schema.Types.ObjectId, ref: 'User' },
+    managerApprovals: [{
+      managerEmail: { type: String, required: true },
+      managerName: { type: String, required: true },
+      status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+      emailSent: { type: Boolean, default: false },
+      emailSentAt: { type: Date },
+      approvedAt: { type: Date }
+    }]
   },
   { timestamps: true }
 );

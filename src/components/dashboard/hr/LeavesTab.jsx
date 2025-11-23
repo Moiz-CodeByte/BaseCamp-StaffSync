@@ -5,10 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import HRLeaveRequestForm from './HRLeaveRequestForm';
+import { Mail } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   const [myLeaves, setMyLeaves] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(null);
 
   const loadMyLeaves = async () => {
     try {
@@ -39,6 +42,22 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   const handleFormSuccess = () => {
     setShowForm(false);
     loadMyLeaves();
+  };
+
+  const handleSendEmail = async (leaveId) => {
+    setSendingEmail(leaveId);
+    try {
+      await api.post(`/api/leaves/${leaveId}/send-approval`);
+      toast.success('Approval emails sent to reporting managers');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send emails');
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
+  const hasPendingApprovals = (leave) => {
+    return leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
   };
 
   return (
@@ -89,6 +108,7 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                     <th className="text-left p-3 font-semibold">Duration</th>
                     <th className="text-left p-3 font-semibold">Dates</th>
                     <th className="text-left p-3 font-semibold">Reason</th>
+                    <th className="text-left p-3 font-semibold">Manager Approvals</th>
                     <th className="text-left p-3 font-semibold">Status</th>
                   </tr>
                 </thead>
@@ -117,6 +137,31 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                         </td>
                         <td className="p-3 text-muted-foreground max-w-xs truncate">
                           {leave.reason || '-'}
+                        </td>
+                        <td className="p-3">
+                          {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
+                            <div className="space-y-1 text-xs">
+                              {leave.managerApprovals.map((approval, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <span className="font-medium truncate max-w-[100px]" title={approval.managerName}>
+                                    {approval.managerName}
+                                  </span>
+                                  <Badge 
+                                    variant={
+                                      approval.status === 'Approved' ? 'default' : 
+                                      approval.status === 'Rejected' ? 'destructive' : 
+                                      'secondary'
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {approval.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
                         </td>
                         <td className="p-3">
                           <Badge 
@@ -162,6 +207,7 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                     <th className="text-left p-3 font-semibold">Duration</th>
                     <th className="text-left p-3 font-semibold">Dates</th>
                     <th className="text-left p-3 font-semibold">Leave Stats</th>
+                    <th className="text-left p-3 font-semibold">Manager Approvals</th>
                     <th className="text-left p-3 font-semibold">Reason</th>
                     <th className="text-right p-3 font-semibold">Actions</th>
                   </tr>
@@ -220,11 +266,53 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                             </div>
                           </div>
                         </td>
+                        <td className="p-3">
+                          {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
+                            <div className="space-y-1 text-xs">
+                              {leave.managerApprovals.map((approval, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <span className="font-medium truncate max-w-[120px]" title={approval.managerName}>
+                                    {approval.managerName}
+                                  </span>
+                                  <Badge 
+                                    variant={
+                                      approval.status === 'Approved' ? 'default' : 
+                                      approval.status === 'Rejected' ? 'destructive' : 
+                                      'secondary'
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {approval.status}
+                                  </Badge>
+                                  {approval.emailSent && (
+                                    <span className="text-muted-foreground" title="Email sent">
+                                      ✉
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">No managers assigned</span>
+                          )}
+                        </td>
                         <td className="p-3 text-muted-foreground max-w-xs truncate">
                           {leave.reason || '-'}
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex gap-2 justify-end">
+                            {hasPendingApprovals(leave) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="border-[#f58327] text-[#f58327] hover:bg-[#f58327] hover:text-white"
+                                onClick={() => handleSendEmail(leave._id)}
+                                disabled={sendingEmail === leave._id}
+                              >
+                                <Mail className="w-4 h-4 mr-1" />
+                                {sendingEmail === leave._id ? 'Sending...' : 'Send Email'}
+                              </Button>
+                            )}
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -273,6 +361,7 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                     <th className="text-left p-3 font-semibold">Duration</th>
                     <th className="text-left p-3 font-semibold">Dates</th>
                     <th className="text-left p-3 font-semibold">Reason</th>
+                    <th className="text-left p-3 font-semibold">Manager Approvals</th>
                     <th className="text-left p-3 font-semibold">Status</th>
                     <th className="text-left p-3 font-semibold">Submitted</th>
                   </tr>
@@ -309,6 +398,31 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                         </td>
                         <td className="p-3 text-muted-foreground max-w-xs truncate">
                           {leave.reason || '-'}
+                        </td>
+                        <td className="p-3">
+                          {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
+                            <div className="space-y-1 text-xs">
+                              {leave.managerApprovals.map((approval, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <span className="font-medium truncate max-w-[100px]" title={approval.managerName}>
+                                    {approval.managerName}
+                                  </span>
+                                  <Badge 
+                                    variant={
+                                      approval.status === 'Approved' ? 'default' : 
+                                      approval.status === 'Rejected' ? 'destructive' : 
+                                      'secondary'
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {approval.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
                         </td>
                         <td className="p-3">
                           <Badge 

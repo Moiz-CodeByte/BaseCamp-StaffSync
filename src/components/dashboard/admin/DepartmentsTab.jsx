@@ -20,6 +20,7 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
     hr: ''
   });
   const [newManager, setNewManager] = useState({ name: '', email: '' });
+  const [editingManagerIndex, setEditingManagerIndex] = useState(null);
 
   const resetForm = () => {
     setFormData({
@@ -28,6 +29,7 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
       hr: ''
     });
     setNewManager({ name: '', email: '' });
+    setEditingManagerIndex(null);
     setEditingDept(null);
     setShowForm(false);
   };
@@ -42,6 +44,16 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
     setShowForm(true);
   };
 
+  const startEditManager = (index) => {
+    setEditingManagerIndex(index);
+    setNewManager({ ...formData.reportingManagers[index] });
+  };
+
+  const cancelEditManager = () => {
+    setEditingManagerIndex(null);
+    setNewManager({ name: '', email: '' });
+  };
+
   const addManager = () => {
     if (!newManager.name.trim() || !newManager.email.trim()) {
       toast.error('Please enter both name and email');
@@ -51,10 +63,25 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
       toast.error('Please enter a valid email address');
       return;
     }
-    setFormData({
-      ...formData,
-      reportingManagers: [...formData.reportingManagers, { ...newManager }]
-    });
+
+    if (editingManagerIndex !== null) {
+      // Update existing manager
+      const updated = [...formData.reportingManagers];
+      updated[editingManagerIndex] = { ...newManager };
+      setFormData({
+        ...formData,
+        reportingManagers: updated
+      });
+      setEditingManagerIndex(null);
+      toast.success('Manager updated');
+    } else {
+      // Add new manager
+      setFormData({
+        ...formData,
+        reportingManagers: [...formData.reportingManagers, { ...newManager }]
+      });
+      toast.success('Manager added');
+    }
     setNewManager({ name: '', email: '' });
   };
 
@@ -63,6 +90,11 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
       ...formData,
       reportingManagers: formData.reportingManagers.filter((_, i) => i !== index)
     });
+    if (editingManagerIndex === index) {
+      setEditingManagerIndex(null);
+      setNewManager({ name: '', email: '' });
+    }
+    toast.success('Manager removed');
   };
 
   const handleSubmit = async (e) => {
@@ -158,11 +190,27 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
                 {formData.reportingManagers.length > 0 && (
                   <div className="space-y-2">
                     {formData.reportingManagers.map((manager, index) => (
-                      <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                      <div 
+                        key={index} 
+                        className={`flex items-center gap-2 p-3 rounded-lg ${
+                          editingManagerIndex === index 
+                            ? 'bg-primary/10 border-2 border-primary' 
+                            : 'bg-muted'
+                        }`}
+                      >
                         <div className="flex-1">
                           <p className="font-medium text-sm">{manager.name}</p>
                           <p className="text-xs text-muted-foreground">{manager.email}</p>
                         </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditManager(index)}
+                          disabled={editingManagerIndex !== null && editingManagerIndex !== index}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                         <Button
                           type="button"
                           size="sm"
@@ -176,7 +224,7 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
                   </div>
                 )}
 
-                {/* Add new manager form */}
+                {/* Add/Edit manager form */}
                 <div className="grid gap-2 md:grid-cols-2 p-3 border rounded-lg">
                   <Input
                     placeholder="Manager name"
@@ -189,15 +237,36 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
                     value={newManager.email}
                     onChange={(e) => setNewManager({ ...newManager, email: e.target.value })}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addManager}
-                    className="md:col-span-2"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Manager
-                  </Button>
+                  <div className="md:col-span-2 flex gap-2">
+                    {editingManagerIndex !== null && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={cancelEditManager}
+                        className="flex-1"
+                      >
+                        Cancel Edit
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant={editingManagerIndex !== null ? "default" : "outline"}
+                      onClick={addManager}
+                      className="flex-1"
+                    >
+                      {editingManagerIndex !== null ? (
+                        <>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Update Manager
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Manager
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
