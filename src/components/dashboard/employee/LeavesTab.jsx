@@ -1,4 +1,4 @@
-import { Trash2, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 
 export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leaves, deleteLeaveRequest, me }) {
   const [showForm, setShowForm] = useState(false);
+
+  // Calculate approved leave days
+  const approvedLeaveDays = useMemo(() => {
+    return leaves
+      .filter(l => l.status === 'Approved')
+      .reduce((total, leave) => {
+        const start = new Date(leave.startDate);
+        const end = new Date(leave.endDate);
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        return total + days;
+      }, 0);
+  }, [leaves]);
 
   // Calculate duration when dates are selected
   const duration = useMemo(() => {
@@ -22,8 +35,49 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     return 0;
   }, [leaveForm.startDate, leaveForm.endDate]);
 
+  // Calculate remaining leave balance
+  const remainingLeaves = useMemo(() => {
+    return (me?.leave_limit || 0) - approvedLeaveDays;
+  }, [me?.leave_limit, approvedLeaveDays]);
+
+  // Validation checks
+  const validationErrors = useMemo(() => {
+    const errors = [];
+    
+    if (leaveForm.startDate && leaveForm.endDate) {
+      const start = new Date(leaveForm.startDate);
+      const end = new Date(leaveForm.endDate);
+      
+      // Check if end date is less than start date
+      if (end < start) {
+        errors.push('End date cannot be earlier than start date');
+      }
+    }
+    
+    // Check if duration exceeds leave limit
+    if (duration > 0 && me?.leave_limit) {
+      if (duration > me.leave_limit) {
+        errors.push(`Duration (${duration} days) exceeds your leave limit (${me.leave_limit} days)`);
+      }
+      
+      // Check if approved leaves + new request exceeds leave limit
+      if (approvedLeaveDays + duration > me.leave_limit) {
+        errors.push(`Total leave days would exceed your limit. You have ${remainingLeaves} days remaining`);
+      }
+    }
+    
+    return errors;
+  }, [leaveForm.startDate, leaveForm.endDate, duration, me, approvedLeaveDays, remainingLeaves]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate before submission
+    if (validationErrors.length > 0) {
+      validationErrors.forEach(error => toast.error(error));
+      return;
+    }
+    
     await requestLeave(e);
     setShowForm(false);
   };
@@ -82,6 +136,23 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-base font-semibold">Remaining Balance</Label>
+                  <div className={`h-11 px-3 py-2 rounded-md border flex items-center ${
+                    remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                    remainingLeaves === 0 ? 'bg-orange-50 border-orange-200' : 
+                    'bg-green-50 border-green-200'
+                  }`}>
+                    <span className={`text-sm font-medium ${
+                      remainingLeaves < 0 ? 'text-destructive' : 
+                      remainingLeaves === 0 ? 'text-orange-600' : 
+                      'text-green-600'
+                    }`}>
+                      {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''} available
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="startDate" className="text-base font-semibold">Start Date *</Label>
                   <Input 
                     id="startDate" 
@@ -107,13 +178,41 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
 
                 {duration > 0 && (
                   <div className="md:col-span-2">
-                    <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className={`p-4 rounded-lg border ${
+                      validationErrors.length > 0 
+                        ? 'bg-destructive/10 border-destructive/20' 
+                        : 'bg-primary/10 border-primary/20'
+                    }`}>
                       <div className="flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary" />
-                        <span className="font-semibold text-primary">Duration:</span>
-                        <span className="text-lg font-bold text-primary">
+                        <Clock className={`w-5 h-5 ${
+                          validationErrors.length > 0 ? 'text-destructive' : 'text-primary'
+                        }`} />
+                        <span className={`font-semibold ${
+                          validationErrors.length > 0 ? 'text-destructive' : 'text-primary'
+                        }`}>Duration:</span>
+                        <span className={`text-lg font-bold ${
+                          validationErrors.length > 0 ? 'text-destructive' : 'text-primary'
+                        }`}>
                           {duration} day{duration !== 1 ? 's' : ''}
                         </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {validationErrors.length > 0 && (
+                  <div className="md:col-span-2">
+                    <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-destructive mb-2">Cannot Submit Leave Request:</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {validationErrors.map((error, index) => (
+                              <li key={index} className="text-sm text-destructive">{error}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -142,7 +241,11 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 >
                   Clear
                 </Button>
-                <Button type="submit" className="flex-1">
+                <Button 
+                  type="submit" 
+                  className="flex-1"
+                  disabled={validationErrors.length > 0}
+                >
                   Submit Leave Request
                 </Button>
               </div>
