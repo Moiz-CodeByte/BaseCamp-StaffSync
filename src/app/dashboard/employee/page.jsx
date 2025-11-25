@@ -13,6 +13,7 @@ import ProfileTab from '@/components/dashboard/employee/ProfileTab';
 export default function EmployeeDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [me, setMe] = useState(null);
   const [leaves, setLeaves] = useState([]);
   const [leaveForm, setLeaveForm] = useState({ type: 'Annual', startDate: '', endDate: '', reason: '' });
@@ -56,6 +57,7 @@ export default function EmployeeDashboard() {
         approvedLeaves: leaveList.filter(l => l.status === 'Approved').length,
         rejectedLeaves: leaveList.filter(l => l.status === 'Rejected').length,
       });
+      setIsLoadingStats(false);
     } catch (e) {
       console.error('Employee dashboard data fetch error:', e);
       if (retryCount < maxRetries) {
@@ -143,6 +145,7 @@ export default function EmployeeDashboard() {
             <OverviewTab 
               stats={stats}
               leaves={leaves}
+              isLoading={isLoadingStats}
             />
           )}
 

@@ -13,6 +13,7 @@ import HRProfileTab from '@/components/dashboard/hr/HRProfileTab';
 export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [pending, setPending] = useState([]);
   const [recentlyApproved, setRecentlyApproved] = useState([]);
   const [allRecentLeaves, setAllRecentLeaves] = useState([]);
@@ -74,6 +75,7 @@ export default function HRDashboard() {
               return date.setHours(0, 0, 0, 0) === today;
             }).length,
           });
+          setIsLoadingStats(false);
         }
       } catch (error) {
         if (!ignore) {
@@ -141,7 +143,7 @@ export default function HRDashboard() {
         
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
-            {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} />}
+            {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} isLoading={isLoadingStats} />}
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
             {activeTab === 'leaves' && <LeavesTab 
               leaves={pending}

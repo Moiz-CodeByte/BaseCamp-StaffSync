@@ -14,6 +14,7 @@ import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [hrUsers, setHrUsers] = useState([]);
@@ -129,6 +130,7 @@ export default function AdminDashboard() {
               return l.status === 'Approved' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
             }).length,
           });
+          setIsLoadingStats(false);
         }
       } catch (error) {
         if (!ignore) {
@@ -184,7 +186,7 @@ export default function AdminDashboard() {
         
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto">
-            {activeTab === 'overview' && <OverviewTab stats={stats} />}
+            {activeTab === 'overview' && <OverviewTab stats={stats} isLoading={isLoadingStats} />}
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
             {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
             {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}

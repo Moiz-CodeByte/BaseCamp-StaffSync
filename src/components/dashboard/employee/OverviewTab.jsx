@@ -4,32 +4,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-export default function OverviewTab({ stats, leaves }) {
+export default function OverviewTab({ stats, leaves, isLoading = false }) {
   const statCards = [
     { 
       label: 'Total Leave Days', 
-      value: stats.totalLeaveDays || 0, 
+      value: stats?.totalLeaveDays || 0, 
       icon: Calendar,
       color: 'text-blue-600 dark:text-blue-400',
       bg: 'bg-blue-100 dark:bg-blue-900/20'
     },
     { 
       label: 'Pending Requests', 
-      value: stats.pendingLeaves || 0, 
+      value: stats?.pendingLeaves || 0, 
       icon: Clock,
       color: 'text-yellow-600 dark:text-yellow-400',
       bg: 'bg-yellow-100 dark:bg-yellow-900/20'
     },
     { 
       label: 'Approved Leaves', 
-      value: stats.approvedLeaves || 0, 
+      value: stats?.approvedLeaves || 0, 
       icon: CheckCircle,
       color: 'text-green-600 dark:text-green-400',
       bg: 'bg-green-100 dark:bg-green-900/20'
     },
     { 
       label: 'Rejected Leaves', 
-      value: stats.rejectedLeaves || 0, 
+      value: stats?.rejectedLeaves || 0, 
       icon: XCircle,
       color: 'text-red-600 dark:text-red-400',
       bg: 'bg-red-100 dark:bg-red-900/20'
@@ -49,17 +49,25 @@ export default function OverviewTab({ stats, leaves }) {
         {statCards.map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <Card key={idx} className="hover:shadow-lg transition-shadow">
+            <Card key={idx} className={isLoading ? 'relative overflow-hidden' : ''}>
+              {isLoading && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent animate-shimmer" 
+                     style={{ backgroundSize: '200% 100%', animation: 'shimmer 2s infinite' }} />
+              )}
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.label}
                 </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bg}`}>
+                <div className={`p-2 rounded-lg ${stat.bg} ${isLoading ? 'opacity-50' : ''}`}>
                   <Icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stat.value}</div>
+                {isLoading ? (
+                  <div className="h-9 w-16 bg-muted rounded animate-pulse" />
+                ) : (
+                  <div className="text-3xl font-bold">{stat.value}</div>
+                )}
               </CardContent>
             </Card>
           );
