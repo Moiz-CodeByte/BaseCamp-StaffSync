@@ -19,22 +19,25 @@ export default function EmployeeDashboard() {
   const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
   const [stats, setStats] = useState({ totalLeaveDays: 0, pendingLeaves: 0, approvedLeaves: 0, rejectedLeaves: 0 });
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (retryCount = 0) => {
+    const maxRetries = 3;
     try {
       const [{ data: meData }, { data: leaveData }] = await Promise.all([
         api.get('/api/users/me'),
         api.get('/api/leaves/my'),
       ]);
       
-      setMe(meData.user);
-      setProfileForm({
-        name: meData.user.name || '',
-        email: meData.user.email || '',
-        currentPassword: '',
-        password: ''
-      });
+      if (meData?.user) {
+        setMe(meData.user);
+        setProfileForm({
+          name: meData.user.name || '',
+          email: meData.user.email || '',
+          currentPassword: '',
+          password: ''
+        });
+      }
       
-      const leaveList = leaveData.leaves || [];
+      const leaveList = Array.isArray(leaveData?.leaves) ? leaveData.leaves : [];
       setLeaves(leaveList);
       
       // Calculate total leave days (approved leaves)
@@ -54,7 +57,14 @@ export default function EmployeeDashboard() {
         rejectedLeaves: leaveList.filter(l => l.status === 'Rejected').length,
       });
     } catch (e) {
-      toast.error(e?.response?.data?.message || e.message);
+      console.error('Employee dashboard data fetch error:', e);
+      if (retryCount < maxRetries) {
+        setTimeout(() => {
+          fetchData(retryCount + 1);
+        }, 1000 * (retryCount + 1));
+      } else {
+        toast.error('Failed to load dashboard data. Please refresh the page.');
+      }
     }
   }, []);
 

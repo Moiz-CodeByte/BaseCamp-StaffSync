@@ -74,7 +74,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let ignore = false;
-    (async () => {
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const fetchData = async () => {
       try {
         const [
           { data: usersData }, 
@@ -91,11 +94,11 @@ export default function AdminDashboard() {
         ]);
 
         if (!ignore) {
-          const userList = usersData.users || [];
-          const deptList = departmentsData.departments || [];
-          const leavesList = leavesData.leaves || [];
-          const pastLeavesList = pastLeavesData.leaves || [];
-          const userData = meData.user;
+          const userList = Array.isArray(usersData?.users) ? usersData.users : [];
+          const deptList = Array.isArray(departmentsData?.departments) ? departmentsData.departments : [];
+          const leavesList = Array.isArray(leavesData?.leaves) ? leavesData.leaves : [];
+          const pastLeavesList = Array.isArray(pastLeavesData?.leaves) ? pastLeavesData.leaves : [];
+          const userData = meData?.user;
 
           // Filter HR users for department assignment
           const hrList = userList.filter(u => u.role === 'HR');
@@ -129,12 +132,23 @@ export default function AdminDashboard() {
         }
       } catch (error) {
         if (!ignore) {
-          setUsers([]);
-          setLeaves([]);
-          setPastLeaves([]);
+          console.error('Admin dashboard data fetch error:', error);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            setTimeout(() => {
+              if (!ignore) fetchData();
+            }, 1000 * retryCount);
+          } else {
+            setUsers([]);
+            setLeaves([]);
+            setPastLeaves([]);
+            toast.error('Failed to load dashboard data. Please refresh the page.');
+          }
         }
       }
-    })();
+    };
+    
+    fetchData();
     return () => { ignore = true; };
   }, []);
 

@@ -29,7 +29,10 @@ export default function HRDashboard() {
 
   useEffect(() => {
     let ignore = false;
-    (async () => {
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const fetchData = async () => {
       try {
         const [{ data: leaves }, { data: recentData }, { data: allRecentData }, { data: usersData }, { data: departmentsData }, { data: meData }] = await Promise.all([
           api.get('/api/leaves/manage'),
@@ -40,12 +43,12 @@ export default function HRDashboard() {
           api.get('/api/users/me'),
         ]);
         if (!ignore) {
-          const pendingList = leaves.leaves || [];
-          const recentList = recentData.leaves || [];
-          const allRecentList = allRecentData.leaves || [];
-          const usersList = usersData.users || [];
-          const deptList = departmentsData.departments || [];
-          const userData = meData.user;
+          const pendingList = Array.isArray(leaves?.leaves) ? leaves.leaves : [];
+          const recentList = Array.isArray(recentData?.leaves) ? recentData.leaves : [];
+          const allRecentList = Array.isArray(allRecentData?.leaves) ? allRecentData.leaves : [];
+          const usersList = Array.isArray(usersData?.users) ? usersData.users : [];
+          const deptList = Array.isArray(departmentsData?.departments) ? departmentsData.departments : [];
+          const userData = meData?.user;
           
           setPending(pendingList);
           setRecentlyApproved(recentList);
@@ -72,10 +75,27 @@ export default function HRDashboard() {
             }).length,
           });
         }
-      } catch {
-        if (!ignore) { setPending([]); setRecentlyApproved([]); setAllRecentLeaves([]); setUsers([]); setDepartments([]); }
+      } catch (error) {
+        if (!ignore) {
+          console.error('HR dashboard data fetch error:', error);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            setTimeout(() => {
+              if (!ignore) fetchData();
+            }, 1000 * retryCount);
+          } else {
+            setPending([]); 
+            setRecentlyApproved([]); 
+            setAllRecentLeaves([]); 
+            setUsers([]); 
+            setDepartments([]);
+            toast.error('Failed to load dashboard data. Please refresh the page.');
+          }
+        }
       }
-    })();
+    };
+    
+    fetchData();
     return () => { ignore = true; };
   }, []);
 
