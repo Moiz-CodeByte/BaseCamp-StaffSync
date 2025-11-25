@@ -8,6 +8,7 @@ import HRHeader from '@/components/dashboard/hr/HRHeader';
 import OverviewTab from '@/components/dashboard/hr/OverviewTab';
 import LeavesTab from '@/components/dashboard/hr/LeavesTab';
 import UsersTab from '@/components/dashboard/hr/UsersTab';
+import DepartmentsTab from '@/components/dashboard/admin/DepartmentsTab';
 import HRProfileTab from '@/components/dashboard/hr/HRProfileTab';
 
 export default function HRDashboard() {
@@ -19,6 +20,7 @@ export default function HRDashboard() {
   const [allRecentLeaves, setAllRecentLeaves] = useState([]);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [hrUsers, setHrUsers] = useState([]);
   const [stats, setStats] = useState({ 
     pendingLeaves: 0,
     totalEmployees: 0,
@@ -50,12 +52,14 @@ export default function HRDashboard() {
           const usersList = Array.isArray(usersData?.users) ? usersData.users : [];
           const deptList = Array.isArray(departmentsData?.departments) ? departmentsData.departments : [];
           const userData = meData?.user;
+          const hrList = usersList.filter(u => u.role === 'HR');
           
           setPending(pendingList);
           setRecentlyApproved(recentList);
           setAllRecentLeaves(allRecentList);
           setUsers(usersList);
           setDepartments(deptList);
+          setHrUsers(hrList);
           setMe(userData);
           setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
           
@@ -121,6 +125,15 @@ export default function HRDashboard() {
     }
   };
 
+  const loadDepartments = async () => {
+    try {
+      const { data } = await api.get('/api/departments');
+      setDepartments(data.departments || []);
+    } catch (error) {
+      toast.error('Failed to load departments');
+    }
+  };
+
   const updateProfile = async (e) => {
     e.preventDefault();
     try {
@@ -145,6 +158,7 @@ export default function HRDashboard() {
           <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
             {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} isLoading={isLoadingStats} />}
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
+            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
             {activeTab === 'leaves' && <LeavesTab 
               leaves={pending}
               allRecentLeaves={allRecentLeaves}

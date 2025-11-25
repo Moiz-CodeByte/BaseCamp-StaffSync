@@ -41,8 +41,8 @@ export async function GET(req, { params }) {
 export async function PUT(req, { params }) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'Admin') {
-    return NextResponse.json({ message: 'Forbidden - Only Admin can update departments' }, { status: 403 });
+  if (!['Admin', 'HR'].includes(user.role)) {
+    return NextResponse.json({ message: 'Forbidden - Only Admin and HR can update departments' }, { status: 403 });
   }
 
   await connectDB();
@@ -156,8 +156,8 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'Admin') {
-    return NextResponse.json({ message: 'Forbidden - Only Admin can delete departments' }, { status: 403 });
+  if (!['Admin', 'HR'].includes(user.role)) {
+    return NextResponse.json({ message: 'Forbidden - Only Admin and HR can delete departments' }, { status: 403 });
   }
 
   await connectDB();

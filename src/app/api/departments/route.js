@@ -40,8 +40,8 @@ export async function GET(req) {
 export async function POST(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'Admin') {
-    return NextResponse.json({ message: 'Forbidden - Only Admin can create departments' }, { status: 403 });
+  if (!['Admin', 'HR'].includes(user.role)) {
+    return NextResponse.json({ message: 'Forbidden - Only Admin and HR can create departments' }, { status: 403 });
   }
 
   await connectDB();
