@@ -40,42 +40,67 @@ export async function POST(req, { params }) {
     }
 
     // Initialize managerApprovals if not exists
-    if (!leave.managerApprovals) {
+    if (!leave.managerApprovals || leave.managerApprovals.length === 0) {
+      console.log('📋 Initializing manager approvals for leave:', leave._id);
       leave.managerApprovals = [];
+      
+      // Create approval entries for each manager
+      leave.managerApprovals = managersToNotify.map(manager => ({
+        managerEmail: manager.email,
+        managerName: manager.name,
+        status: 'Pending',
+        emailSent: false,
+        emailSentAt: null
+      }));
+      
+      await leave.save();
+      console.log('✅ Manager approvals initialized:', leave.managerApprovals);
     }
 
-    // Create approval entries for each manager
-    leave.managerApprovals = managersToNotify.map(manager => ({
-      managerEmail: manager.email,
-      managerName: manager.name,
-      status: 'Pending',
-      emailSent: false,
-      emailSentAt: null
-    }));
+    console.log('📊 Current manager approvals:', leave.managerApprovals);
 
-    await leave.save();
+    // Filter managers who have Pending status (send email regardless of previous emailSent status)
+    const managersNeedingEmail = leave.managerApprovals.filter(
+      approval => approval.status === 'Pending'
+    );
 
-    // Send approval emails to all reporting managers with 3 second gap
+    console.log('🔍 Managers needing email (with Pending status):', managersNeedingEmail);
+
+    if (managersNeedingEmail.length === 0) {
+      console.log('⚠️ No managers need email notification');
+      return NextResponse.json({ 
+        message: 'No pending managers need email notification',
+        managerApprovals: leave.managerApprovals
+      });
+    }
+
+    // Send approval emails only to managers with pending status who haven't received email
     let emailsSentCount = 0;
-    for (let i = 0; i < managersToNotify.length; i++) {
-      const manager = managersToNotify[i];
+    console.log(`📨 Starting to send emails to ${managersNeedingEmail.length} manager(s)...`);
+    
+    for (let i = 0; i < managersNeedingEmail.length; i++) {
+      const approvalEntry = managersNeedingEmail[i];
+      console.log(`📧 [${i + 1}/${managersNeedingEmail.length}] Sending email to: ${approvalEntry.managerEmail}`);
       
       try {
         // Add 3 second delay between emails (except for the first one)
         if (i > 0) {
+          console.log(`⏳ Waiting 3 seconds before next email...`);
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
 
         const emailSent = await sendLeaveApprovalEmail({
-          managerEmail: manager.email,
-          managerName: manager.name,
+          managerEmail: approvalEntry.managerEmail,
+          managerName: approvalEntry.managerName,
           leave: leave,
           employee: userWithDept
         });
 
+        console.log(`${emailSent ? '✅' : '❌'} Email ${emailSent ? 'sent' : 'failed'} to ${approvalEntry.managerEmail}`);
+
         // Update the approval entry to mark email as sent
         const approvalIndex = leave.managerApprovals.findIndex(
-          a => a.managerEmail === manager.email
+          a => a.managerEmail === approvalEntry.managerEmail
         );
         if (approvalIndex !== -1) {
           leave.managerApprovals[approvalIndex].emailSent = emailSent;
@@ -87,12 +112,14 @@ export async function POST(req, { params }) {
 
         await leave.save();
       } catch (error) {
-        console.error(`Failed to send email to ${manager.email}:`, error);
+        console.error(`❌ Failed to send email to ${approvalEntry.managerEmail}:`, error);
       }
     }
+    
+    console.log(`✅ Email sending complete: ${emailsSentCount}/${managersNeedingEmail.length} sent successfully`);
 
     return NextResponse.json({ 
-      message: `Approval emails sent to ${emailsSentCount} of ${managersToNotify.length} manager(s)`,
+      message: `Approval emails sent to ${emailsSentCount} of ${managersNeedingEmail.length} manager(s) with pending status`,
       managerApprovals: leave.managerApprovals
     });
 
