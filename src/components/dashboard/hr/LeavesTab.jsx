@@ -5,13 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import HRLeaveRequestForm from './HRLeaveRequestForm';
-import { Mail } from 'lucide-react';
+import { Mail, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   const [myLeaves, setMyLeaves] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(null);
+  const [pastLeaves, setPastLeaves] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('All');
 
   const loadMyLeaves = async () => {
     try {
@@ -26,13 +28,21 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.get('/api/leaves/my');
+        const [myLeavesData, pastLeavesData] = await Promise.all([
+          api.get('/api/leaves/my'),
+          api.get('/api/leaves/all-recent')
+        ]);
         if (!cancelled) {
-          setMyLeaves(data.leaves || []);
+          setMyLeaves(myLeavesData.data.leaves || []);
+          // Filter out HR's own leaves from past leaves
+          const filteredPastLeaves = (pastLeavesData.data.leaves || []).filter(
+            leave => leave.status !== 'Pending' && leave.user?.role !== 'HR'
+          );
+          setPastLeaves(filteredPastLeaves);
         }
       } catch (error) {
         if (!cancelled) {
-          console.error('Failed to load my leaves:', error);
+          console.error('Failed to load leaves:', error);
         }
       }
     })();
@@ -70,18 +80,26 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
       </div>
 
       {/* My Leave Requests Section */}
-      <div className="rounded-lg border bg-card">
-        <div className="p-4 border-b flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold">My Leave Requests</h3>
-            <p className="text-xs text-muted-foreground mt-1">Your personal leave requests</p>
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 dark:from-cyan-950 dark:to-sky-950 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-cyan-200 dark:bg-cyan-800 flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-cyan-700 dark:text-cyan-200" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-cyan-900 dark:text-cyan-100 text-lg">My Leave Requests</h3>
+                <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1">Your personal leave requests ({myLeaves.length})</p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => setShowForm(!showForm)}
+              variant="secondary"
+              size="sm"
+            >
+              {showForm ? 'Cancel' : 'Request Leave'}
+            </Button>
           </div>
-          <Button 
-            onClick={() => setShowForm(!showForm)}
-            size="sm"
-          >
-            {showForm ? 'Cancel' : 'Request Leave'}
-          </Button>
         </div>
         
         <div className="p-4">
@@ -89,331 +107,451 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
             <div className="mb-6">
               <HRLeaveRequestForm 
                 me={me} 
+                myLeaves={myLeaves}
                 onSuccess={handleFormSuccess}
               />
             </div>
           )}
 
           {myLeaves.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No leave requests yet</p>
-              <p className="text-sm mt-2">Click &ldquo;Request Leave&rdquo; to submit a new request</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-cyan-600" />
+              </div>
+              <p className="font-medium">No leave requests yet</p>
+              <p className="text-sm mt-2">Click &ldquo;Request Leave&rdquo; to submit your first request</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-semibold">Type</th>
-                    <th className="text-left p-3 font-semibold">Duration</th>
-                    <th className="text-left p-3 font-semibold">Dates</th>
-                    <th className="text-left p-3 font-semibold">Reason</th>
-                    <th className="text-left p-3 font-semibold">Manager Approvals</th>
-                    <th className="text-left p-3 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {myLeaves.map(leave => {
-                    const startDate = new Date(leave.startDate);
-                    const endDate = new Date(leave.endDate);
-                    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                    
-                    return (
-                      <tr key={leave._id} className="border-b hover:bg-muted/50">
-                        <td className="p-3">
-                          <Badge variant="outline">{leave.type}</Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className="font-medium">{days} day{days !== 1 ? 's' : ''}</span>
-                        </td>
-                        <td className="p-3 text-muted-foreground">
-                          <div className="text-xs">
-                            {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            <div className="grid gap-4">
+              {myLeaves.map(leave => {
+                const startDate = new Date(leave.startDate);
+                const endDate = new Date(leave.endDate);
+                const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                
+                return (
+                  <div 
+                    key={leave._id} 
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold">
+                          {me?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'ME'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="font-medium">
+                              {leave.type}
+                            </Badge>
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {days} day{days !== 1 ? 's' : ''}
+                            </span>
                           </div>
-                          <div className="text-xs">to</div>
-                          <div className="text-xs">
-                            {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </div>
-                        </td>
-                        <td className="p-3 text-muted-foreground max-w-xs truncate">
-                          {leave.reason || '-'}
-                        </td>
-                        <td className="p-3">
-                          {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                            <div className="space-y-1 text-xs">
-                              {leave.managerApprovals.map((approval, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <span className="font-medium truncate max-w-[100px]" title={approval.managerName}>
-                                    {approval.managerName}
-                                  </span>
-                                  <Badge 
-                                    variant={
-                                      approval.status === 'Approved' ? 'default' : 
-                                      approval.status === 'Rejected' ? 'destructive' : 
-                                      'secondary'
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {approval.status}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <Badge 
-                            variant={
-                              leave.status === 'Approved' ? 'default' : 
-                              leave.status === 'Rejected' ? 'destructive' : 
-                              'secondary'
-                            }
-                          >
+                          <Badge variant={
+                            leave.status === 'Approved' ? 'default' :
+                            leave.status === 'Rejected' ? 'destructive' :
+                            'secondary'
+                          }>
                             {leave.status}
                           </Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dates</p>
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            From: {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                          <div className="font-medium">
+                            To: {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {leave.reason && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reason</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {leave.reason}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Manager Approvals</p>
+                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
+                          <div className="space-y-2">
+                            {leave.managerApprovals.map((approval, idx) => (
+                              <div 
+                                key={idx} 
+                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                              >
+                                <span className="text-sm font-medium">{approval.managerName}</span>
+                                <Badge 
+                                  variant={
+                                    approval.status === 'Approved' ? 'default' :
+                                    approval.status === 'Rejected' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {approval.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No managers assigned</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
       {/* Employee Leave Requests Section */}
-      <div className="rounded-lg border bg-card">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold">Employee Leave Requests ({leaves.length})</h3>
-          <p className="text-xs text-muted-foreground mt-1">Pending requests from your team</p>
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+          <h3 className="text-lg font-bold">Employee Leave Requests ({leaves.length})</h3>
+          <p className="text-sm text-muted-foreground mt-1">Pending requests from your team</p>
         </div>
         
-        <div className="p-4">
+        <div className="p-6">
           {leaves.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No pending leave requests</p>
+            <div className="text-center py-16 text-muted-foreground">
+              <div className="mx-auto w-16 h-16 mb-4 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-lg font-medium">No pending leave requests</p>
               <p className="text-sm mt-2">All leave requests have been processed</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-semibold">Employee</th>
-                    <th className="text-left p-3 font-semibold">Type</th>
-                    <th className="text-left p-3 font-semibold">Duration</th>
-                    <th className="text-left p-3 font-semibold">Dates</th>
-                    <th className="text-left p-3 font-semibold">Leave Stats</th>
-                    <th className="text-left p-3 font-semibold">Manager Approvals</th>
-                    <th className="text-left p-3 font-semibold">Reason</th>
-                    <th className="text-right p-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaves.map(leave => {
-                    const startDate = new Date(leave.startDate);
-                    const endDate = new Date(leave.endDate);
-                    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                    const stats = leave.leaveStats || {};
-                    
-                    return (
-                      <tr key={leave._id} className="border-b hover:bg-muted/50">
-                        <td className="p-3">
-                          <div className="font-medium">{leave.user?.name}</div>
-                          <div className="text-xs text-muted-foreground">{leave.user?.email}</div>
-                        </td>
-                        <td className="p-3">
-                          <Badge variant="outline">{leave.type}</Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className="font-medium">{days} day{days !== 1 ? 's' : ''}</span>
-                        </td>
-                        <td className="p-3 text-muted-foreground">
-                          <div className="text-xs">
-                            {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            <div className="space-y-4">
+              {leaves.map(leave => {
+                const startDate = new Date(leave.startDate);
+                const endDate = new Date(leave.endDate);
+                const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const stats = leave.leaveStats || {};
+                
+                return (
+                  <div key={leave._id} className="border rounded-lg p-5 hover:shadow-md transition-shadow bg-card">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                            {leave.user?.name?.charAt(0).toUpperCase()}
                           </div>
-                          <div className="text-xs">to</div>
-                          <div className="text-xs">
-                            {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <div>
+                            <h4 className="font-semibold text-base">{leave.user?.name}</h4>
+                            <p className="text-xs text-muted-foreground">{leave.user?.email}</p>
                           </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="space-y-1 text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Limit:</span>
-                              <span className="font-medium">{stats.leaveLimit || 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Remaining:</span>
-                              <span className={`font-medium ${stats.remaining <= 2 ? 'text-red-600' : 'text-green-600'}`}>
-                                {stats.remaining !== undefined ? stats.remaining : 'N/A'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Yearly:</span>
-                              <span className="font-medium">{stats.yearlyTaken !== undefined ? stats.yearlyTaken : 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">This Month:</span>
-                              <span className="font-medium">{stats.currentMonth !== undefined ? stats.currentMonth : 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Last Month:</span>
-                              <span className="font-medium">{stats.previousMonth !== undefined ? stats.previousMonth : 'N/A'}</span>
-                            </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {hasPendingApprovals(leave) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-[#f58327] text-[#f58327] hover:bg-[#f58327] hover:text-white"
+                            onClick={() => handleSendEmail(leave._id)}
+                            disabled={sendingEmail === leave._id}
+                          >
+                            <Mail className="w-4 h-4 mr-1" />
+                            {sendingEmail === leave._id ? 'Sending...' : 'Send Email'}
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="hover:bg-destructive hover:text-white hover:border-destructive"
+                          onClick={() => onAction(leave._id, 'reject')}
+                        >
+                          Reject
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 text-white hover:bg-green-700" 
+                          onClick={() => onAction(leave._id, 'approve')}
+                        >
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Content Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Type & Duration */}
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Type</p>
+                          <Badge variant="outline" className="text-sm">{leave.type}</Badge>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Duration</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-primary">{days}</span>
+                            <span className="text-sm text-muted-foreground">day{days !== 1 ? 's' : ''}</span>
                           </div>
-                        </td>
-                        <td className="p-3">
-                          {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                            <div className="space-y-1 text-xs">
-                              {leave.managerApprovals.map((approval, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <span className="font-medium truncate max-w-[120px]" title={approval.managerName}>
+                        </div>
+                      </div>
+
+                      {/* Dates */}
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Dates</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground">From:</span>
+                            <span className="font-medium">
+                              {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground">To:</span>
+                            <span className="font-medium">
+                              {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Leave Stats */}
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Leave Stats</p>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Limit:</span>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.leaveLimit || 10}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Remaining:</span>
+                            <span className={`font-semibold ${
+                              (stats.remaining !== undefined ? stats.remaining : 10) <= 2 
+                                ? 'text-red-600 dark:text-red-400' 
+                                : 'text-green-600 dark:text-green-400'
+                            }`}>
+                              {stats.remaining !== undefined ? stats.remaining : 10}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Yearly:</span>
+                            <span className="font-medium">{stats.yearlyTaken !== undefined ? stats.yearlyTaken : 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">This Month:</span>
+                            <span className="font-medium">{stats.currentMonth !== undefined ? stats.currentMonth : 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Last Month:</span>
+                            <span className="font-medium">{stats.previousMonth !== undefined ? stats.previousMonth : 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Manager Approvals */}
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Manager Approvals</p>
+                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
+                          <div className="space-y-2">
+                            {leave.managerApprovals.map((approval, idx) => (
+                              <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium truncate" title={approval.managerName}>
                                     {approval.managerName}
-                                  </span>
-                                  <Badge 
-                                    variant={
-                                      approval.status === 'Approved' ? 'default' : 
-                                      approval.status === 'Rejected' ? 'destructive' : 
-                                      'secondary'
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {approval.status}
-                                  </Badge>
+                                  </p>
                                   {approval.emailSent && (
-                                    <span className="text-muted-foreground" title="Email sent">
-                                      ✉
-                                    </span>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      Sent
+                                    </p>
                                   )}
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">No managers assigned</span>
-                          )}
-                        </td>
-                        <td className="p-3 text-muted-foreground max-w-xs truncate">
-                          {leave.reason || '-'}
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="flex gap-2 justify-end">
-                            {hasPendingApprovals(leave) && (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="border-[#f58327] text-[#f58327] hover:bg-[#f58327] hover:text-white"
-                                onClick={() => handleSendEmail(leave._id)}
-                                disabled={sendingEmail === leave._id}
-                              >
-                                <Mail className="w-4 h-4 mr-1" />
-                                {sendingEmail === leave._id ? 'Sending...' : 'Send Email'}
-                              </Button>
-                            )}
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => onAction(leave._id, 'reject')}
-                            >
-                              Reject
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              className="bg-green-600 text-white hover:bg-green-700" 
-                              onClick={() => onAction(leave._id, 'approve')}
-                            >
-                              Approve
-                            </Button>
+                                <Badge 
+                                  variant={
+                                    approval.status === 'Approved' ? 'default' : 
+                                    approval.status === 'Rejected' ? 'destructive' : 
+                                    'secondary'
+                                  }
+                                  className="text-xs shrink-0"
+                                >
+                                  {approval.status}
+                                </Badge>
+                              </div>
+                            ))}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        ) : (
+                          <div className="text-xs text-muted-foreground italic p-2 bg-muted/30 rounded">
+                            No managers assigned
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Reason */}
+                    {leave.reason && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs text-muted-foreground mb-1">Reason</p>
+                        <p className="text-sm">{leave.reason}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* Recently Submitted Leaves Section */}
-      <div className="rounded-lg border bg-card">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold">Recently Submitted Leave Requests</h3>
-          <p className="text-xs text-muted-foreground mt-1">Last 15 leave requests from all employees (all statuses)</p>
+      {/* Past Leave Requests Section */}
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-6 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold">Past Leave Requests ({pastLeaves?.length || 0})</h3>
+              <p className="text-sm text-muted-foreground mt-1">All processed employee leave requests (Approved/Rejected)</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant={statusFilter === 'All' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setStatusFilter('All')}
+              >
+                All
+              </Button>
+              <Button 
+                variant={statusFilter === 'Approved' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setStatusFilter('Approved')}
+              >
+                Approved
+              </Button>
+              <Button 
+                variant={statusFilter === 'Rejected' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setStatusFilter('Rejected')}
+              >
+                Rejected
+              </Button>
+            </div>
+          </div>
         </div>
         
-        <div className="p-4">
-          {!allRecentLeaves || allRecentLeaves.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No recent leave requests</p>
+        <div className="p-6">
+          {(!pastLeaves || pastLeaves.length === 0) ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <div className="mx-auto w-16 h-16 mb-4 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <svg className="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-lg font-medium">No past leave requests</p>
+              <p className="text-sm mt-2">Processed leave requests will appear here</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-semibold">Employee</th>
-                    <th className="text-left p-3 font-semibold">Type</th>
-                    <th className="text-left p-3 font-semibold">Duration</th>
-                    <th className="text-left p-3 font-semibold">Dates</th>
-                    <th className="text-left p-3 font-semibold">Reason</th>
-                    <th className="text-left p-3 font-semibold">Manager Approvals</th>
-                    <th className="text-left p-3 font-semibold">Status</th>
-                    <th className="text-left p-3 font-semibold">Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allRecentLeaves.map(leave => {
-                    const startDate = new Date(leave.startDate);
-                    const endDate = new Date(leave.endDate);
-                    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                    const submittedDate = new Date(leave.createdAt);
-                    
-                    return (
-                      <tr key={leave._id} className="border-b hover:bg-muted/50">
-                        <td className="p-3">
-                          <div className="font-medium">{leave.user?.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {leave.user?.department || 'N/A'} • {leave.user?.role || 'Employee'}
+            <div className="space-y-4">
+              {pastLeaves
+                .filter(leave => statusFilter === 'All' || leave.status === statusFilter)
+                .map(leave => {
+                  const startDate = new Date(leave.startDate);
+                  const endDate = new Date(leave.endDate);
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  const processedDate = leave.updatedAt ? new Date(leave.updatedAt) : null;
+                  
+                  return (
+                    <div key={leave._id} className="border rounded-lg p-5 hover:shadow-md transition-shadow bg-card">
+                      {/* Header Row */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold">
+                              {leave.user?.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-base">{leave.user?.name}</h4>
+                                <Badge variant={leave.status === 'Approved' ? 'default' : 'destructive'}>
+                                  {leave.status}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{leave.user?.email}</p>
+                            </div>
                           </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge variant="outline">{leave.type}</Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className="font-medium">{days} day{days !== 1 ? 's' : ''}</span>
-                        </td>
-                        <td className="p-3 text-muted-foreground">
-                          <div className="text-xs">
-                            {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => onAction(leave._id, leave.status === 'Approved' ? 'reject' : 'approve')}
+                          >
+                            {leave.status === 'Approved' ? 'Mark Rejected' : 'Mark Approved'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Content Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {/* Type & Duration */}
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Type</p>
+                            <Badge variant="outline" className="text-sm">{leave.type}</Badge>
                           </div>
-                          <div className="text-xs">to</div>
-                          <div className="text-xs">
-                            {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Duration</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-bold text-primary">{days}</span>
+                              <span className="text-sm text-muted-foreground">day{days !== 1 ? 's' : ''}</span>
+                            </div>
                           </div>
-                        </td>
-                        <td className="p-3 text-muted-foreground max-w-xs truncate">
-                          {leave.reason || '-'}
-                        </td>
-                        <td className="p-3">
+                        </div>
+
+                        {/* Dates */}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Dates</p>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-muted-foreground">From:</span>
+                              <span className="font-medium">
+                                {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-muted-foreground">To:</span>
+                              <span className="font-medium">
+                                {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Manager Approvals */}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Manager Approvals</p>
                           {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                            <div className="space-y-1 text-xs">
+                            <div className="space-y-2">
                               {leave.managerApprovals.map((approval, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <span className="font-medium truncate max-w-[100px]" title={approval.managerName}>
-                                    {approval.managerName}
-                                  </span>
+                                <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate" title={approval.managerName}>
+                                      {approval.managerName}
+                                    </p>
+                                  </div>
                                   <Badge 
                                     variant={
                                       approval.status === 'Approved' ? 'default' : 
                                       approval.status === 'Rejected' ? 'destructive' : 
                                       'secondary'
                                     }
-                                    className="text-xs"
+                                    className="text-xs shrink-0"
                                   >
                                     {approval.status}
                                   </Badge>
@@ -421,34 +559,40 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                               ))}
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
+                            <div className="text-xs text-muted-foreground italic p-2 bg-muted/30 rounded">
+                              No managers assigned
+                            </div>
                           )}
-                        </td>
-                        <td className="p-3">
-                          <Badge 
-                            variant={
-                              leave.status === 'Approved' ? 'default' : 
-                              leave.status === 'Rejected' ? 'destructive' : 
-                              'secondary'
-                            }
-                          >
-                            {leave.status}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-xs text-muted-foreground">
-                          {submittedDate.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+
+                        {/* Processing Info */}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Processing Info</p>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-muted-foreground">Processed:</span>
+                              <span className="font-medium">
+                                {processedDate ? processedDate.toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                }) : '-'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reason */}
+                      {leave.reason && (
+                        <div className="mt-4 pt-4 border-t">
+                          <p className="text-xs text-muted-foreground mb-1">Reason</p>
+                          <p className="text-sm">{leave.reason}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           )}
         </div>

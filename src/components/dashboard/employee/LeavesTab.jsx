@@ -43,6 +43,17 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
   // Validation checks
   const validationErrors = useMemo(() => {
     const errors = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (leaveForm.startDate) {
+      const start = new Date(leaveForm.startDate);
+      
+      // Check if start date is before today
+      if (start < today) {
+        errors.push('Start date cannot be in the past');
+      }
+    }
     
     if (leaveForm.startDate && leaveForm.endDate) {
       const start = new Date(leaveForm.startDate);
@@ -254,58 +265,54 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>My Leave Requests ({leaves.length})</CardTitle>
-          <CardDescription>View and manage all your leave requests</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 dark:from-cyan-950 dark:to-sky-950 p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-cyan-200 dark:bg-cyan-800 flex items-center justify-center">
+              <CalendarIcon className="w-6 h-6 text-cyan-700 dark:text-cyan-200" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-cyan-900 dark:text-cyan-100 text-lg">My Leave Requests</h3>
+              <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1">View and manage all your leave requests ({leaves.length})</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
           {leaves.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center mx-auto mb-4">
+                <CalendarIcon className="w-8 h-8 text-cyan-600" />
+              </div>
               <p className="font-medium">No leave requests yet</p>
               <p className="text-sm mt-2">Click &ldquo;Request Leave&rdquo; to submit your first request</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-semibold">Type</th>
-                    <th className="text-left p-3 font-semibold">Duration</th>
-                    <th className="text-left p-3 font-semibold">Dates</th>
-                    <th className="text-left p-3 font-semibold">Reason</th>
-                    <th className="text-left p-3 font-semibold">Status</th>
-                    <th className="text-right p-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaves.map((leave) => {
-                    const startDate = new Date(leave.startDate);
-                    const endDate = new Date(leave.endDate);
-                    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                    
-                    return (
-                      <tr key={leave._id} className="border-b hover:bg-muted/50">
-                        <td className="p-3">
-                          <Badge variant="outline">{leave.type}</Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className="font-medium">{days} day{days !== 1 ? 's' : ''}</span>
-                        </td>
-                        <td className="p-3 text-muted-foreground">
-                          <div className="text-xs">
-                            {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            <div className="grid gap-4">
+              {leaves.map((leave) => {
+                const startDate = new Date(leave.startDate);
+                const endDate = new Date(leave.endDate);
+                const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                
+                return (
+                  <div 
+                    key={leave._id} 
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold">
+                          {me?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'ME'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="font-medium">
+                              {leave.type}
+                            </Badge>
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {days} day{days !== 1 ? 's' : ''}
+                            </span>
                           </div>
-                          <div className="text-xs">to</div>
-                          <div className="text-xs">
-                            {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </div>
-                        </td>
-                        <td className="p-3 text-muted-foreground max-w-xs truncate">
-                          {leave.reason || '-'}
-                        </td>
-                        <td className="p-3">
                           <Badge variant={
                             leave.status === 'Approved' ? 'default' :
                             leave.status === 'Rejected' ? 'destructive' :
@@ -313,28 +320,78 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                           }>
                             {leave.status}
                           </Badge>
-                        </td>
-                        <td className="p-3 text-right">
-                          {leave.status === 'Pending' && (
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              onClick={() => deleteLeaveRequest(leave._id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Cancel
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+
+                      {leave.status === 'Pending' && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => deleteLeaveRequest(leave._id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dates</p>
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            From: {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                          <div className="font-medium">
+                            To: {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {leave.reason && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reason</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {leave.reason}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Manager Approvals</p>
+                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
+                          <div className="space-y-2">
+                            {leave.managerApprovals.map((approval, idx) => (
+                              <div 
+                                key={idx} 
+                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                              >
+                                <span className="text-sm font-medium">{approval.managerName}</span>
+                                <Badge 
+                                  variant={
+                                    approval.status === 'Approved' ? 'default' :
+                                    approval.status === 'Rejected' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {approval.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No managers assigned</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

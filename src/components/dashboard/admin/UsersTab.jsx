@@ -24,22 +24,30 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        {/* <div>
-          <h2 className="text-2xl font-bold">User Management</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage all system users and their roles
-          </p>
-        </div> */}
-        <Button onClick={() => setShowAddUser(!showAddUser)}>
-          {showAddUser ? 'Cancel' : '+ Add User'}
-        </Button>
+      {/* Header Section */}
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-6 border-b bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold">User Management ({users.length})</h3>
+              <p className="text-sm text-muted-foreground mt-1">Manage all system users and their roles</p>
+            </div>
+            <Button onClick={() => setShowAddUser(!showAddUser)}>
+              {showAddUser ? 'Cancel' : '+ Add User'}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Add User Form */}
       {showAddUser && (
-        <div className="rounded-lg border p-6 bg-card">
-          <h3 className="text-lg font-semibold mb-4">Add New User</h3>
+        <div className="rounded-lg border p-6 bg-card shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-primary text-lg">+</span>
+            </div>
+            Add New User
+          </h3>
           <form onSubmit={addUser} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -103,8 +111,10 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
       )}
 
       {/* User Management Table */}
-      <div className="rounded-lg border bg-card p-6">
-        <UserManagementTable users={users} departments={departments} onUpdate={onUpdate} isAdmin={true} />
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-6">
+          <UserManagementTable users={users} departments={departments} onUpdate={onUpdate} isAdmin={true} />
+        </div>
       </div>
     </div>
   );

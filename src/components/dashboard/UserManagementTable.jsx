@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search, Trash2 } from 'lucide-react';
+import { Edit, Save, X, Search, Trash2, UserPlus, UserMinus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -183,157 +183,149 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
         Showing {filteredUsers.length} of {users.length} employees
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left p-2">Name</th>
-            <th className="text-left p-2">Email</th>
-            <th className="text-left p-2">Department</th>
-            <th className="text-left p-2">Role</th>
-            <th className="text-left p-2">Reporting Managers</th>
-            {/* <th className="text-right p-2">Basic Salary</th>
-            <th className="text-right p-2">Allowance</th> */}
-            <th className="text-right p-2">Leave Limit</th>
-            <th className="text-right p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+      {/* Empty State or Cards */}
+      {filteredUsers.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-muted-foreground/50" />
+          </div>
+          <p className="font-medium">No users found</p>
+          <p className="text-sm mt-2">Try adjusting your search or filters</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
           {filteredUsers.map(user => (
-            <tr key={user._id} className="border-b hover:bg-muted/50">
+            <div key={user._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card">
               {editingId === user._id ? (
-                <>
-                  <td className="p-2">
-                    <Input 
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                      className="w-full"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <Input 
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                      className="w-full"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <Select value={editForm.department } onValueChange={(val) => setEditForm({...editForm, department: val === 'none' ? '' : val})}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Department</SelectItem>
-                        {departments.map(dept => (
-                          <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-2">
-                    {isAdmin ? (
-                      <Select value={editForm.role} onValueChange={(val) => setEditForm({...editForm, role: val})}>
-                        <SelectTrigger className="w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Employee">Employee</SelectItem>
-                          <SelectItem value="HR">HR</SelectItem>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      getRoleBadge(editForm.role)
-                    )}
-                  </td>
-                  <td className="p-2">
-                    <div className="space-y-1 max-w-xs">
-                      {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
-                        getAvailableManagers(users.find(u => u._id === editingId) || {}).map((manager, idx) => {
-                          const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => toggleManager(manager)}
-                              className={`flex items-center gap-2 px-2 py-1 rounded text-xs w-full transition-colors ${
-                                isSelected 
-                                  ? 'bg-primary text-primary-foreground' 
-                                  : 'bg-muted hover:bg-muted/70'
-                              }`}
-                            >
-                              {isSelected ? '✓' : '+'} <span className="truncate">{manager.name}</span>
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">No managers in dept</p>
-                      )}
+                /* Edit Mode */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold">
+                        {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <Input 
+                          value={editForm.name}
+                          onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                          className="font-semibold"
+                          placeholder="Name"
+                        />
+                      </div>
                     </div>
-                  </td>
-                  {/* <td className="p-2">
-                    <Input 
-                      type="number"
-                      value={editForm.basic_salary}
-                      onChange={(e) => setEditForm({...editForm, basic_salary: parseFloat(e.target.value) || 0})}
-                      className="w-28"
-                    />
-                  </td> */}
-                  {/* <td className="p-2">
-                    <Input 
-                      type="number"
-                      value={editForm.allowance}
-                      onChange={(e) => setEditForm({...editForm, allowance: parseFloat(e.target.value) || 0})}
-                      className="w-28"
-                    />
-                  </td> */}
-                  <td className="p-2">
-                    <Input 
-                      type="number"
-                      value={editForm.leave_limit}
-                      onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 12})}
-                      className="w-24"
-                    />
-                  </td>
-                  <td className="p-2 text-right">
-                    <div className="flex gap-1 justify-end">
+                    <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={cancelEdit}>
-                        <X className="w-4 h-4" />
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
                       </Button>
                       <Button size="sm" onClick={() => saveEdit(user._id)}>
-                        <Save className="w-4 h-4" />
+                        <Save className="w-4 h-4 mr-1" />
+                        Save
                       </Button>
                     </div>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td className="p-2 font-medium">{user.name}</td>
-                  <td className="p-2 text-muted-foreground">{user.email}</td>
-                  <td className="p-2">{getDepartmentName(user.department)}</td>
-                  <td className="p-2">{getRoleBadge(user.role)}</td>
-                  <td className="p-2">
-                    {user.reportingManagers && user.reportingManagers.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {user.reportingManagers.map((manager, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
-                            {manager.name}
-                          </Badge>
-                        ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</Label>
+                      <Input 
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                        placeholder="email@example.com"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</Label>
+                      <Select value={editForm.department} onValueChange={(val) => setEditForm({...editForm, department: val === 'none' ? '' : val})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Department</SelectItem>
+                          {departments.map(dept => (
+                            <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</Label>
+                      <Input 
+                        type="number"
+                        value={editForm.leave_limit}
+                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 12})}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {isAdmin && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</Label>
+                        <Select value={editForm.role} onValueChange={(val) => setEditForm({...editForm, role: val})}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Employee">Employee</SelectItem>
+                            <SelectItem value="HR">HR</SelectItem>
+                            <SelectItem value="Admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
                     )}
-                  </td>
-                  {/* <td className="p-2 text-right">Rs. {(user.basic_salary || 0).toLocaleString()}</td>
-                  <td className="p-2 text-right text-green-600">+Rs.{(user.allowance || 0).toLocaleString()}</td> */}
-                  <td className="p-2 text-right">{user.leave_limit || 12} days</td>
-                  <td className="p-2 text-right">
-                    <div className="flex gap-2 justify-end">
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
+                          getAvailableManagers(users.find(u => u._id === editingId) || {}).map((manager, idx) => {
+                            const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => toggleManager(manager)}
+                                className={`flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
+                                  isSelected 
+                                    ? 'bg-primary text-primary-foreground' 
+                                    : 'bg-muted hover:bg-muted/70'
+                                }`}
+                              >
+                                <span className="truncate">{manager.name}</span>
+                                {isSelected ? <UserMinus className="w-4 h-4 ml-2 flex-shrink-0" /> : <UserPlus className="w-4 h-4 ml-2 flex-shrink-0" />}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="text-sm text-muted-foreground col-span-2">No managers in department</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* View Mode */
+                <div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold">
+                        {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">{user.name}</h4>
+                          {getRoleBadge(user.role)}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
                       </Button>
                       {isAdmin && (
                         <Button 
@@ -346,14 +338,40 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         </Button>
                       )}
                     </div>
-                  </td>
-                </>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</p>
+                      <p className="text-sm font-medium">{getDepartmentName(user.department)}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
+                      <p className="text-2xl font-bold text-primary">{user.leave_limit || 12} <span className="text-sm font-normal text-muted-foreground">days</span></p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
+                      {user.reportingManagers && user.reportingManagers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {user.reportingManagers.map((manager, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
+                              {manager.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No managers assigned</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
-            </tr>
+            </div>
           ))}
-        </tbody>
-      </table>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

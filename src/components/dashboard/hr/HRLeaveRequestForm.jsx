@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Send } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, AlertCircle, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
-export default function HRLeaveRequestForm({ me, onSuccess }) {
+export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
   const [formData, setFormData] = useState({
     type: 'Annual',
     startDate: '',
@@ -19,6 +19,18 @@ export default function HRLeaveRequestForm({ me, onSuccess }) {
     reason: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Calculate approved leave days
+  const approvedLeaveDays = useMemo(() => {
+    return myLeaves
+      .filter(l => l.status === 'Approved')
+      .reduce((total, leave) => {
+        const start = new Date(leave.startDate);
+        const end = new Date(leave.endDate);
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        return total + days;
+      }, 0);
+  }, [myLeaves]);
 
   const calculateDays = () => {
     if (formData.startDate && formData.endDate) {
@@ -30,11 +42,63 @@ export default function HRLeaveRequestForm({ me, onSuccess }) {
     return 0;
   };
 
+  // Calculate remaining leave balance
+  const remainingLeaves = useMemo(() => {
+    return (me?.leave_limit || 0) - approvedLeaveDays;
+  }, [me?.leave_limit, approvedLeaveDays]);
+
+  // Validation checks
+  const validationErrors = useMemo(() => {
+    const errors = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = calculateDays();
+    
+    if (formData.startDate) {
+      const start = new Date(formData.startDate);
+      
+      // Check if start date is before today
+      if (start < today) {
+        errors.push('Start date cannot be in the past');
+      }
+    }
+    
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      
+      // Check if end date is less than start date
+      if (end < start) {
+        errors.push('End date cannot be earlier than start date');
+      }
+    }
+    
+    // Check if duration exceeds leave limit
+    if (days > 0 && me?.leave_limit) {
+      if (days > me.leave_limit) {
+        errors.push(`Duration (${days} days) exceeds your leave limit (${me.leave_limit} days)`);
+      }
+      
+      // Check if approved leaves + new request exceeds leave limit
+      if (approvedLeaveDays + days > me.leave_limit) {
+        errors.push(`Total leave days would exceed your limit. You have ${remainingLeaves} days remaining`);
+      }
+    }
+    
+    return errors;
+  }, [formData.startDate, formData.endDate, me?.leave_limit, approvedLeaveDays, remainingLeaves]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.startDate || !formData.endDate) {
       toast.error('Please select start and end dates');
+      return;
+    }
+
+    // Validate before submission
+    if (validationErrors.length > 0) {
+      validationErrors.forEach(error => toast.error(error));
       return;
     }
 
@@ -106,9 +170,17 @@ export default function HRLeaveRequestForm({ me, onSuccess }) {
 
               <div className="space-y-2">
                 <Label>Duration</Label>
-                <div className="flex items-center gap-2 p-2 rounded-md border bg-muted/50">
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">
+                <div className={`flex items-center gap-2 p-2 rounded-md border ${
+                  validationErrors.length > 0 && days > 0
+                    ? 'bg-destructive/10 border-destructive/20' 
+                    : 'bg-muted/50'
+                }`}>
+                  <Clock className={`h-4 w-4 ${
+                    validationErrors.length > 0 && days > 0 ? 'text-destructive' : 'text-muted-foreground'
+                  }`} />
+                  <span className={`font-medium ${
+                    validationErrors.length > 0 && days > 0 ? 'text-destructive' : ''
+                  }`}>
                     {days > 0 ? `${days} day${days !== 1 ? 's' : ''}` : 'Select dates'}
                   </span>
                 </div>
@@ -152,10 +224,41 @@ export default function HRLeaveRequestForm({ me, onSuccess }) {
             </div>
 
             {me && me.leave_limit && (
-              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
-                <p className="text-sm text-blue-900 dark:text-blue-100">
-                  <span className="font-medium">Your Annual Leave Limit:</span> {me.leave_limit} days
-                </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+                  <p className="text-sm text-blue-900 dark:text-blue-100">
+                    <span className="font-medium">Annual Leave Limit:</span> {me.leave_limit} days
+                  </p>
+                </div>
+                <div className={`p-3 rounded-lg border ${
+                  remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                  remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                  'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                }`}>
+                  <p className={`text-sm font-medium ${
+                    remainingLeaves < 0 ? 'text-destructive' : 
+                    remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                    'text-green-600 dark:text-green-400'
+                  }`}>
+                    Remaining: {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {validationErrors.length > 0 && (
+              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-destructive mb-2">Cannot Submit Leave Request:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {validationErrors.map((error, index) => (
+                        <li key={index} className="text-sm text-destructive">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -173,7 +276,7 @@ export default function HRLeaveRequestForm({ me, onSuccess }) {
               >
                 Clear
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || validationErrors.length > 0}>
                 {isSubmitting ? (
                   'Submitting...'
                 ) : (
