@@ -47,12 +47,22 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     return (me?.leave_limit || 0) - approvedLeaveDays;
   }, [me?.leave_limit, approvedLeaveDays]);
 
+  // Check for pending leaves
+  const hasPendingLeaves = useMemo(() => {
+    return myLeaves.some(leave => leave.status === 'Pending');
+  }, [myLeaves]);
+
   // Validation checks
   const validationErrors = useMemo(() => {
     const errors = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const days = calculateDays();
+    
+    // Check for pending leaves
+    if (hasPendingLeaves) {
+      errors.push('You already have a pending leave request. Please wait for approval before submitting another.');
+    }
     
     if (formData.startDate) {
       const start = new Date(formData.startDate);
@@ -76,12 +86,12 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     // Check if duration exceeds leave limit
     if (days > 0 && me?.leave_limit) {
       if (days > me.leave_limit) {
-        errors.push(`Duration (${days} days) exceeds your leave limit (${me.leave_limit} days)`);
+        errors.push(`⚠️ Duration (${days} days) exceeds your leave limit (${me.leave_limit} days)`);
       }
       
       // Check if approved leaves + new request exceeds leave limit
       if (approvedLeaveDays + days > me.leave_limit) {
-        errors.push(`Total leave days would exceed your limit. You have ${remainingLeaves} days remaining`);
+        errors.push(`⚠️ ALERT: Total leave days (${approvedLeaveDays + days}) would exceed your limit (${me.leave_limit}). You have only ${remainingLeaves} days remaining.`);
       }
     }
     

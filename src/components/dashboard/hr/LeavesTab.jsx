@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import HRLeaveRequestForm from './HRLeaveRequestForm';
-import { Mail, Calendar } from 'lucide-react';
+import { Mail, Calendar, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
@@ -156,6 +156,27 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                           </Badge>
                         </div>
                       </div>
+                      {leave.status === 'Pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="hover:bg-red-600 hover:text-white hover:border-red-600"
+                          onClick={async () => {
+                            if (window.confirm('Are you sure you want to delete this leave request?')) {
+                              try {
+                                await api.delete(`/api/leaves/${leave._id}`);
+                                toast.success('Leave request deleted successfully');
+                                loadMyLeaves();
+                              } catch (error) {
+                                toast.error(error.response?.data?.message || 'Failed to delete leave request');
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

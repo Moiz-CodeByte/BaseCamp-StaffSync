@@ -40,11 +40,21 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     return (me?.leave_limit || 0) - approvedLeaveDays;
   }, [me?.leave_limit, approvedLeaveDays]);
 
+  // Check for pending leaves
+  const hasPendingLeaves = useMemo(() => {
+    return leaves.some(leave => leave.status === 'Pending');
+  }, [leaves]);
+
   // Validation checks
   const validationErrors = useMemo(() => {
     const errors = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    // Check for pending leaves
+    if (hasPendingLeaves) {
+      errors.push('You already have a pending leave request. Please wait for approval before submitting another.');
+    }
     
     if (leaveForm.startDate) {
       const start = new Date(leaveForm.startDate);
@@ -68,17 +78,17 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     // Check if duration exceeds leave limit
     if (duration > 0 && me?.leave_limit) {
       if (duration > me.leave_limit) {
-        errors.push(`Duration (${duration} days) exceeds your leave limit (${me.leave_limit} days)`);
+        errors.push(`⚠️ Duration (${duration} days) exceeds your leave limit (${me.leave_limit} days)`);
       }
       
       // Check if approved leaves + new request exceeds leave limit
       if (approvedLeaveDays + duration > me.leave_limit) {
-        errors.push(`Total leave days would exceed your limit. You have ${remainingLeaves} days remaining`);
+        errors.push(`⚠️ ALERT: Total leave days (${approvedLeaveDays + duration}) would exceed your limit (${me.leave_limit}). You have only ${remainingLeaves} days remaining.`);
       }
     }
     
     return errors;
-  }, [leaveForm.startDate, leaveForm.endDate, duration, me, approvedLeaveDays, remainingLeaves]);
+  }, [leaveForm.startDate, leaveForm.endDate, duration, me, approvedLeaveDays, remainingLeaves, hasPendingLeaves]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
