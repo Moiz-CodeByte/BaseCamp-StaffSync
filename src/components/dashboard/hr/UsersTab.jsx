@@ -10,11 +10,17 @@ import { Edit, Save, X, Search, UserPlus, UserMinus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
-export default function HRUsersTab({ users, departments = [], onUpdate }) {
+export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+
+  // Get departments where this HR is assigned
+  const myDepartments = useMemo(() => {
+    if (!me?._id) return [];
+    return departments.filter(dept => dept.hr?._id === me._id || dept.hr === me._id);
+  }, [departments, me]);
 
   const startEdit = (user) => {
     setEditingId(user._id);
@@ -101,6 +107,13 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
         return false;
       }
       
+      // Only show employees from HR's assigned departments
+      const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
+      const isInMyDepartment = myDepartments.some(dept => dept._id === userDeptId);
+      if (!isInMyDepartment) {
+        return false;
+      }
+      
       const deptName = getDepartmentName(user.department);
       const matchesSearch = searchQuery === '' || 
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -108,12 +121,11 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
         deptName?.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Department filter - handle both ID and populated object
-      const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
       const matchesDepartment = departmentFilter === 'all' || userDeptId === departmentFilter;
       
       return matchesSearch && matchesDepartment;
     });
-  }, [users, searchQuery, departmentFilter, getDepartmentName]);
+  }, [users, searchQuery, departmentFilter, getDepartmentName, myDepartments]);
 
   return (
     <div className="space-y-6">
@@ -146,8 +158,8 @@ export default function HRUsersTab({ users, departments = [], onUpdate }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map(dept => (
+                  <SelectItem value="all">All My Departments</SelectItem>
+                  {myDepartments.map(dept => (
                     <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
                   ))}
                 </SelectContent>

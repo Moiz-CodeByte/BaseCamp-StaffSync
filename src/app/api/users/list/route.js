@@ -12,10 +12,10 @@ export async function GET(req) {
   const users = await User.find({}, 'name email role department reportingManagers basic_salary allowance leave_limit createdAt')
     .lean();
   
-  // Manually populate departments and set reporting managers
+  // Manually populate departments with HR and set reporting managers
   for (const user of users) {
     if (user.department) {
-      user.department = await Department.findById(user.department);
+      user.department = await Department.findById(user.department).populate('hr', 'name email').lean();
       
       // If user has no reportingManagers field at all (undefined), use department managers
       // If it's an empty array [], that means explicitly set to zero managers

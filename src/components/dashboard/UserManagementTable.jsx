@@ -260,24 +260,27 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         className="w-full"
                       />
                     </div>
+                  </div>
 
-                    {isAdmin && (
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</Label>
-                        <Select value={editForm.role} onValueChange={(val) => setEditForm({...editForm, role: val})}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Employee">Employee</SelectItem>
-                            <SelectItem value="HR">HR</SelectItem>
-                            <SelectItem value="Admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                  {isAdmin && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</Label>
+                      <Select value={editForm.role} onValueChange={(val) => setEditForm({...editForm, role: val})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Employee">Employee</SelectItem>
+                          <SelectItem value="HR">HR</SelectItem>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
-                    <div className="space-y-2 md:col-span-2">
+                  <div className="md:col-span-3">
+
+                    <div className="space-y-2">
                       <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</Label>
                       <div className="grid grid-cols-2 gap-2">
                         {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
@@ -340,11 +343,24 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className={`grid grid-cols-1 gap-4 ${user.role === 'Employee' ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</p>
                       <p className="text-sm font-medium">{getDepartmentName(user.department)}</p>
                     </div>
+
+                    {user.role === 'Employee' && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assigned HR</p>
+                        {user.department && typeof user.department === 'object' && user.department.hr ? (
+                          <Badge variant="secondary" className="text-xs">
+                            {user.department.hr.name}
+                          </Badge>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No HR assigned</p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
