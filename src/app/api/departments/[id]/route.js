@@ -66,6 +66,13 @@ export async function PUT(req, { params }) {
 
     // If HR is being updated, verify the user exists and has HR role
     if (hr && hr !== department.hr.toString()) {
+      // Only Admin can change the assigned HR
+      if (user.role !== 'Admin') {
+        return NextResponse.json({ 
+          message: 'Only Admin can change the assigned HR for a department' 
+        }, { status: 403 });
+      }
+      
       const hrUser = await User.findById(hr);
       if (!hrUser) {
         return NextResponse.json({ message: 'HR user not found' }, { status: 404 });

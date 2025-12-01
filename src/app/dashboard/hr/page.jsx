@@ -158,7 +158,7 @@ export default function HRDashboard() {
           <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
             {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} isLoading={isLoadingStats} />}
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} me={me} />}
-            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
+            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} isAdmin={false} />}
             {activeTab === 'leaves' && <LeavesTab 
               leaves={pending}
               allRecentLeaves={allRecentLeaves}

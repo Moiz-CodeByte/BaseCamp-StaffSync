@@ -11,7 +11,7 @@ import { Plus, Edit, Trash2, Building2, Users, Mail, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
-export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
+export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin = true }) {
   const [showForm, setShowForm] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
   const [formData, setFormData] = useState({
@@ -164,22 +164,35 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate }) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="hr">Assigned HR *</Label>
-                  <Select
-                    value={formData.hr}
-                    onValueChange={(value) => setFormData({ ...formData, hr: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select HR" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hrUsers.map((hr) => (
-                        <SelectItem key={hr._id} value={hr._id}>
-                          {hr.name} ({hr.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isAdmin ? (
+                    <Select
+                      value={formData.hr}
+                      onValueChange={(value) => setFormData({ ...formData, hr: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select HR" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hrUsers.map((hr) => (
+                          <SelectItem key={hr._id} value={hr._id}>
+                            {hr.name} ({hr.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={hrUsers.find(hr => hr._id === formData.hr)?.name || 'Not Assigned'}
+                      disabled
+                      className="bg-muted"
+                    />
+                  )}
+                  {!isAdmin && (
+                    <p className="text-xs text-muted-foreground">
+                      Only Admin can change the assigned HR for departments
+                    </p>
+                  )}
                 </div>
               </div>
 
