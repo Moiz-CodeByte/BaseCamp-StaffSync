@@ -4,7 +4,8 @@ import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
 import { User } from '@/models/User';
 import { Department } from '@/models/Department';
-import { sendLeaveApprovalEmail } from '@/lib/email';
+import { sendLeaveApprovalEmail, sendHRNotificationEmail } from '@/lib/email';
+import { calculateLeaveStats } from '@/lib/leave-stats';
 
 export async function POST(req) {
   const user = authenticateRequest(req);
@@ -83,6 +84,37 @@ export async function POST(req) {
           }
         }
       }
+    }
+
+    // Send notification to assigned HR
+    try {
+      const employeeWithDept = await User.findById(user.id).populate('department');
+      
+      if (employeeWithDept.department && employeeWithDept.department.hr) {
+        const hrUser = await User.findById(employeeWithDept.department.hr);
+        
+        if (hrUser && hrUser.email) {
+          // Calculate leave statistics
+          const leaveStats = await calculateLeaveStats(user.id);
+          
+          // Populate leave with user info for email
+          const populatedLeave = await Leave.findById(leave._id).populate('user');
+          
+          await sendHRNotificationEmail({
+            hrEmail: hrUser.email,
+            hrName: hrUser.name,
+            leave: populatedLeave,
+            employee: employeeWithDept,
+            leaveStats: leaveStats,
+            eventType: 'request'
+          });
+          
+          console.log(`✅ HR notification sent to ${hrUser.email}`);
+        }
+      }
+    } catch (hrEmailError) {
+      console.error('Failed to send HR notification:', hrEmailError);
+      // Don't fail the request if HR email fails
     }
 
     return NextResponse.json({ 

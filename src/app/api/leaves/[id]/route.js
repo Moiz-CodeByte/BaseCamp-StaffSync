@@ -1,7 +1,10 @@
 import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
+import { User } from '@/models/User';
 import { connectDB } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { sendHRNotificationEmail } from '@/lib/email';
+import { calculateLeaveStats } from '@/lib/leave-stats';
 
 // PUT/PATCH - Update leave status (Admin/HR only)
 export async function PUT(req, { params }) {
@@ -24,15 +27,54 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ message: 'Invalid status. Must be Approved, Rejected, or Pending' }, { status: 400 });
     }
 
-    const leave = await Leave.findById(id);
+    const leave = await Leave.findById(id).populate('user');
     
     if (!leave) {
       return NextResponse.json({ message: 'Leave request not found' }, { status: 404 });
     }
 
+    const previousStatus = leave.status;
+
     // Update the leave status
     leave.status = status;
     await leave.save();
+
+    // Send notification to HR if status changed to Approved or Rejected
+    if ((status === 'Approved' || status === 'Rejected') && previousStatus !== status) {
+      try {
+        const employeeWithDept = await User.findById(leave.user._id).populate('department');
+        
+        if (employeeWithDept.department && employeeWithDept.department.hr) {
+          const hrUser = await User.findById(employeeWithDept.department.hr);
+          
+          // Get HR user info
+          const hrUserWhoApproved = await User.findById(decoded.id);
+          
+          if (hrUser && hrUser.email) {
+            // Calculate leave statistics
+            const leaveStats = await calculateLeaveStats(leave.user._id);
+            
+            // Reload leave with updated data
+            const updatedLeave = await Leave.findById(leave._id).populate('user');
+            
+            await sendHRNotificationEmail({
+              hrEmail: hrUser.email,
+              hrName: hrUser.name,
+              leave: updatedLeave,
+              employee: employeeWithDept,
+              leaveStats: leaveStats,
+              eventType: status === 'Approved' ? 'approved' : 'rejected',
+              managerName: hrUserWhoApproved?.name || 'HR'
+            });
+            
+            console.log(`✅ HR notification sent to ${hrUser.email} (${status} - Dashboard)`);
+          }
+        }
+      } catch (hrEmailError) {
+        console.error('Failed to send HR notification:', hrEmailError);
+        // Don't fail the request if HR email fails
+      }
+    }
 
     return NextResponse.json({ 
       message: `Leave ${status.toLowerCase()} successfully`,

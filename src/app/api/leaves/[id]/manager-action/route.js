@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Leave } from '@/models/Leave';
-import { sendLeaveStatusEmail } from '@/lib/email';
+import { User } from '@/models/User';
+import { Department } from '@/models/Department';
+import { sendLeaveStatusEmail, sendHRNotificationEmail } from '@/lib/email';
+import { calculateLeaveStats } from '@/lib/leave-stats';
 
 // Handle GET requests (for email links)
 export async function GET(req, { params }) {
@@ -142,6 +145,38 @@ export async function GET(req, { params }) {
       });
     } catch (emailError) {
       console.error('Failed to send status email:', emailError);
+    }
+
+    // Send notification to assigned HR
+    try {
+      const employeeWithDept = await User.findById(leave.user._id).populate('department');
+      
+      if (employeeWithDept.department && employeeWithDept.department.hr) {
+        const hrUser = await User.findById(employeeWithDept.department.hr);
+        
+        if (hrUser && hrUser.email) {
+          // Calculate leave statistics
+          const leaveStats = await calculateLeaveStats(leave.user._id);
+          
+          // Reload leave with updated data
+          const updatedLeave = await Leave.findById(leave._id).populate('user');
+          
+          await sendHRNotificationEmail({
+            hrEmail: hrUser.email,
+            hrName: hrUser.name,
+            leave: updatedLeave,
+            employee: employeeWithDept,
+            leaveStats: leaveStats,
+            eventType: action === 'approve' ? 'approved' : 'rejected',
+            managerName: leave.managerApprovals[approvalIndex].managerName
+          });
+          
+          console.log(`✅ HR notification sent to ${hrUser.email} (${action})`);
+        }
+      }
+    } catch (hrEmailError) {
+      console.error('Failed to send HR notification:', hrEmailError);
+      // Don't fail the request if HR email fails
     }
 
     return new Response(`
@@ -337,6 +372,38 @@ export async function POST(req, { params }) {
       });
     } catch (emailError) {
       console.error('Failed to send status email:', emailError);
+    }
+
+    // Send notification to assigned HR
+    try {
+      const employeeWithDept = await User.findById(leave.user._id).populate('department');
+      
+      if (employeeWithDept.department && employeeWithDept.department.hr) {
+        const hrUser = await User.findById(employeeWithDept.department.hr);
+        
+        if (hrUser && hrUser.email) {
+          // Calculate leave statistics
+          const leaveStats = await calculateLeaveStats(leave.user._id);
+          
+          // Reload leave with updated data
+          const updatedLeave = await Leave.findById(leave._id).populate('user');
+          
+          await sendHRNotificationEmail({
+            hrEmail: hrUser.email,
+            hrName: hrUser.name,
+            leave: updatedLeave,
+            employee: employeeWithDept,
+            leaveStats: leaveStats,
+            eventType: action === 'approve' ? 'approved' : 'rejected',
+            managerName: leave.managerApprovals[approvalIndex].managerName
+          });
+          
+          console.log(`✅ HR notification sent to ${hrUser.email} (${action} - API)`);
+        }
+      }
+    } catch (hrEmailError) {
+      console.error('Failed to send HR notification:', hrEmailError);
+      // Don't fail the request if HR email fails
     }
 
     return NextResponse.json({ 
