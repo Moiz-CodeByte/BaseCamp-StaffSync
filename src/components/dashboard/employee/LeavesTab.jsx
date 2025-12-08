@@ -31,12 +31,12 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       // Second half: July to December
       // Calculate months elapsed in second half (July=1, Aug=2, ..., Dec=6)
       const monthsInHalf = (currentMonth - 6) + 1;
-      return Math.min(Math.round(monthsInHalf * monthlyAccrual), maxPerHalf);
+      return Math.min(Math.floor(monthsInHalf * monthlyAccrual), maxPerHalf);
     } else {
       // First half: January to June
       // Calculate months elapsed in first half (Jan=1, Feb=2, ..., Jun=6)
       const monthsInHalf = currentMonth + 1;
-      return Math.min(Math.round(monthsInHalf * monthlyAccrual), maxPerHalf);
+      return Math.min(Math.floor(monthsInHalf * monthlyAccrual), maxPerHalf);
     }
   }, [me?.leave_limit]);
 
@@ -127,7 +127,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     
     // Check if duration exceeds earned leaves for current half
     if (duration > 0) {
-      const maxPerHalf = Math.round((me?.leave_limit || 12) / 2);
+      const maxPerHalf = Math.floor((me?.leave_limit || 12) / 2);
       
       // Check if duration exceeds max per half
       if (duration > maxPerHalf) {
@@ -240,7 +240,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    💡 You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.round((me?.leave_limit || 12) / 2)} leaves per half-year. Unused leaves from previous period are not carried forward.
+                    💡 You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 12) / 2)} leaves per half-year. Unused leaves from previous period are not carried forward.
                   </p>
                 </div>
 

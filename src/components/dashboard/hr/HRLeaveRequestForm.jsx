@@ -38,12 +38,12 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
       // Second half: July to December
       // Calculate months elapsed in second half (July=1, Aug=2, ..., Dec=6)
       const monthsInHalf = (currentMonth - 6) + 1;
-      return Math.min(Math.round(monthsInHalf * monthlyAccrual), maxPerHalf);
+      return Math.min(Math.floor(monthsInHalf * monthlyAccrual), maxPerHalf);
     } else {
       // First half: January to June
       // Calculate months elapsed in first half (Jan=1, Feb=2, ..., Jun=6)
       const monthsInHalf = currentMonth + 1;
-      return Math.min(Math.round(monthsInHalf * monthlyAccrual), maxPerHalf);
+      return Math.min(Math.floor(monthsInHalf * monthlyAccrual), maxPerHalf);
     }
   }, [me?.leave_limit]);
 
@@ -134,7 +134,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     
     // Check if duration exceeds earned leaves for current half
     if (days > 0) {
-      const maxPerHalf = Math.round((me?.leave_limit || 12) / 2);
+      const maxPerHalf = Math.floor((me?.leave_limit || 12) / 2);
       
       // Check if duration exceeds max per half
       if (days > maxPerHalf) {
@@ -317,13 +317,13 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                 }`}>
                   {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Max {Math.round((me?.leave_limit || 12) / 2)}/half</p>
+                <p className="text-xs text-muted-foreground mt-1">Max {Math.floor((me?.leave_limit || 12) / 2)}/half</p>
               </div>
             </div>
             
             <div className="p-3 rounded-lg bg-muted/50 border">
               <p className="text-xs text-muted-foreground">
-                💡 <strong>Leave Policy:</strong> You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.round((me?.leave_limit || 12) / 2)} leaves per half-year (Jan-Jun & Jul-Dec). Unused leaves from previous period are not carried forward.
+                💡 <strong>Leave Policy:</strong> You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 12) / 2)} leaves per half-year (Jan-Jun & Jul-Dec). Unused leaves from previous period are not carried forward.
               </p>
             </div>
 
