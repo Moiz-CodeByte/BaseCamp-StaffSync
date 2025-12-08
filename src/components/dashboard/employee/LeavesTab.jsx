@@ -12,10 +12,60 @@ import { toast } from 'sonner';
 export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leaves, deleteLeaveRequest, me }) {
   const [showForm, setShowForm] = useState(false);
 
-  // Calculate approved leave days
-  const approvedLeaveDays = useMemo(() => {
+  // Calculate earned leaves based on current month (dynamic based on leave_limit)
+  const earnedLeaves = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-11 (Jan-Dec)
+    const currentYear = now.getFullYear();
+    
+    const leaveLimit = me?.leave_limit || 12; // Use leave_limit from user model
+    const monthlyAccrual = leaveLimit / 12; // Leaves earned per month
+    const maxPerHalf = leaveLimit / 2; // Maximum leaves per half-year
+    
+    // Determine which half of the year we're in
+    // First half: Jan-Jun (months 0-5)
+    // Second half: Jul-Dec (months 6-11)
+    const isSecondHalf = currentMonth >= 6;
+    
+    if (isSecondHalf) {
+      // Second half: July to December
+      // Calculate months elapsed in second half (July=1, Aug=2, ..., Dec=6)
+      const monthsInHalf = (currentMonth - 6) + 1;
+      return Math.min(Math.round(monthsInHalf * monthlyAccrual), maxPerHalf);
+    } else {
+      // First half: January to June
+      // Calculate months elapsed in first half (Jan=1, Feb=2, ..., Jun=6)
+      const monthsInHalf = currentMonth + 1;
+      return Math.min(Math.round(monthsInHalf * monthlyAccrual), maxPerHalf);
+    }
+  }, [me?.leave_limit]);
+
+  // Calculate approved leave days for current half only
+  const approvedLeaveDaysCurrentHalf = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const isSecondHalf = currentMonth >= 6;
+    
+    // Define date range for current half
+    let halfStartDate, halfEndDate;
+    if (isSecondHalf) {
+      // July 1 to Dec 31
+      halfStartDate = new Date(currentYear, 6, 1);
+      halfEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
+    } else {
+      // Jan 1 to June 30
+      halfStartDate = new Date(currentYear, 0, 1);
+      halfEndDate = new Date(currentYear, 5, 30, 23, 59, 59);
+    }
+    
     return leaves
-      .filter(l => l.status === 'Approved')
+      .filter(l => {
+        if (l.status !== 'Approved') return false;
+        const leaveStart = new Date(l.startDate);
+        // Only count leaves that started in current half
+        return leaveStart >= halfStartDate && leaveStart <= halfEndDate;
+      })
       .reduce((total, leave) => {
         const start = new Date(leave.startDate);
         const end = new Date(leave.endDate);
@@ -35,10 +85,10 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     return 0;
   }, [leaveForm.startDate, leaveForm.endDate]);
 
-  // Calculate remaining leave balance
+  // Calculate available leave balance (earned - used in current half)
   const remainingLeaves = useMemo(() => {
-    return (me?.leave_limit || 0) - approvedLeaveDays;
-  }, [me?.leave_limit, approvedLeaveDays]);
+    return earnedLeaves - approvedLeaveDaysCurrentHalf;
+  }, [earnedLeaves, approvedLeaveDaysCurrentHalf]);
 
   // Check for pending leaves
   const hasPendingLeaves = useMemo(() => {
@@ -75,20 +125,23 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       }
     }
     
-    // Check if duration exceeds leave limit
-    if (duration > 0 && me?.leave_limit) {
-      if (duration > me.leave_limit) {
-        errors.push(`⚠️ Duration (${duration} days) exceeds your leave limit (${me.leave_limit} days)`);
+    // Check if duration exceeds earned leaves for current half
+    if (duration > 0) {
+      const maxPerHalf = Math.round((me?.leave_limit || 12) / 2);
+      
+      // Check if duration exceeds max per half
+      if (duration > maxPerHalf) {
+        errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxPerHalf} days per half-year`);
       }
       
-      // Check if approved leaves + new request exceeds leave limit
-      if (approvedLeaveDays + duration > me.leave_limit) {
-        errors.push(`⚠️ ALERT: Total leave days (${approvedLeaveDays + duration}) would exceed your limit (${me.leave_limit}). You have only ${remainingLeaves} days remaining.`);
+      // Check if approved leaves + new request exceeds earned leaves
+      if (approvedLeaveDaysCurrentHalf + duration > earnedLeaves) {
+        errors.push(`⚠️ ALERT: Total leave days (${approvedLeaveDaysCurrentHalf + duration}) would exceed your earned leaves (${earnedLeaves}). You have only ${remainingLeaves} days available.`);
       }
     }
     
     return errors;
-  }, [leaveForm.startDate, leaveForm.endDate, duration, me, approvedLeaveDays, remainingLeaves, hasPendingLeaves]);
+  }, [leaveForm.startDate, leaveForm.endDate, duration, earnedLeaves, approvedLeaveDaysCurrentHalf, remainingLeaves, hasPendingLeaves, me?.leave_limit]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -148,17 +201,29 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 </div>
                 
                 <div className="space-y-2">
-                  <Label className="text-base font-semibold">Leave Limit</Label>
-                  <div className="h-11 px-3 py-2 rounded-md border bg-muted flex items-center">
-                    <span className="text-sm font-medium">
-                      {me?.leave_limit ? `${me.leave_limit} days per year` : 'Not set'}
+                  <Label className="text-base font-semibold">Earned This Period</Label>
+                  <div className="h-11 px-3 py-2 rounded-md border bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''} earned
+                    </span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                      ({((me?.leave_limit || 12) / 12).toFixed(1)} per month)
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-base font-semibold">Remaining Balance</Label>
-                  <div className={`h-11 px-3 py-2 rounded-md border flex items-center ${
+                  <Label className="text-base font-semibold">Used This Period</Label>
+                  <div className="h-11 px-3 py-2 rounded-md border bg-muted flex items-center">
+                    <span className="text-sm font-medium">
+                      {approvedLeaveDaysCurrentHalf} day{approvedLeaveDaysCurrentHalf !== 1 ? 's' : ''} used
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-base font-semibold">Available Balance</Label>
+                  <div className={`h-11 px-3 py-2 rounded-md border flex items-center justify-between ${
                     remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
                     remainingLeaves === 0 ? 'bg-orange-50 border-orange-200' : 
                     'bg-green-50 border-green-200'
@@ -170,7 +235,13 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     }`}>
                       {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''} available
                     </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date().getMonth() >= 6 ? 'Jul-Dec period' : 'Jan-Jun period'}
+                    </span>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    💡 You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.round((me?.leave_limit || 12) / 2)} leaves per half-year. Unused leaves from previous period are not carried forward.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
