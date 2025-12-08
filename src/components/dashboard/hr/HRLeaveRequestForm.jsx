@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Send, AlertCircle, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, AlertCircle, Clock, UserPlus, Mail, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -16,9 +16,11 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     type: 'Annual',
     startDate: '',
     endDate: '',
-    reason: ''
+    reason: '',
+    additionalRecipients: []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
 
   // Calculate earned leaves based on current month (dynamic based on leave_limit)
   const earnedLeaves = useMemo(() => {
@@ -150,6 +152,37 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     return errors;
   }, [formData.startDate, formData.endDate, earnedLeaves, approvedLeaveDaysCurrentHalf, remainingLeaves, hasPendingLeaves]);
 
+  const addRecipient = () => {
+    if (!newRecipient.name.trim() || !newRecipient.email.trim()) {
+      toast.error('Please enter both name and email');
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(newRecipient.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (formData.additionalRecipients.some(r => r.email === newRecipient.email)) {
+      toast.error('This email is already added');
+      return;
+    }
+    
+    setFormData({
+      ...formData,
+      additionalRecipients: [...formData.additionalRecipients, { ...newRecipient }]
+    });
+    setNewRecipient({ name: '', email: '' });
+    toast.success('Recipient added');
+  };
+
+  const removeRecipient = (index) => {
+    setFormData({
+      ...formData,
+      additionalRecipients: formData.additionalRecipients.filter((_, i) => i !== index)
+    });
+    toast.success('Recipient removed');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -178,8 +211,10 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
         type: 'Annual',
         startDate: '',
         endDate: '',
-        reason: ''
+        reason: '',
+        additionalRecipients: []
       });
+      setNewRecipient({ name: '', email: '' });
       if (onSuccess) onSuccess();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit leave request');
@@ -285,6 +320,68 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
               />
             </div>
 
+            <div className="space-y-3">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                Additional Email Recipients (Optional)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Add people who should receive email notifications about this leave request
+              </p>
+              
+              {/* List of added recipients */}
+              {formData.additionalRecipients && formData.additionalRecipients.length > 0 && (
+                <div className="space-y-2">
+                  {formData.additionalRecipients.map((recipient, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-center gap-2 p-3 rounded-lg bg-muted"
+                    >
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{recipient.name}</p>
+                        <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeRecipient(index)}
+                      >
+                        <X className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add recipient form */}
+              <div className="grid gap-2 md:grid-cols-2 p-3 border rounded-lg bg-muted/30">
+                <Input
+                  placeholder="Recipient name"
+                  value={newRecipient.name}
+                  onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
+                />
+                <Input
+                  type="email"
+                  placeholder="Recipient email"
+                  value={newRecipient.email}
+                  onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
+                />
+                <div className="md:col-span-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addRecipient}
+                    className="w-full"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add Recipient
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-3 md:grid-cols-3">
               <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
                 <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Period</p>
@@ -347,12 +444,16 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setFormData({
-                  type: 'Annual',
-                  startDate: '',
-                  endDate: '',
-                  reason: ''
-                })}
+                onClick={() => {
+                  setFormData({
+                    type: 'Annual',
+                    startDate: '',
+                    endDate: '',
+                    reason: '',
+                    additionalRecipients: []
+                  });
+                  setNewRecipient({ name: '', email: '' });
+                }}
                 disabled={isSubmitting}
               >
                 Clear

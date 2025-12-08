@@ -16,6 +16,14 @@ const LeaveSchema = new Schema(
       emailSent: { type: Boolean, default: false },
       emailSentAt: { type: Date },
       approvedAt: { type: Date }
+    }],
+    additionalRecipients: [{
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+      emailSent: { type: Boolean, default: false },
+      emailSentAt: { type: Date },
+      approvedAt: { type: Date }
     }]
   },
   { timestamps: true }

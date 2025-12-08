@@ -13,7 +13,7 @@ export async function POST(req) {
   await connectDB();
 
   const body = await req.json();
-  const { type, startDate, endDate, reason } = body;
+  const { type, startDate, endDate, reason, additionalRecipients } = body;
   try {
     // Create the leave request
     const leave = await Leave.create({
@@ -22,6 +22,7 @@ export async function POST(req) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       reason,
+      additionalRecipients: additionalRecipients || [],
     });
 
     // Get user's reporting managers
@@ -81,6 +82,37 @@ export async function POST(req) {
             await leave.save();
           } catch (error) {
             console.error(`Failed to send email to ${manager.email}:`, error);
+          }
+        }
+      }
+
+      // Send emails to additional recipients with status tracking
+      if (additionalRecipients && additionalRecipients.length > 0) {
+        // Initialize additional recipients with status tracking (already set in Leave.create above)
+        for (let i = 0; i < additionalRecipients.length; i++) {
+          const recipient = leave.additionalRecipients[i];
+          
+          try {
+            // Add 3 second delay between emails
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const emailSent = await sendLeaveApprovalEmail({
+              managerEmail: recipient.email,
+              managerName: recipient.name,
+              leave: leave,
+              employee: userWithDept
+            });
+
+            // Update the recipient entry to mark email as sent
+            leave.additionalRecipients[i].emailSent = emailSent;
+            if (emailSent) {
+              leave.additionalRecipients[i].emailSentAt = new Date();
+            }
+
+            await leave.save();
+            console.log(`✅ Notification sent to additional recipient: ${recipient.email}`);
+          } catch (error) {
+            console.error(`Failed to send email to additional recipient ${recipient.email}:`, error);
           }
         }
       }

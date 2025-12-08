@@ -16,7 +16,7 @@ export default function EmployeeDashboard() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [me, setMe] = useState(null);
   const [leaves, setLeaves] = useState([]);
-  const [leaveForm, setLeaveForm] = useState({ type: 'Annual', startDate: '', endDate: '', reason: '' });
+  const [leaveForm, setLeaveForm] = useState({ type: 'Annual', startDate: '', endDate: '', reason: '', additionalRecipients: [] });
   const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
   const [stats, setStats] = useState({ totalLeaveDays: 0, pendingLeaves: 0, approvedLeaves: 0, rejectedLeaves: 0 });
 
@@ -85,7 +85,7 @@ export default function EmployeeDashboard() {
     e.preventDefault();
     try {
       await api.post('/api/leaves/request', leaveForm);
-      setLeaveForm({ type: 'Annual', startDate: '', endDate: '', reason: '' });
+      setLeaveForm({ type: 'Annual', startDate: '', endDate: '', reason: '', additionalRecipients: [] });
       await fetchData();
       toast.success('Leave request submitted successfully!');
     } catch (e) { 

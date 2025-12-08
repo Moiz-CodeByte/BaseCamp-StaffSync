@@ -1,4 +1,4 @@
-import { Trash2, Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, Clock, AlertCircle, UserPlus, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leaves, deleteLeaveRequest, me }) {
   const [showForm, setShowForm] = useState(false);
+  const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
 
   // Calculate earned leaves based on current month (dynamic based on leave_limit)
   const earnedLeaves = useMemo(() => {
@@ -154,6 +155,40 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     
     await requestLeave(e);
     setShowForm(false);
+    setNewRecipient({ name: '', email: '' });
+  };
+
+  const addRecipient = () => {
+    if (!newRecipient.name.trim() || !newRecipient.email.trim()) {
+      toast.error('Please enter both name and email');
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(newRecipient.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    const additionalRecipients = leaveForm.additionalRecipients || [];
+    if (additionalRecipients.some(r => r.email === newRecipient.email)) {
+      toast.error('This email is already added');
+      return;
+    }
+    
+    setLeaveForm({
+      ...leaveForm,
+      additionalRecipients: [...additionalRecipients, { ...newRecipient }]
+    });
+    setNewRecipient({ name: '', email: '' });
+    toast.success('Recipient added');
+  };
+
+  const removeRecipient = (index) => {
+    const additionalRecipients = leaveForm.additionalRecipients || [];
+    setLeaveForm({
+      ...leaveForm,
+      additionalRecipients: additionalRecipients.filter((_, i) => i !== index)
+    });
+    toast.success('Recipient removed');
   };
 
   return (
@@ -320,6 +355,68 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     className="min-h-[100px] resize-none"
                   />
                 </div>
+
+                <div className="space-y-3 md:col-span-2">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Additional Email Recipients (Optional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Add people who should receive email notifications about this leave request
+                  </p>
+                  
+                  {/* List of added recipients */}
+                  {leaveForm.additionalRecipients && leaveForm.additionalRecipients.length > 0 && (
+                    <div className="space-y-2">
+                      {leaveForm.additionalRecipients.map((recipient, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center gap-2 p-3 rounded-lg bg-muted"
+                        >
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{recipient.name}</p>
+                            <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeRecipient(index)}
+                          >
+                            <X className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add recipient form */}
+                  <div className="grid gap-2 md:grid-cols-2 p-3 border rounded-lg bg-muted/30">
+                    <Input
+                      placeholder="Recipient name"
+                      value={newRecipient.name}
+                      onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
+                    />
+                    <Input
+                      type="email"
+                      placeholder="Recipient email"
+                      value={newRecipient.email}
+                      onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
+                    />
+                    <div className="md:col-span-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addRecipient}
+                        className="w-full"
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add Recipient
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div className="flex gap-3 pt-4">
@@ -327,7 +424,8 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                   type="button" 
                   variant="outline" 
                   onClick={() => {
-                    setLeaveForm({ type: 'Annual', startDate: '', endDate: '', reason: '' });
+                    setLeaveForm({ type: 'Annual', startDate: '', endDate: '', reason: '', additionalRecipients: [] });
+                    setNewRecipient({ name: '', email: '' });
                   }}
                   className="flex-1"
                 >
@@ -465,6 +563,32 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                           <p className="text-sm text-muted-foreground">No managers assigned</p>
                         )}
                       </div>
+
+                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Additional Recipients</p>
+                          <div className="space-y-2">
+                            {leave.additionalRecipients.map((recipient, idx) => (
+                              <div 
+                                key={idx} 
+                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                              >
+                                <span className="text-sm font-medium">{recipient.name}</span>
+                                <Badge 
+                                  variant={
+                                    recipient.status === 'Approved' ? 'default' :
+                                    recipient.status === 'Rejected' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {recipient.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

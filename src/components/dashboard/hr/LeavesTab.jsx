@@ -228,6 +228,32 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                           <p className="text-sm text-muted-foreground">No managers assigned</p>
                         )}
                       </div>
+
+                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Additional Recipients</p>
+                          <div className="space-y-2">
+                            {leave.additionalRecipients.map((recipient, idx) => (
+                              <div 
+                                key={idx} 
+                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                              >
+                                <span className="text-sm font-medium">{recipient.name}</span>
+                                <Badge 
+                                  variant={
+                                    recipient.status === 'Approved' ? 'default' :
+                                    recipient.status === 'Rejected' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {recipient.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -415,6 +441,40 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                           </div>
                         )}
                       </div>
+
+                      {/* Additional Recipients */}
+                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Additional Recipients</p>
+                          <div className="space-y-2">
+                            {leave.additionalRecipients.map((recipient, idx) => (
+                              <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium truncate" title={recipient.name}>
+                                    {recipient.name}
+                                  </p>
+                                  {recipient.emailSent && (
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      Sent
+                                    </p>
+                                  )}
+                                </div>
+                                <Badge 
+                                  variant={
+                                    recipient.status === 'Approved' ? 'default' : 
+                                    recipient.status === 'Rejected' ? 'destructive' : 
+                                    'secondary'
+                                  }
+                                  className="text-xs shrink-0"
+                                >
+                                  {recipient.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Reason */}
@@ -585,6 +645,34 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                             </div>
                           )}
                         </div>
+
+                        {/* Additional Recipients */}
+                        {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-2">Additional Recipients</p>
+                            <div className="space-y-2">
+                              {leave.additionalRecipients.map((recipient, idx) => (
+                                <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate" title={recipient.name}>
+                                      {recipient.name}
+                                    </p>
+                                  </div>
+                                  <Badge 
+                                    variant={
+                                      recipient.status === 'Approved' ? 'default' : 
+                                      recipient.status === 'Rejected' ? 'destructive' : 
+                                      'secondary'
+                                    }
+                                    className="text-xs shrink-0"
+                                  >
+                                    {recipient.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Processing Info */}
                         <div>

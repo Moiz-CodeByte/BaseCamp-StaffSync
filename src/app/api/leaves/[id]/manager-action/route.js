@@ -73,12 +73,26 @@ export async function GET(req, { params }) {
       });
     }
 
-    // Find the manager's approval entry
-    const approvalIndex = leave.managerApprovals.findIndex(
+    // Find the manager's approval entry or additional recipient entry
+    let approvalIndex = leave.managerApprovals.findIndex(
       approval => approval.managerEmail === managerEmail
     );
-
+    
+    let recipientIndex = -1;
+    let isAdditionalRecipient = false;
+    
+    // If not found in managers, check additional recipients
     if (approvalIndex === -1) {
+      recipientIndex = leave.additionalRecipients.findIndex(
+        recipient => recipient.email === managerEmail
+      );
+      
+      if (recipientIndex !== -1) {
+        isAdditionalRecipient = true;
+      }
+    }
+
+    if (approvalIndex === -1 && recipientIndex === -1) {
       return new Response(errorPage('Not Authorized', 'You are not authorized to approve this leave request'), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
         status: 404
@@ -86,8 +100,12 @@ export async function GET(req, { params }) {
     }
 
     // Check if already processed
-    if (leave.managerApprovals[approvalIndex].status !== 'Pending') {
-      const currentStatus = leave.managerApprovals[approvalIndex].status;
+    const currentApproval = isAdditionalRecipient 
+      ? leave.additionalRecipients[recipientIndex]
+      : leave.managerApprovals[approvalIndex];
+      
+    if (currentApproval.status !== 'Pending') {
+      const currentStatus = currentApproval.status;
       return new Response(`
         <!DOCTYPE html>
         <html>
@@ -129,8 +147,17 @@ export async function GET(req, { params }) {
         status: 200
       });
     }    // Update the approval status
-    leave.managerApprovals[approvalIndex].status = action === 'approve' ? 'Approved' : 'Rejected';
-    leave.managerApprovals[approvalIndex].approvedAt = new Date();
+    const approverName = isAdditionalRecipient 
+      ? leave.additionalRecipients[recipientIndex].name
+      : leave.managerApprovals[approvalIndex].managerName;
+      
+    if (isAdditionalRecipient) {
+      leave.additionalRecipients[recipientIndex].status = action === 'approve' ? 'Approved' : 'Rejected';
+      leave.additionalRecipients[recipientIndex].approvedAt = new Date();
+    } else {
+      leave.managerApprovals[approvalIndex].status = action === 'approve' ? 'Approved' : 'Rejected';
+      leave.managerApprovals[approvalIndex].approvedAt = new Date();
+    }
 
     await leave.save();
 
@@ -141,7 +168,7 @@ export async function GET(req, { params }) {
         employeeName: leave.user.name,
         leave: leave,
         status: action === 'approve' ? 'Approved' : 'Rejected',
-        managerName: leave.managerApprovals[approvalIndex].managerName
+        managerName: approverName
       });
     } catch (emailError) {
       console.error('Failed to send status email:', emailError);
@@ -168,7 +195,7 @@ export async function GET(req, { params }) {
             employee: employeeWithDept,
             leaveStats: leaveStats,
             eventType: action === 'approve' ? 'approved' : 'rejected',
-            managerName: leave.managerApprovals[approvalIndex].managerName
+            managerName: approverName
           });
           
           console.log(`✅ HR notification sent to ${hrUser.email} (${action})`);
@@ -290,8 +317,8 @@ export async function GET(req, { params }) {
               <span class="detail-value">${leave.type}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Manager:</span>
-              <span class="detail-value">${leave.managerApprovals[approvalIndex].managerName}</span>
+              <span class="detail-label">${isAdditionalRecipient ? 'Recipient' : 'Manager'}:</span>
+              <span class="detail-value">${approverName}</span>
             </div>
           </div>
           
@@ -346,18 +373,41 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: 'Leave request not found' }, { status: 404 });
     }
 
-    // Find the manager's approval entry
-    const approvalIndex = leave.managerApprovals.findIndex(
+    // Find the manager's approval entry or additional recipient entry
+    let approvalIndex = leave.managerApprovals.findIndex(
       approval => approval.managerEmail === managerEmail
     );
-
+    
+    let recipientIndex = -1;
+    let isAdditionalRecipient = false;
+    
+    // If not found in managers, check additional recipients
     if (approvalIndex === -1) {
-      return NextResponse.json({ message: 'Manager not found in approval list' }, { status: 404 });
+      recipientIndex = leave.additionalRecipients.findIndex(
+        recipient => recipient.email === managerEmail
+      );
+      
+      if (recipientIndex !== -1) {
+        isAdditionalRecipient = true;
+      }
+    }
+
+    if (approvalIndex === -1 && recipientIndex === -1) {
+      return NextResponse.json({ message: 'Approver not found in approval list' }, { status: 404 });
     }
 
     // Update the approval status
-    leave.managerApprovals[approvalIndex].status = action === 'approve' ? 'Approved' : 'Rejected';
-    leave.managerApprovals[approvalIndex].approvedAt = new Date();
+    const approverName = isAdditionalRecipient 
+      ? leave.additionalRecipients[recipientIndex].name
+      : leave.managerApprovals[approvalIndex].managerName;
+      
+    if (isAdditionalRecipient) {
+      leave.additionalRecipients[recipientIndex].status = action === 'approve' ? 'Approved' : 'Rejected';
+      leave.additionalRecipients[recipientIndex].approvedAt = new Date();
+    } else {
+      leave.managerApprovals[approvalIndex].status = action === 'approve' ? 'Approved' : 'Rejected';
+      leave.managerApprovals[approvalIndex].approvedAt = new Date();
+    }
 
     await leave.save();
 
@@ -368,7 +418,7 @@ export async function POST(req, { params }) {
         employeeName: leave.user.name,
         leave: leave,
         status: action === 'approve' ? 'Approved' : 'Rejected',
-        managerName: leave.managerApprovals[approvalIndex].managerName
+        managerName: approverName
       });
     } catch (emailError) {
       console.error('Failed to send status email:', emailError);
@@ -395,7 +445,7 @@ export async function POST(req, { params }) {
             employee: employeeWithDept,
             leaveStats: leaveStats,
             eventType: action === 'approve' ? 'approved' : 'rejected',
-            managerName: leave.managerApprovals[approvalIndex].managerName
+            managerName: approverName
           });
           
           console.log(`✅ HR notification sent to ${hrUser.email} (${action} - API)`);
@@ -408,7 +458,8 @@ export async function POST(req, { params }) {
 
     return NextResponse.json({ 
       message: `Leave request ${action}d successfully`,
-      managerApprovals: leave.managerApprovals
+      managerApprovals: leave.managerApprovals,
+      additionalRecipients: leave.additionalRecipients
     });
 
   } catch (error) {
