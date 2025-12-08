@@ -51,6 +51,9 @@ export async function POST(req) {
         
         await leave.save();
 
+        // Calculate leave statistics for email
+        const leaveStats = await calculateLeaveStats(user.id);
+
         // Send approval emails to all reporting managers with 3 second gap
         for (let i = 0; i < managersToNotify.length; i++) {
           const manager = managersToNotify[i];
@@ -65,7 +68,8 @@ export async function POST(req) {
               managerEmail: manager.email,
               managerName: manager.name,
               leave: leave,
-              employee: userWithDept
+              employee: userWithDept,
+              leaveStats: leaveStats
             });
 
             // Update the approval entry to mark email as sent
@@ -88,6 +92,9 @@ export async function POST(req) {
 
       // Send emails to additional recipients with status tracking
       if (additionalRecipients && additionalRecipients.length > 0) {
+        // Calculate leave statistics for email (reuse if already calculated above)
+        const leaveStats = await calculateLeaveStats(user.id);
+        
         // Initialize additional recipients with status tracking (already set in Leave.create above)
         for (let i = 0; i < additionalRecipients.length; i++) {
           const recipient = leave.additionalRecipients[i];
@@ -100,7 +107,8 @@ export async function POST(req) {
               managerEmail: recipient.email,
               managerName: recipient.name,
               leave: leave,
-              employee: userWithDept
+              employee: userWithDept,
+              leaveStats: leaveStats
             });
 
             // Update the recipient entry to mark email as sent

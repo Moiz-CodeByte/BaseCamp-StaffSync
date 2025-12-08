@@ -19,9 +19,10 @@
  * @param {string} params.managerName - Manager's name
  * @param {Object} params.leave - Leave request object
  * @param {Object} params.employee - Employee object
+ * @param {Object} params.leaveStats - Leave statistics (thisMonth, lastMonth, thisYear, thisQuarter, etc.)
  * @returns {Promise<boolean>} - Success status
  */
-export async function sendLeaveApprovalEmail({ managerEmail, managerName, leave, employee }) {
+export async function sendLeaveApprovalEmail({ managerEmail, managerName, leave, employee, leaveStats }) {
   try {
     // TODO: Replace with actual email service integration
     // Example implementations below:
@@ -47,7 +48,7 @@ export async function sendLeaveApprovalEmail({ managerEmail, managerName, leave,
       from: process.env.FROM_EMAIL,
       to: managerEmail,
       subject: `Leave Approval Request from ${employee.name}`,
-      html: generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee })
+      html: generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee, leaveStats })
     });
     
 
@@ -71,7 +72,7 @@ export async function sendLeaveApprovalEmail({ managerEmail, managerName, leave,
 /**
  * Generate HTML template for leave approval email
  */
-function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee }) {
+function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee, leaveStats }) {
   const startDate = new Date(leave.startDate).toLocaleDateString('en-US', { 
     month: 'long', 
     day: 'numeric', 
@@ -145,6 +146,38 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee 
             </div>
             ` : ''}
           </div>
+
+          ${leaveStats ? `
+          <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">Employee Leave Statistics</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Leave Limit</div>
+                <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 12}</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Year</div>
+                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.thisYear || 0}</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Quarter</div>
+                <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisQuarter || 0}</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.approvedLeavesCount || 0) <= 2 ? '#ef4444' : '#10b981'};">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Approved (Half)</div>
+                <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.approvedLeavesCount || 0) <= 2 ? '#ef4444' : '#10b981'};">${leaveStats.approvedLeavesCount || 0}</div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
 
           <div class="button-container">
             <a href="${approveUrl}" class="button approve">Approve Leave</a>
