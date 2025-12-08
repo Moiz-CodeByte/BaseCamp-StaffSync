@@ -7,6 +7,32 @@ import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
+// Calculate business days (excluding weekends)
+const calculateBusinessDays = (startDate, endDate) => {
+  let start, end;
+  if (typeof startDate === 'string') {
+    start = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
+  } else {
+    start = new Date(startDate);
+  }
+  if (typeof endDate === 'string') {
+    end = new Date(endDate.includes('T') ? endDate : endDate + 'T00:00:00');
+  } else {
+    end = new Date(endDate);
+  }
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  if (end < start) return 0;
+  let businessDays = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    current.setDate(current.getDate() + 1);
+  }
+  return businessDays;
+};
+
 export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sendingEmail, setSendingEmail] = useState(null);
@@ -58,7 +84,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
               {leaves.map(leave => {
                 const startDate = new Date(leave.startDate);
                 const endDate = new Date(leave.endDate);
-                const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const days = calculateBusinessDays(leave.startDate, leave.endDate);
                 const stats = leave.leaveStats || {};
                 
                 return (
@@ -325,7 +351,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                 .map(leave => {
                   const startDate = new Date(leave.startDate);
                   const endDate = new Date(leave.endDate);
-                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  const days = calculateBusinessDays(leave.startDate, leave.endDate);
                   const processedDate = leave.updatedAt ? new Date(leave.updatedAt) : null;
                   
                   return (

@@ -1,6 +1,32 @@
 import { Leave } from '@/models/Leave';
 import { connectDB } from '@/lib/db';
 
+// Business days calculation function (excludes weekends)
+const calculateBusinessDays = (startDate, endDate) => {
+  let start, end;
+  if (typeof startDate === 'string') {
+    start = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
+  } else {
+    start = new Date(startDate);
+  }
+  if (typeof endDate === 'string') {
+    end = new Date(endDate.includes('T') ? endDate : endDate + 'T00:00:00');
+  } else {
+    end = new Date(endDate);
+  }
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  if (end < start) return 0;
+  let businessDays = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    current.setDate(current.getDate() + 1);
+  }
+  return businessDays;
+};
+
 /**
  * Calculate comprehensive leave statistics for an employee
  * @param {string} userId - User ID
@@ -36,9 +62,7 @@ export async function calculateLeaveStats(userId) {
 
   // Calculate leave days
   const calculateDays = (leave) => {
-    const start = new Date(leave.startDate);
-    const end = new Date(leave.endDate);
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    return calculateBusinessDays(leave.startDate, leave.endDate);
   };
 
   // Filter and sum by date range

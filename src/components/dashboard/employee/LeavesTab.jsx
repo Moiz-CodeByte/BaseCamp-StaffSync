@@ -9,6 +9,41 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
+// Calculate business days (excluding weekends)
+const calculateBusinessDays = (startDate, endDate) => {
+  let start, end;
+  
+  if (typeof startDate === 'string') {
+    start = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
+  } else {
+    start = new Date(startDate);
+  }
+  
+  if (typeof endDate === 'string') {
+    end = new Date(endDate.includes('T') ? endDate : endDate + 'T00:00:00');
+  } else {
+    end = new Date(endDate);
+  }
+  
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  
+  if (end < start) return 0;
+  
+  let businessDays = 0;
+  const current = new Date(start);
+  
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      businessDays++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  
+  return businessDays;
+};
+
 export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leaves, deleteLeaveRequest, me }) {
   const [showForm, setShowForm] = useState(false);
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
@@ -68,22 +103,15 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         return leaveStart >= halfStartDate && leaveStart <= halfEndDate;
       })
       .reduce((total, leave) => {
-        const start = new Date(leave.startDate);
-        const end = new Date(leave.endDate);
-        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const days = calculateBusinessDays(leave.startDate, leave.endDate);
         return total + days;
       }, 0);
   }, [leaves]);
 
-  // Calculate duration when dates are selected
+  // Calculate duration when dates are selected (business days only, excluding weekends)
   const duration = useMemo(() => {
-    if (leaveForm.startDate && leaveForm.endDate) {
-      const start = new Date(leaveForm.startDate);
-      const end = new Date(leaveForm.endDate);
-      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      return days > 0 ? days : 0;
-    }
-    return 0;
+    if (!leaveForm.startDate || !leaveForm.endDate) return 0;
+    return calculateBusinessDays(leaveForm.startDate, leaveForm.endDate);
   }, [leaveForm.startDate, leaveForm.endDate]);
 
   // Calculate available leave balance (earned - used in current half)
@@ -471,7 +499,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
               {leaves.map((leave) => {
                 const startDate = new Date(leave.startDate);
                 const endDate = new Date(leave.endDate);
-                const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const days = calculateBusinessDays(leave.startDate, leave.endDate);
                 
                 return (
                   <div 

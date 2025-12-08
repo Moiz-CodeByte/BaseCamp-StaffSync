@@ -2,6 +2,33 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
+
+// Business days calculation function (excludes weekends)
+const calculateBusinessDays = (startDate, endDate) => {
+  let start, end;
+  if (typeof startDate === 'string') {
+    start = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
+  } else {
+    start = new Date(startDate);
+  }
+  if (typeof endDate === 'string') {
+    end = new Date(endDate.includes('T') ? endDate : endDate + 'T00:00:00');
+  } else {
+    end = new Date(endDate);
+  }
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  if (end < start) return 0;
+  let businessDays = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    current.setDate(current.getDate() + 1);
+  }
+  return businessDays;
+};
+
 export async function GET(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -53,9 +80,7 @@ export async function GET(req) {
     
     // Helper function to calculate days between dates
     const calculateDays = (startDate, endDate) => {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      return calculateBusinessDays(startDate, endDate);
     };
     
     // Get approved leaves for this year and calculate total days

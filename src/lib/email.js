@@ -10,7 +10,33 @@
  * 3. Nodemailer (npm install nodemailer)
  * 4. Resend (npm install resend)
  */
-    import { Resend } from 'resend';
+import { Resend } from 'resend';
+
+// Calculate business days (excluding weekends)
+const calculateBusinessDays = (startDate, endDate) => {
+  let start, end;
+  if (typeof startDate === 'string') {
+    start = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
+  } else {
+    start = new Date(startDate);
+  }
+  if (typeof endDate === 'string') {
+    end = new Date(endDate.includes('T') ? endDate : endDate + 'T00:00:00');
+  } else {
+    end = new Date(endDate);
+  }
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  if (end < start) return 0;
+  let businessDays = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    current.setDate(current.getDate() + 1);
+  }
+  return businessDays;
+};
 
 /**
  * Send leave approval request email to reporting managers
@@ -288,10 +314,8 @@ function generateHRNotificationHTML({
     year: 'numeric' 
   });
 
-  // Calculate leave duration
-  const start = new Date(leave.startDate);
-  const end = new Date(leave.endDate);
-  const leaveDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  // Calculate leave duration (business days only, excluding weekends)
+  const leaveDays = calculateBusinessDays(leave.startDate, leave.endDate);
 
   // Status badge color
   let statusColor = '#f59e0b'; // Pending
@@ -424,7 +448,7 @@ function generateHRNotificationHTML({
             </div>
             <div class="detail-row">
               <span class="label">Duration:</span>
-              <span class="value">${leaveDays} day${leaveDays > 1 ? 's' : ''}</span>
+              <span class="value">${leaveDays} business day${leaveDays !== 1 ? 's' : ''} <span style="font-size: 11px; color: #6b7280;">(weekends excluded)</span></span>
             </div>
             <div class="detail-row">
               <span class="label">From:</span>
