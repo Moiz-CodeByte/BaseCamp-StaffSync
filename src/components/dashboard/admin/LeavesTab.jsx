@@ -50,7 +50,9 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
   };
 
   const hasPendingApprovals = (leave) => {
-    return leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
+    const hasPendingManagers = leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
+    const hasPendingRecipients = leave.additionalRecipients && leave.additionalRecipients.some(r => r.status === 'Pending');
+    return hasPendingManagers || hasPendingRecipients;
   };
   return (
     <div className="space-y-6">

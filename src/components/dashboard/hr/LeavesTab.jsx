@@ -93,7 +93,9 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   };
 
   const hasPendingApprovals = (leave) => {
-    return leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
+    const hasPendingManagers = leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
+    const hasPendingRecipients = leave.additionalRecipients && leave.additionalRecipients.some(r => r.status === 'Pending');
+    return hasPendingManagers || hasPendingRecipients;
   };
 
   return (
