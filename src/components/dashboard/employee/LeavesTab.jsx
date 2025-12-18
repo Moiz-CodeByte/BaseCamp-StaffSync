@@ -47,6 +47,7 @@ const calculateBusinessDays = (startDate, endDate) => {
 export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leaves, deleteLeaveRequest, me }) {
   const [showForm, setShowForm] = useState(false);
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calculate earned leaves based on current month (dynamic based on leave_limit)
   const earnedLeaves = useMemo(() => {
@@ -181,9 +182,16 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       return;
     }
     
-    await requestLeave(e);
-    setShowForm(false);
-    setNewRecipient({ name: '', email: '' });
+    setIsSubmitting(true);
+    try {
+      await requestLeave(e);
+      setShowForm(false);
+      setNewRecipient({ name: '', email: '' });
+    } catch (error) {
+      // Error is already handled by requestLeave
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const addRecipient = () => {
@@ -456,15 +464,16 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     setNewRecipient({ name: '', email: '' });
                   }}
                   className="flex-1"
+                  disabled={isSubmitting}
                 >
                   Clear
                 </Button>
                 <Button 
                   type="submit" 
                   className="flex-1"
-                  disabled={validationErrors.length > 0}
+                  disabled={isSubmitting || validationErrors.length > 0}
                 >
-                  Submit Leave Request
+                  {isSubmitting ? 'Submitting...' : 'Submit Leave Request'}
                 </Button>
               </div>
             </form>
