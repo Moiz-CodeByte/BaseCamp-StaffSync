@@ -52,6 +52,11 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
             <p className="text-xs text-gray-500 mt-1">Contact HR to update</p>
           </div>
           <div>
+            <Label className="text-gray-500">Designation</Label>
+            <p className="text-lg font-medium mt-1">{me.designation || 'Not assigned'}</p>
+            <p className="text-xs text-gray-500 mt-1">Contact HR to update</p>
+          </div>
+          <div>
             <Label className="text-gray-500">Reporting Managers</Label>
             {me.reportingManagers && me.reportingManagers.length > 0 ? (
               <div className="mt-2 space-y-3">

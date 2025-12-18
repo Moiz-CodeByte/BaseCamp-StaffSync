@@ -30,7 +30,7 @@ export async function PATCH(req, { params }) {
     
     // Allowed fields to update
     const allowedFields = [
-      'name', 'email', 'department', 'role', 
+      'name', 'email', 'department', 'role', 'designation',
       'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers'
     ];
     

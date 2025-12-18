@@ -26,6 +26,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       email: user.email || '',
       department: deptId || '',
       role: user.role || 'Employee',
+      designation: user.designation || '',
       basic_salary: user.basic_salary || 0,
       allowance: user.allowance || 0,
       leave_limit: user.leave_limit || 12,
@@ -252,6 +253,15 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     </div>
 
                     <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</Label>
+                      <Input 
+                        value={editForm.designation || ''}
+                        onChange={(e) => setEditForm({...editForm, designation: e.target.value})}
+                        placeholder="e.g. Senior Developer"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</Label>
                       <Input 
                         type="number"
@@ -343,10 +353,15 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     </div>
                   </div>
 
-                  <div className={`grid grid-cols-1 gap-4 ${user.role === 'Employee' ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+                  <div className={`grid grid-cols-1 gap-4 ${user.role === 'Employee' ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</p>
                       <p className="text-sm font-medium">{getDepartmentName(user.department)}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
+                      <p className="text-sm font-medium">{user.designation || '-'}</p>
                     </div>
 
                     {user.role === 'Employee' && (

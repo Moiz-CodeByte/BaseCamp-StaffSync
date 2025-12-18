@@ -16,6 +16,7 @@ const UserSchema = new Schema(
       name: { type: String, required: true },
       email: { type: String, required: true }
     }],
+    designation: { type: String, trim: true }, // Job title/designation
     
     // Salary Information (set by HR/Admin)
     basic_salary: { type: Number, default: 0 }, // Default monthly basic salary

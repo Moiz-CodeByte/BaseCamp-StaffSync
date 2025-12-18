@@ -25,6 +25,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   const startEdit = (user) => {
     setEditingId(user._id);
     setEditForm({
+      designation: user.designation || '',
       leave_limit: user.leave_limit || 12,
       reportingManagers: user.reportingManagers || []
     });
@@ -213,7 +214,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                   </div>
 
                   {/* Edit Form Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <Label className="text-xs text-muted-foreground mb-2 block">Department</Label>
                       <div className="p-2 rounded bg-muted text-sm">
@@ -226,6 +227,17 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                       <div className="p-2 rounded bg-muted">
                         {getRoleBadge(user.role)}
                       </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="designation" className="text-xs text-muted-foreground mb-2 block">Designation</Label>
+                      <Input 
+                        id="designation"
+                        value={editForm.designation || ''}
+                        onChange={(e) => setEditForm({...editForm, designation: e.target.value})}
+                        placeholder="e.g. Senior Developer"
+                        className="w-full"
+                      />
                     </div>
 
                     <div>
@@ -295,10 +307,15 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                   </div>
 
                   {/* Info Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Department</p>
                       <p className="text-sm font-medium">{getDepartmentName(user.department)}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Designation</p>
+                      <p className="text-sm font-medium">{user.designation || '-'}</p>
                     </div>
 
                     <div>
