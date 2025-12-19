@@ -109,6 +109,13 @@ export default function HRProfileTab({ me, profileForm, setProfileForm, updatePr
             <Label className="text-gray-500">Leave Limit</Label>
             <p className="text-lg font-medium mt-1">{me.leave_limit || 12} days per year</p>
           </div>
+          {me.previousLeavesAvailed > 0 && (
+            <div>
+              <Label className="text-gray-500">Previous Leaves Used (Pre-System)</Label>
+              <p className="text-lg font-medium mt-1">{me.previousLeavesAvailed} days</p>
+              <p className="text-xs text-gray-500 mt-1">Historical data before system migration</p>
+            </div>
+          )}
           <div>
             <Label className="text-gray-500">Account Created</Label>
             <p className="text-lg font-medium mt-1">

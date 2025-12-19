@@ -96,7 +96,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       halfEndDate = new Date(currentYear, 5, 30, 23, 59, 59);
     }
     
-    return leaves
+    const systemRecordedDays = leaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
         const leaveStart = new Date(l.startDate);
@@ -107,7 +107,15 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         const days = calculateBusinessDays(leave.startDate, leave.endDate);
         return total + days;
       }, 0);
-  }, [leaves]);
+    
+    // Add previous leaves availed (historical pre-migration data) - only if from current year
+    // Auto-resets at year-end: historical leaves only count in the year they were set
+    const currentYearCheck = new Date().getFullYear();
+    const historicalLeaves = (me?.previousLeavesAvailedYear === currentYearCheck) 
+      ? (me?.previousLeavesAvailed || 0) 
+      : 0;
+    return systemRecordedDays + historicalLeaves;
+  }, [leaves, me?.previousLeavesAvailed, me?.previousLeavesAvailedYear]);
 
   // Calculate duration when dates are selected (business days only, excluding weekends)
   const duration = useMemo(() => {

@@ -86,6 +86,8 @@ export async function calculateLeaveStats(userId) {
   const lastMonthDays = lastMonthLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisQuarterDays = thisQuarterLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
 
+  // Note: This function doesn't add previousLeavesAvailed since it needs user object
+  // The calling code should add user.previousLeavesAvailed to thisYear value
   return {
     thisYear: thisYearDays,
     thisMonth: thisMonthDays,

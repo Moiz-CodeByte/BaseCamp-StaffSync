@@ -22,6 +22,10 @@ const UserSchema = new Schema(
     basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
     allowance: { type: Number, default: 0 }, // Default monthly allowance
     leave_limit: { type: Number, default: 12 }, // Annual leave limit (in days)
+    
+    // Historical leave data (for migration purposes)
+    previousLeavesAvailed: { type: Number, default: 0 }, // Leaves already used before system migration
+    previousLeavesAvailedYear: { type: Number }, // Year when previousLeavesAvailed was set (auto-resets at year-end)
   },
   { timestamps: true }
 );

@@ -68,12 +68,19 @@ export default function EmployeeDashboard() {
       setLeaves(leaveList);
       
       // Calculate total leave days (approved leaves - business days only)
-      const totalLeaveDays = leaveList
+      const systemRecordedDays = leaveList
         .filter(l => l.status === 'Approved')
         .reduce((total, leave) => {
           const days = calculateBusinessDays(leave.startDate, leave.endDate);
           return total + days;
         }, 0);
+      
+      // Add previous leaves availed (pre-migration data) - only if from current year
+      const currentYear = new Date().getFullYear();
+      const historicalLeaves = (meData.user.previousLeavesAvailedYear === currentYear) 
+        ? (meData.user.previousLeavesAvailed || 0) 
+        : 0;
+      const totalLeaveDays = systemRecordedDays + historicalLeaves;
       
       setStats({
         totalLeaveDays,

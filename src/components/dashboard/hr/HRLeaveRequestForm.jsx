@@ -94,7 +94,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
       halfEndDate = new Date(currentYear, 5, 30, 23, 59, 59);
     }
     
-    return myLeaves
+    const systemRecordedDays = myLeaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
         const leaveStart = new Date(l.startDate);
@@ -105,7 +105,13 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
         const days = calculateBusinessDays(leave.startDate, leave.endDate);
         return total + days;
       }, 0);
-  }, [myLeaves]);
+    
+    // Add previous leaves availed (historical pre-migration data) - only if from current year
+    const historicalLeaves = (me?.previousLeavesAvailedYear === currentYear) 
+      ? (me?.previousLeavesAvailed || 0) 
+      : 0;
+    return systemRecordedDays + historicalLeaves;
+  }, [myLeaves, me?.previousLeavesAvailed, me?.previousLeavesAvailedYear]);
 
   const calculateDays = () => {
     if (formData.startDate && formData.endDate) {

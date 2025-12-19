@@ -6,7 +6,7 @@ import { signToken } from '@/lib/auth';
 
 export async function POST(req) {
   await connectDB();
-  const { name, email, password, role, department } = await req.json();
+  const { name, email, password, role, department, previousLeavesAvailed } = await req.json();
 
   const exists = await User.findOne({ email });
   if (exists) {
@@ -14,7 +14,21 @@ export async function POST(req) {
   }
 
   try {
-    const user = await User.create({ name, email, password, role, department: department || undefined });
+    const userData = { 
+      name, 
+      email, 
+      password, 
+      role, 
+      department: department || undefined 
+    };
+    
+    // Only add previousLeavesAvailed if provided and greater than 0
+    if (previousLeavesAvailed && previousLeavesAvailed > 0) {
+      userData.previousLeavesAvailed = previousLeavesAvailed;
+      userData.previousLeavesAvailedYear = new Date().getFullYear();
+    }
+    
+    const user = await User.create(userData);
     const token = signToken(user);
     return NextResponse.json(
       { token, user: { id: user._id, name, email, role: user.role, department: user.department } },

@@ -22,13 +22,18 @@ export async function GET(req) {
     
     // Manually populate department
     if (user.department) {
-      const department = await Department.findById(user.department);
+      const department = await Department.findById(user.department).populate('hr', 'name email');
       user.department = department;
       
       // If user has no reportingManagers field at all (undefined), use department managers
       // If it's an empty array [], that means explicitly set to zero managers
       if (user.reportingManagers === undefined || user.reportingManagers === null) {
         user.reportingManagers = department?.reportingManagers || [];
+      }
+      
+      // If user has no assignedHR, use department's HR
+      if (!user.assignedHR && department?.hr) {
+        user.assignedHR = department.hr;
       }
     } else {
       // Ensure reportingManagers field exists (for backward compatibility)
