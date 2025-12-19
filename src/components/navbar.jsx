@@ -31,13 +31,21 @@ export default function Navbar() {
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
+              <Link href="/feedback">
+                <Button variant="ghost" size="sm">Feedback</Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={signOut}>Logout</Button>
             </>
           )}
           {!loading && !user && (
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Login</Button>
-            </Link>
+            <>
+              <Link href="/feedback">
+                <Button variant="ghost" size="sm">Feedback</Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">Login</Button>
+              </Link>
+            </>
           )}
           <ThemeToggle />
         </div>

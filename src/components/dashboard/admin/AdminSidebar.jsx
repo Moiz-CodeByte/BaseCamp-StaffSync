@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, User, Users, LayoutDashboard, Building2 } from 'lucide-react';
+import { FileText, User, Users, LayoutDashboard, Building2, MessageSquare } from 'lucide-react';
 
 export default function AdminSidebar({ sidebarOpen, activeTab, onTabChange, me }) {
   const menuItems = [
@@ -8,6 +8,7 @@ export default function AdminSidebar({ sidebarOpen, activeTab, onTabChange, me }
     { id: 'departments', label: 'Departments', icon: Building2 },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'leaves', label: 'Leave Management', icon: FileText },
+    { id: 'feedback', label: 'Feedback & Bugs', icon: MessageSquare },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

@@ -9,6 +9,7 @@ import OverviewTab from '@/components/dashboard/admin/OverviewTab';
 import UsersTab from '@/components/dashboard/admin/UsersTab';
 import DepartmentsTab from '@/components/dashboard/admin/DepartmentsTab';
 import LeavesTab from '@/components/dashboard/admin/LeavesTab';
+import FeedbackTab from '@/components/dashboard/admin/FeedbackTab';
 import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
 export default function AdminDashboard() {
@@ -190,6 +191,7 @@ export default function AdminDashboard() {
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
             {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
             {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
+            {activeTab === 'feedback' && <FeedbackTab />}
             {activeTab === 'profile' && (
               <ProfileTab 
                 me={me} 
