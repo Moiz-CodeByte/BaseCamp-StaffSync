@@ -6,7 +6,7 @@ import { signToken } from '@/lib/auth';
 
 export async function POST(req) {
   await connectDB();
-  const { name, email, password, role, department, previousLeavesAvailed } = await req.json();
+  const { name, email, password, role, department, designation, previousLeavesAvailed } = await req.json();
 
   const exists = await User.findOne({ email });
   if (exists) {
@@ -19,7 +19,8 @@ export async function POST(req) {
       email, 
       password, 
       role, 
-      department: department || undefined 
+      department: department || undefined,
+      designation: designation || undefined
     };
     
     // Only add previousLeavesAvailed if provided and greater than 0
