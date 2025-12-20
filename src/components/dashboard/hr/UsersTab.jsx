@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search, UserPlus, UserMinus, Mail } from 'lucide-react';
+import { Edit, Save, X, Search, UserPlus, UserMinus, Mail, Eye, Calendar, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -15,6 +15,9 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   const [editForm, setEditForm] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [viewingUser, setViewingUser] = useState(null);
+  const [userStats, setUserStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // Get departments where this HR is assigned
   const myDepartments = useMemo(() => {
@@ -45,6 +48,37 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
       toast.success(`Password reset email sent to ${userEmail}`);
     } catch (error) {
       toast.error(error.message || 'Failed to send password reset email');
+    }
+  };
+
+  const viewUserDetails = async (user) => {
+    setViewingUser(user);
+    setLoadingStats(true);
+    
+    try {
+      // Fetch user stats - leaves
+      const leavesRes = await api.get(`/api/leaves/my?userId=${user._id}`);
+      
+      setUserStats({
+        leaves: leavesRes.data?.leaves || []
+      });
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+      setUserStats({ leaves: [] });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const closeViewModal = () => {
+    setViewingUser(null);
+    setUserStats(null);
+  };
+
+  const startEditFromView = () => {
+    if (viewingUser) {
+      startEdit(viewingUser);
+      closeViewModal();
     }
   };
 
@@ -313,9 +347,13 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => viewUserDetails(user)} title="View Details">
+                        <Eye className="w-4 h-4 mr-1" />
+                        <span className="hidden sm:inline">View</span>
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
                         <Edit className="w-4 h-4 mr-1" />
-                        Edit
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                       <Button 
                         size="sm" 
@@ -370,6 +408,173 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
           ))
         )}
       </div>
+
+      {/* View User Details Modal */}
+      {viewingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4" onClick={closeViewModal}>
+          <div className="bg-background rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-b p-3 sm:p-4 md:p-6 z-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-base sm:text-lg md:text-xl flex-shrink-0">
+                    {viewingUser.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold truncate">{viewingUser.name}</h2>
+                      {getRoleBadge(viewingUser.role)}
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{viewingUser.email}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button size="sm" onClick={startEditFromView} className="flex-1 sm:flex-none">
+                    <Edit className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Edit Details</span>
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={closeViewModal}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+              {/* Basic Information */}
+              <div className="rounded-lg border bg-card shadow-sm">
+                <div className="p-4 border-b">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-600" />
+                    Basic Information
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Full Name</p>
+                      <p className="text-sm font-medium">{viewingUser.name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</p>
+                      <p className="text-sm font-medium">{viewingUser.email}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</p>
+                      {getRoleBadge(viewingUser.role)}
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</p>
+                      <p className="text-sm font-medium">{getDepartmentName(viewingUser.department)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
+                      <p className="text-sm font-medium">{viewingUser.designation || '-'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
+                      <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                    </div>
+                    {viewingUser.createdAt && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Joined Date</p>
+                        <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    )}
+                    {viewingUser.reportingManagers && viewingUser.reportingManagers.length > 0 && (
+                      <div className="space-y-1 md:col-span-3">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
+                        <div className="flex flex-wrap gap-1">
+                          {viewingUser.reportingManagers.map((manager, idx) => (
+                            <span key={idx} title={`${manager.name} - ${manager.email}`}>
+                              <Badge variant="outline" className="text-xs cursor-help">
+                                {manager.name}
+                              </Badge>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Leave Statistics */}
+              {loadingStats ? (
+                <div className="rounded-lg border bg-card shadow-sm">
+                  <div className="p-12">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                      <span className="ml-3 text-muted-foreground">Loading statistics...</span>
+                    </div>
+                  </div>
+                </div>
+              ) : userStats && (
+                <div className="rounded-lg border bg-card shadow-sm">
+                  <div className="p-4 border-b">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                      Leave History
+                    </h3>
+                  </div>
+                  <div className="p-4">
+                    {userStats.leaves && userStats.leaves.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Total Requests</p>
+                            <p className="text-2xl font-bold text-blue-600">{userStats.leaves.length}</p>
+                          </div>
+                          <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Approved</p>
+                            <p className="text-2xl font-bold text-green-600">
+                              {userStats.leaves.filter(l => l.status === 'Approved').length}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Pending</p>
+                            <p className="text-2xl font-bold text-yellow-600">
+                              {userStats.leaves.filter(l => l.status === 'Pending').length}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Rejected</p>
+                            <p className="text-2xl font-bold text-red-600">
+                              {userStats.leaves.filter(l => l.status === 'Rejected').length}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="font-semibold text-sm">Recent Leave Requests</p>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {userStats.leaves.slice(0, 10).map((leave, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-sm">
+                                <div>
+                                  <p className="font-medium">{leave.type}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <Badge variant={
+                                  leave.status === 'Approved' ? 'default' :
+                                  leave.status === 'Pending' ? 'secondary' : 'destructive'
+                                }>
+                                  {leave.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">No leave requests found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
