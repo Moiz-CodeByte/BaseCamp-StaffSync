@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search, Trash2, UserPlus, UserMinus, Mail } from 'lucide-react';
+import { Edit, Save, X, Search, Trash2, UserPlus, UserMinus, Mail, Eye, Calendar, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -16,6 +16,9 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
   const [editForm, setEditForm] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [viewingUser, setViewingUser] = useState(null);
+  const [userStats, setUserStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   const startEdit = (user) => {
     setEditingId(user._id);
@@ -103,6 +106,37 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
     }
   };
 
+  const viewUserDetails = async (user) => {
+    setViewingUser(user);
+    setLoadingStats(true);
+    
+    try {
+      // Fetch user stats - leaves
+      const leavesRes = await api.get(`/api/leaves/my?userId=${user._id}`);
+      
+      setUserStats({
+        leaves: leavesRes.data?.leaves || []
+      });
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+      setUserStats({ leaves: [] });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const closeViewModal = () => {
+    setViewingUser(null);
+    setUserStats(null);
+  };
+
+  const startEditFromView = () => {
+    if (viewingUser) {
+      startEdit(viewingUser);
+      closeViewModal();
+    }
+  };
+
   const deleteUser = async (id, userName) => {
     if (!isAdmin) {
       toast.error('Only admins can delete users');
@@ -169,7 +203,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex gap-4 items-end">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
         <div className="flex-1">
           <Label htmlFor="search">Search</Label>
           <div className="relative">
@@ -183,7 +217,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
             />
           </div>
         </div>
-        <div className="w-64">
+        <div className="w-full sm:w-64">
           <Label htmlFor="department">Department</Label>
           <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
             <SelectTrigger id="department">
@@ -216,16 +250,16 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       ) : (
         <div className="grid gap-4">
           {filteredUsers.map(user => (
-            <div key={user._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card">
+            <div key={user._id} className="border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow bg-card">
               {editingId === user._id ? (
                 /* Edit Mode */
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
                         {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <Input 
                           value={editForm.name}
                           onChange={(e) => setEditForm({...editForm, name: e.target.value})}
@@ -234,14 +268,14 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         />
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
-                        <X className="w-4 h-4 mr-1" />
-                        Cancel
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button size="sm" variant="outline" onClick={cancelEdit} className="flex-1 sm:flex-none">
+                        <X className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Cancel</span>
                       </Button>
-                      <Button size="sm" onClick={() => saveEdit(user._id)}>
-                        <Save className="w-4 h-4 mr-1" />
-                        Save
+                      <Button size="sm" onClick={() => saveEdit(user._id)} className="flex-1 sm:flex-none">
+                        <Save className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Save</span>
                       </Button>
                     </div>
                   </div>
@@ -281,15 +315,17 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</Label>
-                      <Input 
-                        type="number"
-                        value={editForm.leave_limit}
-                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
-                        className="w-full"
-                      />
-                    </div>
+                    {editForm.role !== 'Admin' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</Label>
+                        <Input 
+                          type="number"
+                          value={editForm.leave_limit}
+                          onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {isAdmin && (
@@ -308,57 +344,63 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     </div>
                   )}
 
-                  <div className="md:col-span-3">
+                  {editForm.role !== 'Admin' && (
+                    <div className="md:col-span-3">
 
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
-                          getAvailableManagers(users.find(u => u._id === editingId) || {}).map((manager, idx) => {
-                            const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
-                            return (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => toggleManager(manager)}
-                                className={`flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
-                                  isSelected 
-                                    ? 'bg-primary text-primary-foreground' 
-                                    : 'bg-muted hover:bg-muted/70'
-                                }`}
-                              >
-                                <span className="truncate">{manager.name}</span>
-                                {isSelected ? <UserMinus className="w-4 h-4 ml-2 flex-shrink-0" /> : <UserPlus className="w-4 h-4 ml-2 flex-shrink-0" />}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <p className="text-sm text-muted-foreground col-span-2">No managers in department</p>
-                        )}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
+                            getAvailableManagers(users.find(u => u._id === editingId) || {}).map((manager, idx) => {
+                              const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => toggleManager(manager)}
+                                  className={`flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
+                                    isSelected 
+                                      ? 'bg-primary text-primary-foreground' 
+                                      : 'bg-muted hover:bg-muted/70'
+                                  }`}
+                                >
+                                  <span className="truncate">{manager.name}</span>
+                                  {isSelected ? <UserMinus className="w-4 h-4 ml-2 flex-shrink-0" /> : <UserPlus className="w-4 h-4 ml-2 flex-shrink-0" />}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <p className="text-sm text-muted-foreground col-span-2">No managers in department</p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ) : (
                 /* View Mode */
                 <div>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
                         {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{user.name}</h4>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-semibold truncate">{user.name}</h4>
                           {getRoleBadge(user.role)}
                         </div>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => viewUserDetails(user)} className="flex-1 sm:flex-none">
+                        <Eye className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">View</span>
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => startEdit(user)} className="flex-1 sm:flex-none">
+                        <Edit className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                       {isAdmin && (
                         <>
@@ -408,30 +450,216 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       </div>
                     )}
 
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
-                      <p className="text-2xl font-bold text-primary">{user.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days</span></p>
-                    </div>
+                    {user.role !== 'Admin' && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
+                        <p className="text-2xl font-bold text-primary">{user.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days</span></p>
+                      </div>
+                    )}
 
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
-                      {user.reportingManagers && user.reportingManagers.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {user.reportingManagers.map((manager, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
-                              {manager.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No managers assigned</p>
-                      )}
-                    </div>
+                    {user.role !== 'Admin' && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
+                        {user.reportingManagers && user.reportingManagers.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {user.reportingManagers.map((manager, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
+                                {manager.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No managers assigned</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* View User Details Modal */}
+      {viewingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4" onClick={closeViewModal}>
+          <div className="bg-background rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-b p-3 sm:p-4 md:p-6 z-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-base sm:text-lg md:text-xl flex-shrink-0">
+                    {viewingUser.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold truncate">{viewingUser.name}</h2>
+                      {getRoleBadge(viewingUser.role)}
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{viewingUser.email}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button size="sm" onClick={startEditFromView} className="flex-1 sm:flex-none">
+                    <Edit className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Edit Details</span>
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={closeViewModal}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+              {/* Basic Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-600" />
+                    Basic Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Full Name</p>
+                      <p className="text-sm font-medium">{viewingUser.name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</p>
+                      <p className="text-sm font-medium">{viewingUser.email}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</p>
+                      {getRoleBadge(viewingUser.role)}
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</p>
+                      <p className="text-sm font-medium">{getDepartmentName(viewingUser.department)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
+                      <p className="text-sm font-medium">{viewingUser.designation || '-'}</p>
+                    </div>
+                    {viewingUser.role !== 'Admin' && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
+                        <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 12} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                      </div>
+                    )}
+                   
+                    {viewingUser.role === 'Employee' && viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assigned HR</p>
+                        <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
+                          <Badge variant="secondary" className="cursor-help">{viewingUser.department.hr.name}</Badge>
+                        </span>
+                      </div>
+                    )}
+                   
+                    {viewingUser.createdAt && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User Creation Date</p>
+                        <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    )}
+                    {viewingUser.role !== 'Admin' && viewingUser.reportingManagers && viewingUser.reportingManagers.length > 0 && (
+                      <div className="space-y-1 md:col-span-3">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
+                        <div className="flex flex-wrap gap-1">
+                          {viewingUser.reportingManagers.map((manager, idx) => (
+                            <span key={idx} title={`${manager.name} - ${manager.email}`}>
+                              <Badge variant="outline" className="text-xs cursor-help">
+                                {manager.name}
+                              </Badge>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Statistics */}
+              {loadingStats ? (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                      <span className="ml-3 text-muted-foreground">Loading statistics...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : userStats && viewingUser.role !== 'Admin' && (
+                <>
+                  {/* Leave Statistics */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        Leave History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {userStats.leaves && userStats.leaves.length > 0 ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Total Requests</p>
+                              <p className="text-2xl font-bold text-blue-600">{userStats.leaves.length}</p>
+                            </div>
+                            <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Approved</p>
+                              <p className="text-2xl font-bold text-green-600">
+                                {userStats.leaves.filter(l => l.status === 'Approved').length}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Pending</p>
+                              <p className="text-2xl font-bold text-yellow-600">
+                                {userStats.leaves.filter(l => l.status === 'Pending').length}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Rejected</p>
+                              <p className="text-2xl font-bold text-red-600">
+                                {userStats.leaves.filter(l => l.status === 'Rejected').length}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-semibold text-sm">Recent Leave Requests</p>
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                              {userStats.leaves.slice(0, 10).map((leave, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-sm">
+                                  <div>
+                                    <p className="font-medium">{leave.type}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <Badge variant={
+                                    leave.status === 'Approved' ? 'default' :
+                                    leave.status === 'Pending' ? 'secondary' : 'destructive'
+                                  }>
+                                    {leave.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground py-8">No leave requests found</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

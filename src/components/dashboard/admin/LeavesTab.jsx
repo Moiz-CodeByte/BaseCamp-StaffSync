@@ -199,8 +199,10 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Yearly:</span>
-                            <span className="font-medium">{stats.yearlyTaken !== undefined ? stats.yearlyTaken : 0}</span>
+                            <span className="text-muted-foreground">
+                              {stats.currentHalf === 'first' ? 'First Half (Jan-Jun):' : 'Second Half (Jul-Dec):'}
+                            </span>
+                            <span className="font-medium">{stats.halfYearTaken !== undefined ? stats.halfYearTaken : 0}</span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-muted-foreground">This Month:</span>

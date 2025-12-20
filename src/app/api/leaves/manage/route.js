@@ -128,6 +128,25 @@ export async function GET(req) {
       return total + calculateDays(leave.startDate, leave.endDate);
     }, 0);
     
+    // Determine current half (First Half: Jan-Jun, Second Half: Jul-Dec)
+    // currentMonth is 1-based (1-12), so Jan=1, Jun=6, Jul=7, Dec=12
+    const currentHalf = currentMonth <= 6 ? 'first' : 'second';
+    const halfStartMonth = currentHalf === 'first' ? 0 : 6; // JS months are 0-based
+    const halfEndMonth = currentHalf === 'first' ? 6 : 12;
+    
+    // Get approved leaves for current half year and calculate total days
+    const halfYearLeaves = await Leave.find({
+      user: userId,
+      status: 'Approved',
+      startDate: {
+        $gte: new Date(currentYear, halfStartMonth, 1),
+        $lte: new Date(currentYear, halfEndMonth === 12 ? 11 : halfEndMonth - 1, 31, 23, 59, 59)
+      }
+    });
+    const halfYearApprovedLeaves = halfYearLeaves.reduce((total, leave) => {
+      return total + calculateDays(leave.startDate, leave.endDate);
+    }, 0);
+    
     const leaveLimit = leave.user.leave_limit || 10;
     const remaining = leaveLimit - yearlyApprovedLeaves;
     
@@ -136,6 +155,8 @@ export async function GET(req) {
       leaveStats: {
         leaveLimit,
         yearlyTaken: yearlyApprovedLeaves,
+        halfYearTaken: halfYearApprovedLeaves,
+        currentHalf: currentHalf,
         remaining: remaining > 0 ? remaining : 0,
         currentMonth: monthlyApprovedLeaves,
         previousMonth: previousMonthLeaves

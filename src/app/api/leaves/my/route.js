@@ -8,6 +8,13 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   await connectDB();
 
-  const leaves = await Leave.find({ user: user.id }).sort({ createdAt: -1 }).limit(30);
+  // Check if userId is provided in query params (for admin/HR viewing other users)
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get('userId');
+  
+  // Use provided userId if available, otherwise use authenticated user's id
+  const targetUserId = userId || user.id;
+
+  const leaves = await Leave.find({ user: targetUserId }).sort({ createdAt: -1 }).limit(30);
   return NextResponse.json({ leaves });
 }
