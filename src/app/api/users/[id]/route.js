@@ -91,7 +91,9 @@ export async function GET(req, { params }) {
     
     // Manually populate department
     if (targetUser.department) {
-      targetUser.department = await Department.findById(targetUser.department);
+      targetUser.department = await Department.findById(targetUser.department)
+        .populate('hr', 'name email')
+        .lean();
       
       // If user has no reportingManagers field at all (undefined), use department managers
       // If it's an empty array [], that means explicitly set to zero managers

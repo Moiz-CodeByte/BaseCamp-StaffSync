@@ -481,6 +481,14 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
                       <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                     </div>
+                    {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assigned HR</p>
+                        <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
+                          <Badge variant="secondary" className="cursor-help">{viewingUser.department.hr.name}</Badge>
+                        </span>
+                      </div>
+                    )}
                     {viewingUser.createdAt && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Joined Date</p>
