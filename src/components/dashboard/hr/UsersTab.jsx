@@ -52,18 +52,25 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   };
 
   const viewUserDetails = async (user) => {
-    setViewingUser(user);
     setLoadingStats(true);
     
     try {
-      // Fetch user stats - leaves
-      const leavesRes = await api.get(`/api/leaves/my?userId=${user._id}`);
+      // Fetch updated user data and leaves
+      const [userRes, leavesRes] = await Promise.all([
+        api.get(`/api/users/${user._id}`),
+        api.get(`/api/leaves/my?userId=${user._id}`)
+      ]);
       
+      console.log('Fetched user data:', userRes.data.user);
+      console.log('previousLeavesAvailed:', userRes.data.user?.previousLeavesAvailed);
+      
+      setViewingUser(userRes.data.user || user);
       setUserStats({
         leaves: leavesRes.data?.leaves || []
       });
     } catch (error) {
       console.error('Error fetching user stats:', error);
+      setViewingUser(user);
       setUserStats({ leaves: [] });
     } finally {
       setLoadingStats(false);
@@ -517,41 +524,41 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     </h3>
                   </div>
                   <div className="p-4">
-                    {userStats.leaves && userStats.leaves.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Total Requests</p>
-                            <p className="text-2xl font-bold text-blue-600">{userStats.leaves.length}</p>
-                          </div>
-                          <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Approved</p>
-                            <p className="text-2xl font-bold text-green-600">
-                              {userStats.leaves.filter(l => l.status === 'Approved').length}
-                            </p>
-                          </div>
-                          <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Pending</p>
-                            <p className="text-2xl font-bold text-yellow-600">
-                              {userStats.leaves.filter(l => l.status === 'Pending').length}
-                            </p>
-                          </div>
-                          <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Rejected</p>
-                            <p className="text-2xl font-bold text-red-600">
-                              {userStats.leaves.filter(l => l.status === 'Rejected').length}
-                            </p>
-                          </div>
-                          {viewingUser.previousLeavesAvailed && viewingUser.previousLeavesAvailed > 0 && (
-                            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg md:col-span-2">
-                              <p className="text-xs text-muted-foreground">Previous Leaves Used (Pre-System)</p>
-                              <p className="text-2xl font-bold text-purple-600">
-                                {viewingUser.previousLeavesAvailed}
-                                <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
-                              </p>
-                            </div>
-                          )}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                          <p className="text-xs text-muted-foreground">Total Requests</p>
+                          <p className="text-2xl font-bold text-blue-600">{userStats.leaves?.length || 0}</p>
                         </div>
+                        <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                          <p className="text-xs text-muted-foreground">Approved</p>
+                          <p className="text-2xl font-bold text-green-600">
+                            {userStats.leaves?.filter(l => l.status === 'Approved').length || 0}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
+                          <p className="text-xs text-muted-foreground">Pending</p>
+                          <p className="text-2xl font-bold text-yellow-600">
+                            {userStats.leaves?.filter(l => l.status === 'Pending').length || 0}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                          <p className="text-xs text-muted-foreground">Rejected</p>
+                          <p className="text-2xl font-bold text-red-600">
+                            {userStats.leaves?.filter(l => l.status === 'Rejected').length || 0}
+                          </p>
+                        </div>
+                        {viewingUser.previousLeavesAvailed != null && viewingUser.previousLeavesAvailed > 0 && (
+                          <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg md:col-span-2">
+                            <p className="text-xs text-muted-foreground">Previous Leaves Used (Pre-System)</p>
+                            <p className="text-2xl font-bold text-purple-600">
+                              {viewingUser.previousLeavesAvailed}
+                              <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {userStats.leaves && userStats.leaves.length > 0 && (
                         <div className="space-y-2">
                           <p className="font-semibold text-sm">Recent Leave Requests</p>
                           <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -573,10 +580,8 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                             ))}
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground py-8">No leave requests found</p>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
