@@ -55,7 +55,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     const currentMonth = now.getMonth(); // 0-11 (Jan-Dec)
     const currentYear = now.getFullYear();
     
-    const leaveLimit = me?.leave_limit || 12; // Use leave_limit from user model
+    const leaveLimit = me?.leave_limit || 10; // Use leave_limit from user model
     const monthlyAccrual = leaveLimit / 12; // Leaves earned per month
     const maxPerHalf = leaveLimit / 2; // Maximum leaves per half-year
     
@@ -165,7 +165,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     
     // Check if duration exceeds earned leaves for current half
     if (duration > 0) {
-      const maxPerHalf = Math.floor((me?.leave_limit || 12) / 2);
+      const maxPerHalf = Math.floor((me?.leave_limit || 10) / 2);
       
       // Check if duration exceeds max per half
       if (duration > maxPerHalf) {
@@ -286,7 +286,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                       {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''} earned
                     </span>
                     <span className="text-xs text-blue-600 dark:text-blue-400">
-                      ({((me?.leave_limit || 12) / 12).toFixed(1)} per month)
+                      ({((me?.leave_limit || 10) / 12).toFixed(1)} per month)
                     </span>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    💡 You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 12) / 2)} leaves per half-year. Unused leaves from previous period are not carried forward.
+                    💡 You earn {((me?.leave_limit || 10) / 12).toFixed(1)} leave{((me?.leave_limit || 10) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 10) / 2)} leaves per half-year. Unused leaves from previous period are not carried forward.
                   </p>
                 </div>
 

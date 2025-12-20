@@ -179,7 +179,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
                 <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Leave Limit</div>
-                <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 12}</div>
+                <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
               </div>
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
                 <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Year</div>
@@ -460,7 +460,7 @@ function generateHRNotificationHTML({
             </div>
             <div class="detail-row">
               <span class="label">Leave Limit:</span>
-              <span class="value">${employee.leave_limit || 12} days/year</span>
+              <span class="value">${employee.leave_limit || 10} days/year</span>
             </div>
             <div class="detail-row">
               <span class="label">Status:</span>

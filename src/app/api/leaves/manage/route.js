@@ -128,7 +128,7 @@ export async function GET(req) {
       return total + calculateDays(leave.startDate, leave.endDate);
     }, 0);
     
-    const leaveLimit = leave.user.leave_limit || 12;
+    const leaveLimit = leave.user.leave_limit || 10;
     const remaining = leaveLimit - yearlyApprovedLeaves;
     
     return {

@@ -53,7 +53,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     const now = new Date();
     const currentMonth = now.getMonth(); // 0-11 (Jan-Dec)
     
-    const leaveLimit = me?.leave_limit || 12; // Use leave_limit from user model
+    const leaveLimit = me?.leave_limit || 10; // Use leave_limit from user model
     const monthlyAccrual = leaveLimit / 12; // Leaves earned per month
     const maxPerHalf = leaveLimit / 2; // Maximum leaves per half-year
     
@@ -163,7 +163,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     
     // Check if duration exceeds earned leaves for current half
     if (days > 0) {
-      const maxPerHalf = Math.floor((me?.leave_limit || 12) / 2);
+      const maxPerHalf = Math.floor((me?.leave_limit || 10) / 2);
       
       // Check if duration exceeds max per half
       if (days > maxPerHalf) {
@@ -415,7 +415,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                   {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{((me?.leave_limit || 12) / 12).toFixed(1)} per month</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{((me?.leave_limit || 10) / 12).toFixed(1)} per month</p>
               </div>
               
               <div className="p-3 rounded-lg bg-muted border">
@@ -441,13 +441,13 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                 }`}>
                   {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Max {Math.floor((me?.leave_limit || 12) / 2)}/half</p>
+                <p className="text-xs text-muted-foreground mt-1">Max {Math.floor((me?.leave_limit || 10) / 2)}/half</p>
               </div>
             </div>
             
             <div className="p-3 rounded-lg bg-muted/50 border">
               <p className="text-xs text-muted-foreground">
-                💡 <strong>Leave Policy:</strong> You earn {((me?.leave_limit || 12) / 12).toFixed(1)} leave{((me?.leave_limit || 12) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 12) / 2)} leaves per half-year (Jan-Jun & Jul-Dec). Unused leaves from previous period are not carried forward.
+                💡 <strong>Leave Policy:</strong> You earn {((me?.leave_limit || 10) / 12).toFixed(1)} leave{((me?.leave_limit || 10) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 10) / 2)} leaves per half-year (Jan-Jun & Jul-Dec). Unused leaves from previous period are not carried forward.
               </p>
             </div>
 

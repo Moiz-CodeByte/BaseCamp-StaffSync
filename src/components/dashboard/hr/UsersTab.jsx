@@ -26,7 +26,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
     setEditingId(user._id);
     setEditForm({
       designation: user.designation || '',
-      leave_limit: user.leave_limit || 12,
+      leave_limit: user.leave_limit || 10,
       reportingManagers: user.reportingManagers || []
     });
   };
@@ -258,7 +258,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         id="leave_limit"
                         type="number"
                         value={editForm.leave_limit}
-                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 12})}
+                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
                         className="w-full"
                       />
                     </div>
@@ -344,7 +344,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Leave Limit</p>
                       <p className="text-sm font-medium">
-                        <span className="text-2xl font-bold text-primary">{user.leave_limit || 12}</span>
+                        <span className="text-2xl font-bold text-primary">{user.leave_limit || 10}</span>
                         <span className="text-muted-foreground ml-1">days/year</span>
                       </p>
                     </div>

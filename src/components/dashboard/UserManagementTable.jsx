@@ -286,7 +286,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <Input 
                         type="number"
                         value={editForm.leave_limit}
-                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 12})}
+                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
                         className="w-full"
                       />
                     </div>
@@ -410,7 +410,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
-                      <p className="text-2xl font-bold text-primary">{user.leave_limit || 12} <span className="text-sm font-normal text-muted-foreground">days</span></p>
+                      <p className="text-2xl font-bold text-primary">{user.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days</span></p>
                     </div>
 
                     <div className="space-y-1">

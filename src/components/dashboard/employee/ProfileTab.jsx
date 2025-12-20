@@ -88,7 +88,7 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
           </div> */}
           <div>
             <Label className="text-gray-500">Leave Limit</Label>
-            <p className="text-lg font-medium mt-1">{me.leave_limit || 12} days per year</p>
+            <p className="text-lg font-medium mt-1">{me.leave_limit || 10} days per year</p>
           </div>
           {me.previousLeavesAvailed > 0 && (
             <div>
