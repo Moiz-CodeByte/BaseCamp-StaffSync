@@ -628,6 +628,15 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                                 {userStats.leaves.filter(l => l.status === 'Rejected').length}
                               </p>
                             </div>
+                            {viewingUser.previousLeavesAvailed && viewingUser.previousLeavesAvailed > 0 && (
+                              <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg md:col-span-2">
+                                <p className="text-xs text-muted-foreground">Previous Leaves Used (Pre-System)</p>
+                                <p className="text-2xl font-bold text-purple-600">
+                                  {viewingUser.previousLeavesAvailed}
+                                  <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
+                                </p>
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <p className="font-semibold text-sm">Recent Leave Requests</p>
