@@ -7,14 +7,14 @@ import UserManagementTable from '@/components/dashboard/UserManagementTable';
 
 export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', previousLeavesAvailed: 0 });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', previousLeavesAvailed: 0 });
 
   const addUser = async (e) => {
     e.preventDefault();
     try {
       const { api } = await import('@/lib/api');
       await api.post('/api/auth/register', newUser);
-      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', previousLeavesAvailed: 0 });
+      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', previousLeavesAvailed: 0 });
       setShowAddUser(false);
       onUpdate();
     } catch (e) {
@@ -103,6 +103,14 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
                     <option key={dept._id} value={dept._id}>{dept.name}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Designation</label>
+                <Input 
+                  placeholder="e.g. Senior Developer" 
+                  value={newUser.designation} 
+                  onChange={e => setNewUser({ ...newUser, designation: e.target.value })} 
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Previous Leaves Used (Optional)</label>
