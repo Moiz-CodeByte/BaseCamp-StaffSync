@@ -18,14 +18,23 @@ const UserSchema = new Schema(
     }],
     designation: { type: String, trim: true }, // Job title/designation
     
-    // Salary Information (set by HR/Admin)
-    basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
-    allowance: { type: Number, default: 0 }, // Default monthly allowance
+    // _basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
+    // get basic_salary() {
+    //   return this._basic_salary;
+    // },
+    // set basic_salary(value) {
+    //   this._basic_salary = value;
+    // },
+    //_allowance: { type: Number, default: 0 }, // Default monthly allowance
     leave_limit: { type: Number, default: 12 }, // Annual leave limit (in days)
     
     // Historical leave data (for migration purposes)
     previousLeavesAvailed: { type: Number, default: 0 }, // Leaves already used before system migration
     previousLeavesAvailedYear: { type: Number }, // Year when previousLeavesAvailed was set (auto-resets at year-end)
+    
+    // Password reset tokens
+    passwordResetToken: { type: String },
+    passwordResetExpires: { type: Date },
   },
   { timestamps: true }
 );

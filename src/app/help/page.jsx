@@ -61,8 +61,10 @@ export default function HelpPage() {
           title: 'Check Available Balance',
           description: 'Before requesting leave, check your available balance shown on the dashboard.',
           tips: [
-            'Leaves are earned monthly (1 day per month)',
-            'Maximum 6 days can be accumulated per half-year',
+            'Available leave balance varies by employee depending on your leave limit',
+            'Leaves are earned monthly (1 day per month based on your annual limit)',
+            'Maximum 5 days can be accumulated per half-year',
+            'Your leave limit is set by HR and may differ from other employees',
             'You cannot request more days than available',
             'Pending requests block new submissions until approved/rejected'
           ]
@@ -204,7 +206,7 @@ export default function HelpPage() {
         {
           step: 'Q1',
           title: 'How many leaves can I take per year?',
-          description: 'Your annual leave limit is set by HR (typically 12 days). You earn 1 day per month, with a maximum of 6 days per half-year.',
+          description: 'Your annual leave limit is set by HR (typically 10 days). You earn 1 day per month, with a maximum of 5 days per half-year. In all cases, leaves depend on your leave limit and do not carry over to the next year.',
           tips: []
         },
         {
@@ -240,7 +242,7 @@ export default function HelpPage() {
         {
           step: 'Q7',
           title: 'Who can I contact for help?',
-          description: 'Contact your HR department for any issues with the system, leave approvals, or account-related questions.',
+          description: 'Contact your HR and development department for any issues with the system, leave approvals, or account-related questions.',
           tips: []
         }
       ]

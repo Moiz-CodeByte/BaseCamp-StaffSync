@@ -71,7 +71,7 @@ export async function sendLeaveApprovalEmail({ managerEmail, managerName, leave,
     const resend = new Resend(process.env.RESEND_API_KEY);
     
     await resend.emails.send({
-      from: process.env.FROM_EMAIL,
+      from: process.env.FROM_EMAIL ||'BaseCamp StaffSync <onboarding@resend.dev>',
       to: managerEmail,
       subject: `Leave Approval Request from ${employee.name}`,
       html: generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee, leaveStats })
@@ -271,7 +271,7 @@ export async function sendHRNotificationEmail({
     }
 
     await resend.emails.send({
-      from: process.env.FROM_EMAIL,
+      from: process.env.FROM_EMAIL ||'BaseCamp StaffSync <onboarding@resend.dev>',
       to: hrEmail,
       subject: subject,
       html: generateHRNotificationHTML({ 

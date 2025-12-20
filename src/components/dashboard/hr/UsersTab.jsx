@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search, UserPlus, UserMinus } from 'lucide-react';
+import { Edit, Save, X, Search, UserPlus, UserMinus, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -34,6 +34,18 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   const cancelEdit = () => {
     setEditingId(null);
     setEditForm({});
+  };
+
+  const sendPasswordReset = async (id, userName, userEmail) => {
+    const confirmed = confirm(`Send password reset email to "${userName}" (${userEmail})?`);
+    if (!confirmed) return;
+
+    try {
+      await api.post(`/api/users/${id}/send-password-reset`);
+      toast.success(`Password reset email sent to ${userEmail}`);
+    } catch (error) {
+      toast.error(error.message || 'Failed to send password reset email');
+    }
   };
 
   const saveEdit = async (id) => {
@@ -300,10 +312,21 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => startEdit(user)}>
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => sendPasswordReset(user._id, user.name, user.email)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Send password reset email"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Info Grid */}

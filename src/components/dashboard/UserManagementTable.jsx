@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Save, X, Search, Trash2, UserPlus, UserMinus } from 'lucide-react';
+import { Edit, Save, X, Search, Trash2, UserPlus, UserMinus, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -27,9 +27,9 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       department: deptId || '',
       role: user.role || 'Employee',
       designation: user.designation || '',
-      basic_salary: user.basic_salary || 0,
-      allowance: user.allowance || 0,
-      leave_limit: user.leave_limit || 12,
+      // basic_salary: user.basic_salary || 0,
+      //allowance: user.allowance || 0,
+      leave_limit: user.leave_limit || 10,
       reportingManagers: user.reportingManagers || []
     });
   };
@@ -80,6 +80,26 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || 'Failed to update user');
+    }
+  };
+
+  const sendPasswordReset = async (id, userName, userEmail) => {
+    if (!isAdmin) {
+      toast.error('Only admins can send password reset emails');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Send password reset email to "${userName}" (${userEmail})?\n\nA reset link will be sent that expires in 24 hours.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await api.post(`/api/users/${id}/send-password-reset`);
+      toast.success(`Password reset email sent to ${userEmail}`);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Failed to send password reset email');
     }
   };
 
@@ -341,14 +361,25 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         Edit
                       </Button>
                       {isAdmin && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => deleteUser(user._id, user.name)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => sendPasswordReset(user._id, user.name, user.email)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Send password reset email"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => deleteUser(user._id, user.name)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
