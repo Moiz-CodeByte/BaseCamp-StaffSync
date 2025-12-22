@@ -101,7 +101,7 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Leave Management</h2>
+        {/* <h2 className="text-2xl font-bold">Leave Management</h2> */}
         <p className="text-sm text-muted-foreground mt-1">
           Manage employee leave requests and submit your own
         </p>

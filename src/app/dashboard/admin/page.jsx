@@ -122,6 +122,7 @@ export default function AdminDashboard() {
             admins: userList.filter(u => u.role === 'Admin').length,
             hrStaff: userList.filter(u => u.role === 'HR').length,
             employees: userList.filter(u => u.role === 'Employee').length,
+            totalDepartments: deptList.length,
             pendingLeaves: leavesList.length,
             approvedLeaves: pastLeavesList.filter(l => l.status === 'Approved').length,
             rejectedLeaves: pastLeavesList.filter(l => l.status === 'Rejected').length,

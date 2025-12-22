@@ -8,8 +8,6 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Profile</h1>
-      
       <Card>
         <CardHeader>
           <CardTitle>Personal Information</CardTitle>

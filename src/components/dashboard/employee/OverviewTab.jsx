@@ -109,8 +109,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">My Overview</h1>
-        <p className="text-muted-foreground mt-1">Your leave statistics and recent activity</p>
+        <p className="text-muted-foreground">Your leave statistics and recent activity</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

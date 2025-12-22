@@ -40,8 +40,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">HR Overview</h1>
-        <p className="text-muted-foreground mt-1">Leave management dashboard and recent activity</p>
+        <p className="text-muted-foreground">Leave management dashboard and recent activity</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

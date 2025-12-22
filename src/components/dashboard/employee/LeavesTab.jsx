@@ -218,8 +218,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Leave Requests</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground">
             Submit and manage your leave requests
           </p>
         </div>
