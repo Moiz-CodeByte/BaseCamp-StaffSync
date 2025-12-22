@@ -601,6 +601,98 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                 </Card>
               ) : userStats && viewingUser.role !== 'Admin' && (
                 <>
+                  {/* Leave Balance Cards */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-emerald-600" />
+                        Leave Balance (Current Year)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const now = new Date();
+                        const currentYear = now.getFullYear();
+                        const startOfYear = new Date(currentYear, 0, 1);
+                        const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+                        const leaveLimit = viewingUser.leave_limit || 10;
+                        const earnedLeaves = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+                        
+                        // Calculate business days function
+                        const calculateBusinessDays = (startDate, endDate) => {
+                          let start = new Date(startDate);
+                          let end = new Date(endDate);
+                          start.setHours(0, 0, 0, 0);
+                          end.setHours(0, 0, 0, 0);
+                          if (end < start) return 0;
+                          let businessDays = 0;
+                          const current = new Date(start);
+                          while (current <= end) {
+                            const dayOfWeek = current.getDay();
+                            if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+                            current.setDate(current.getDate() + 1);
+                          }
+                          return businessDays;
+                        };
+                        
+                        const yearStartDate = new Date(currentYear, 0, 1);
+                        const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
+                        const approvedLeaveDaysCurrentYear = (userStats.leaves || [])
+                          .filter(l => {
+                            if (l.status !== 'Approved') return false;
+                            const leaveStart = new Date(l.startDate);
+                            return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+                          })
+                          .reduce((total, leave) => {
+                            const days = calculateBusinessDays(leave.startDate, leave.endDate);
+                            return total + days;
+                          }, 0);
+                        
+                        const historicalLeaves = (viewingUser.previousLeavesAvailedYear === currentYear) 
+                          ? (viewingUser.previousLeavesAvailed || 0) 
+                          : 0;
+                        const usedThisYear = approvedLeaveDaysCurrentYear + historicalLeaves;
+                        const remainingLeaves = earnedLeaves - usedThisYear;
+                        
+                        return (
+                          <div className="grid gap-3 md:grid-cols-3">
+                            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+                              <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
+                              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{(leaveLimit / 365).toFixed(2)} per day</p>
+                            </div>
+                            
+                            <div className="p-3 rounded-lg bg-muted border">
+                              <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
+                              <p className="text-sm font-medium">
+                                {usedThisYear} day{usedThisYear !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">Current year</p>
+                            </div>
+                            
+                            <div className={`p-3 rounded-lg border ${
+                              remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                              remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                              'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                            }`}>
+                              <p className="text-xs text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-medium ${
+                                remainingLeaves < 0 ? 'text-destructive' : 
+                                remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                                'text-green-600 dark:text-green-400'
+                              }`}>
+                                {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">Max {leaveLimit}/year</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
                   {/* Leave Statistics */}
                   <Card>
                     <CardHeader>

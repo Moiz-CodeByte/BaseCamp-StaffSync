@@ -81,8 +81,8 @@ export async function POST(req, { params }) {
       });
     }
 
-    // Calculate leave statistics for email
-    const leaveStats = await calculateLeaveStats(leave.user._id);
+    // Calculate leave statistics for email (pass user object for leave_limit)
+    const leaveStats = await calculateLeaveStats(leave.user._id, leave.user);
 
     // Send approval emails only to managers with pending status who haven't received email
     let emailsSentCount = 0;

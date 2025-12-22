@@ -194,4 +194,13 @@
   .animate-shimmer {
     animation: shimmer 2s infinite;
   }
+
+  /* Fix date input calendar icon in dark mode */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+  }
+
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }

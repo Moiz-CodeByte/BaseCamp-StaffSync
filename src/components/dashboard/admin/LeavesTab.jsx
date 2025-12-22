@@ -264,6 +264,9 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                                   <p className="text-xs font-medium truncate" title={recipient.name}>
                                     {recipient.name}
                                   </p>
+                                  <p className="text-xs text-muted-foreground truncate" title={recipient.email}>
+                                    {recipient.email}
+                                  </p>
                                   {recipient.emailSent && (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                                       <Mail className="w-3 h-3" />

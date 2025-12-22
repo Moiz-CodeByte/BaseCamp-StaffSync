@@ -30,9 +30,10 @@ const calculateBusinessDays = (startDate, endDate) => {
 /**
  * Calculate comprehensive leave statistics for an employee
  * @param {string} userId - User ID
+ * @param {Object} user - User object with leave_limit
  * @returns {Object} Leave statistics
  */
-export async function calculateLeaveStats(userId) {
+export async function calculateLeaveStats(userId, user = null) {
   await connectDB();
 
   const now = new Date();
@@ -86,14 +87,29 @@ export async function calculateLeaveStats(userId) {
   const lastMonthDays = lastMonthLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisQuarterDays = thisQuarterLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
 
-  // Note: This function doesn't add previousLeavesAvailed since it needs user object
-  // The calling code should add user.previousLeavesAvailed to thisYear value
+  // Calculate earned leaves based on days elapsed in current year (annual basis)
+  const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+  const leaveLimit = user?.leave_limit || 10;
+  const earnedLeaves = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+  
+  // Add historical leaves if from current year
+  const historicalLeaves = (user?.previousLeavesAvailedYear === currentYear) 
+    ? (user?.previousLeavesAvailed || 0) 
+    : 0;
+  const totalUsedThisYear = thisYearDays + historicalLeaves;
+  
+  // Calculate remaining leaves
+  const remainingLeaves = earnedLeaves - totalUsedThisYear;
+
   return {
-    thisYear: thisYearDays,
+    thisYear: totalUsedThisYear,
     thisMonth: thisMonthDays,
     lastMonth: lastMonthDays,
     thisQuarter: thisQuarterDays,
-    approvedLeavesCount: approvedLeaves.length
+    approvedLeavesCount: approvedLeaves.length,
+    leaveLimit: leaveLimit,
+    earnedLeaves: earnedLeaves,
+    remainingLeaves: remainingLeaves
   };
 }
 

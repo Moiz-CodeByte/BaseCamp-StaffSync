@@ -3,8 +3,76 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useMemo } from 'react';
 
-export default function OverviewTab({ stats, leaves, isLoading = false }) {
+export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
+  // Calculate business days (excluding weekends)
+  const calculateBusinessDays = (startDate, endDate) => {
+    let start, end;
+    if (typeof startDate === 'string') {
+      start = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
+    } else {
+      start = new Date(startDate);
+    }
+    if (typeof endDate === 'string') {
+      end = new Date(endDate.includes('T') ? endDate : endDate + 'T00:00:00');
+    } else {
+      end = new Date(endDate);
+    }
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    if (end < start) return 0;
+    let businessDays = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+      current.setDate(current.getDate() + 1);
+    }
+    return businessDays;
+  };
+
+  // Calculate earned leaves based on days elapsed in current year (annual basis)
+  const earnedLeaves = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1);
+    const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+    const leaveLimit = me?.leave_limit || 10;
+    const earned = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+    return earned;
+  }, [me?.leave_limit]);
+
+  // Calculate approved leave days for current year only
+  const approvedLeaveDaysCurrentYear = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const yearStartDate = new Date(currentYear, 0, 1);
+    const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
+    
+    const systemRecordedDays = (leaves || [])
+      .filter(l => {
+        if (l.status !== 'Approved') return false;
+        const leaveStart = new Date(l.startDate);
+        return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+      })
+      .reduce((total, leave) => {
+        const days = calculateBusinessDays(leave.startDate, leave.endDate);
+        return total + days;
+      }, 0);
+    
+    const currentYearCheck = new Date().getFullYear();
+    const historicalLeaves = (me?.previousLeavesAvailedYear === currentYearCheck) 
+      ? (me?.previousLeavesAvailed || 0) 
+      : 0;
+    return systemRecordedDays + historicalLeaves;
+  }, [leaves, me?.previousLeavesAvailed, me?.previousLeavesAvailedYear]);
+
+  // Calculate available leave balance
+  const remainingLeaves = useMemo(() => {
+    return earnedLeaves - approvedLeaveDaysCurrentYear;
+  }, [earnedLeaves, approvedLeaveDaysCurrentYear]);
+
   const statCards = [
     { 
       label: 'Total Leave Days', 
@@ -73,6 +141,57 @@ export default function OverviewTab({ stats, leaves, isLoading = false }) {
           );
         })}
       </div>
+
+      {/* Leave Balance Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Leave Balance (Annual)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2 font-medium">Earned This Year</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                {((me?.leave_limit || 10) / 365).toFixed(2)} per day
+              </p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-muted border">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Used This Year</p>
+              <p className="text-2xl font-bold">
+                {approvedLeaveDaysCurrentYear} day{approvedLeaveDaysCurrentYear !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Current year
+              </p>
+            </div>
+            
+            <div className={`p-4 rounded-lg border ${
+              remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+              remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+              'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+            }`}>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Available Balance</p>
+              <p className={`text-2xl font-bold ${
+                remainingLeaves < 0 ? 'text-destructive' : 
+                remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                'text-green-600 dark:text-green-400'
+              }`}>
+                {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Max {me?.leave_limit || 10}/year
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            💡 You earn {((me?.leave_limit || 10) / 365).toFixed(2)} leave{((me?.leave_limit || 10) / 365) !== 1 ? 's' : ''} per day. Maximum {me?.leave_limit || 10} leaves per year. Leaves are calculated from January 1st to today.
+          </p>
+        </CardContent>
+      </Card>
 
       {recentLeaves.length > 0 && (
         <Card>

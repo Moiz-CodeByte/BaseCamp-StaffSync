@@ -238,7 +238,10 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                                 key={idx} 
                                 className="flex items-center justify-between p-2 rounded-md bg-muted/50"
                               >
-                                <span className="text-sm font-medium">{approval.managerName}</span>
+                                <div className="flex-1">
+                                  <span className="text-sm font-medium">{approval.managerName}</span>
+                                  <p className="text-xs text-muted-foreground">{approval.managerEmail}</p>
+                                </div>
                                 <Badge 
                                   variant={
                                     approval.status === 'Approved' ? 'default' :
@@ -266,7 +269,10 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                                 key={idx} 
                                 className="flex items-center justify-between p-2 rounded-md bg-muted/50"
                               >
-                                <span className="text-sm font-medium">{recipient.name}</span>
+                                <div className="flex-1">
+                                  <span className="text-sm font-medium">{recipient.name}</span>
+                                  <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                                </div>
                                 <Badge 
                                   variant={
                                     recipient.status === 'Approved' ? 'default' :
@@ -443,6 +449,9 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                                   <p className="text-xs font-medium truncate" title={approval.managerName}>
                                     {approval.managerName}
                                   </p>
+                                  <p className="text-xs text-muted-foreground truncate" title={approval.managerEmail}>
+                                    {approval.managerEmail}
+                                  </p>
                                   {approval.emailSent && (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                                       <Mail className="w-3 h-3" />
@@ -482,9 +491,10 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                                     {recipient.name}
                                   </p>
                                   {recipient.emailSent && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1 truncate" title={recipient.email}>
+
                                       <Mail className="w-3 h-3" />
-                                      Sent
+                                      {recipient.email}
                                     </p>
                                   )}
                                 </div>
@@ -684,6 +694,9 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                                   <div className="flex-1 min-w-0">
                                     <p className="text-xs font-medium truncate" title={recipient.name}>
                                       {recipient.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate" title={recipient.email}>
+                                      {recipient.email}
                                     </p>
                                   </div>
                                   <Badge 

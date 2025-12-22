@@ -33,7 +33,7 @@ export default function HelpPage() {
           step: '2',
           title: 'Access Your Dashboard',
           description: 'After logging in, you\'ll be redirected to your employee dashboard where you can see your leave balance and recent activities.',
-          tips: ['The dashboard shows your earned leaves and used leaves for the current half-year']
+          tips: ['The dashboard shows your earned leaves and used leaves for the current year (January 1 - Today)']
         }
       ]
     },
@@ -62,11 +62,12 @@ export default function HelpPage() {
           description: 'Before requesting leave, check your available balance shown on the dashboard.',
           tips: [
             'Available leave balance varies by employee depending on your leave limit',
-            'Leaves are earned monthly (1 day per month based on your annual limit)',
-            'Maximum 5 days can be accumulated per half-year',
+            'Leaves are earned daily based on your annual limit',
+            'Formula: (Days from Jan 1 to Today) × Leave Limit ÷ 365',
             'Your leave limit is set by HR and may differ from other employees',
             'You cannot request more days than available',
-            'Pending requests block new submissions until approved/rejected'
+            'Pending requests block new submissions until approved/rejected',
+            'Leave balance resets every January 1st'
           ]
         },
         {
@@ -206,7 +207,7 @@ export default function HelpPage() {
         {
           step: 'Q1',
           title: 'How many leaves can I take per year?',
-          description: 'Your annual leave limit is set by HR (typically 10 days). You earn 1 day per month, with a maximum of 5 days per half-year. In all cases, leaves depend on your leave limit and do not carry over to the next year.',
+          description: 'Your annual leave limit is set by HR (typically 10 days per year). You earn leaves daily based on this limit - calculated as (Days from January 1 to Today) × Your Leave Limit ÷ 365. For example, with a 10-day annual limit, you earn approximately 0.027 days per day. Leaves do not carry over to the next year.',
           tips: []
         },
         {

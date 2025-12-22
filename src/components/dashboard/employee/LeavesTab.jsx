@@ -1,4 +1,4 @@
-import { Trash2, Calendar as CalendarIcon, Clock, AlertCircle, UserPlus, Mail, X } from 'lucide-react';
+import { Trash2, FileText, Clock, AlertCircle, UserPlus, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,59 +49,38 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate earned leaves based on current month (dynamic based on leave_limit)
+  // Calculate earned leaves based on days elapsed in current year (annual basis)
   const earnedLeaves = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.getMonth(); // 0-11 (Jan-Dec)
     const currentYear = now.getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1); // January 1st of current year
+    
+    // Calculate days from Jan 1 to today
+    const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
     
     const leaveLimit = me?.leave_limit || 10; // Use leave_limit from user model
-    const monthlyAccrual = leaveLimit / 12; // Leaves earned per month
-    const maxPerHalf = leaveLimit / 2; // Maximum leaves per half-year
     
-    // Determine which half of the year we're in
-    // First half: Jan-Jun (months 0-5)
-    // Second half: Jul-Dec (months 6-11)
-    const isSecondHalf = currentMonth >= 6;
+    // Calculate earned leaves: (days from Jan 1 to today) * leave_limit / 365
+    const earned = Math.floor((daysSinceYearStart * leaveLimit) / 365);
     
-    if (isSecondHalf) {
-      // Second half: July to December
-      // Calculate months elapsed in second half (July=1, Aug=2, ..., Dec=6)
-      const monthsInHalf = (currentMonth - 6) + 1;
-      return Math.min(Math.floor(monthsInHalf * monthlyAccrual), maxPerHalf);
-    } else {
-      // First half: January to June
-      // Calculate months elapsed in first half (Jan=1, Feb=2, ..., Jun=6)
-      const monthsInHalf = currentMonth + 1;
-      return Math.min(Math.floor(monthsInHalf * monthlyAccrual), maxPerHalf);
-    }
+    return earned;
   }, [me?.leave_limit]);
 
-  // Calculate approved leave days for current half only
-  const approvedLeaveDaysCurrentHalf = useMemo(() => {
+  // Calculate approved leave days for current year only
+  const approvedLeaveDaysCurrentYear = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const isSecondHalf = currentMonth >= 6;
     
-    // Define date range for current half
-    let halfStartDate, halfEndDate;
-    if (isSecondHalf) {
-      // July 1 to Dec 31
-      halfStartDate = new Date(currentYear, 6, 1);
-      halfEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
-    } else {
-      // Jan 1 to June 30
-      halfStartDate = new Date(currentYear, 0, 1);
-      halfEndDate = new Date(currentYear, 5, 30, 23, 59, 59);
-    }
+    // Define date range for current year (Jan 1 to Dec 31)
+    const yearStartDate = new Date(currentYear, 0, 1);
+    const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
     
     const systemRecordedDays = leaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
         const leaveStart = new Date(l.startDate);
-        // Only count leaves that started in current half
-        return leaveStart >= halfStartDate && leaveStart <= halfEndDate;
+        // Only count leaves that started in current year
+        return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
       })
       .reduce((total, leave) => {
         const days = calculateBusinessDays(leave.startDate, leave.endDate);
@@ -123,10 +102,10 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     return calculateBusinessDays(leaveForm.startDate, leaveForm.endDate);
   }, [leaveForm.startDate, leaveForm.endDate]);
 
-  // Calculate available leave balance (earned - used in current half)
+  // Calculate available leave balance (earned - used in current year)
   const remainingLeaves = useMemo(() => {
-    return earnedLeaves - approvedLeaveDaysCurrentHalf;
-  }, [earnedLeaves, approvedLeaveDaysCurrentHalf]);
+    return earnedLeaves - approvedLeaveDaysCurrentYear;
+  }, [earnedLeaves, approvedLeaveDaysCurrentYear]);
 
   // Check for pending leaves
   const hasPendingLeaves = useMemo(() => {
@@ -163,23 +142,23 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       }
     }
     
-    // Check if duration exceeds earned leaves for current half
+    // Check if duration exceeds earned leaves for current year
     if (duration > 0) {
-      const maxPerHalf = Math.floor((me?.leave_limit || 10) / 2);
+      const maxPerYear = me?.leave_limit || 10;
       
-      // Check if duration exceeds max per half
-      if (duration > maxPerHalf) {
-        errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxPerHalf} days per half-year`);
+      // Check if duration exceeds max per year
+      if (duration > maxPerYear) {
+        errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxPerYear} days per year`);
       }
       
       // Check if approved leaves + new request exceeds earned leaves
-      if (approvedLeaveDaysCurrentHalf + duration > earnedLeaves) {
-        errors.push(`⚠️ ALERT: Total leave days (${approvedLeaveDaysCurrentHalf + duration}) would exceed your earned leaves (${earnedLeaves}). You have only ${remainingLeaves} days available.`);
+      if (approvedLeaveDaysCurrentYear + duration > earnedLeaves) {
+        errors.push(`⚠️ ALERT: Total leave days (${approvedLeaveDaysCurrentYear + duration}) would exceed your earned leaves (${earnedLeaves}). You have only ${remainingLeaves} days available.`);
       }
     }
     
     return errors;
-  }, [leaveForm.startDate, leaveForm.endDate, duration, earnedLeaves, approvedLeaveDaysCurrentHalf, remainingLeaves, hasPendingLeaves, me?.leave_limit]);
+  }, [leaveForm.startDate, leaveForm.endDate, duration, earnedLeaves, approvedLeaveDaysCurrentYear, remainingLeaves, hasPendingLeaves, me?.leave_limit]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -256,7 +235,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         <Card className="border-2 border-primary/20">
           <CardHeader className="bg-primary/5">
             <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5" />
+              <FileText className="w-5 h-5" />
               Request New Leave
             </CardTitle>
             <CardDescription>Fill in the details below to submit a leave request</CardDescription>
@@ -280,49 +259,67 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 </div>
                 
                 <div className="space-y-2">
-                  <Label className="text-base font-semibold">Earned This Period</Label>
-                  <div className="h-11 px-3 py-2 rounded-md border bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                      {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''} earned
-                    </span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400">
-                      ({((me?.leave_limit || 10) / 12).toFixed(1)} per month)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold">Used This Period</Label>
-                  <div className="h-11 px-3 py-2 rounded-md border bg-muted flex items-center">
-                    <span className="text-sm font-medium">
-                      {approvedLeaveDaysCurrentHalf} day{approvedLeaveDaysCurrentHalf !== 1 ? 's' : ''} used
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label className="text-base font-semibold">Available Balance</Label>
-                  <div className={`h-11 px-3 py-2 rounded-md border flex items-center justify-between ${
-                    remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
-                    remainingLeaves === 0 ? 'bg-orange-50 border-orange-200' : 
-                    'bg-green-50 border-green-200'
+                  <Label htmlFor="duration" className="text-base font-semibold">Duration</Label>
+                  <div className={`h-11 px-3 py-2 rounded-md border flex items-center ${
+                    validationErrors.length > 0 && duration > 0
+                      ? 'bg-destructive/10 border-destructive/20' 
+                      : 'bg-muted/50'
                   }`}>
+                    <Clock className={`w-4 h-4 mr-2 ${
+                      validationErrors.length > 0 && duration > 0 ? 'text-destructive' : 'text-muted-foreground'
+                    }`} />
                     <span className={`text-sm font-medium ${
-                      remainingLeaves < 0 ? 'text-destructive' : 
-                      remainingLeaves === 0 ? 'text-orange-600' : 
-                      'text-green-600'
+                      validationErrors.length > 0 && duration > 0 ? 'text-destructive' : ''
                     }`}>
-                      {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''} available
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date().getMonth() >= 6 ? 'Jul-Dec period' : 'Jan-Jun period'}
+                      {duration > 0 ? `${duration} day${duration !== 1 ? 's' : ''}` : 'Select dates'}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    💡 You earn {((me?.leave_limit || 10) / 12).toFixed(1)} leave{((me?.leave_limit || 10) / 12) !== 1 ? 's' : ''} per month. Maximum {Math.floor((me?.leave_limit || 10) / 2)} leaves per half-year. Unused leaves from previous period are not carried forward.
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{((me?.leave_limit || 10) / 365).toFixed(2)} per day</p>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-muted border">
+                  <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
+                  <p className="text-sm font-medium">
+                    {approvedLeaveDaysCurrentYear} day{approvedLeaveDaysCurrentYear !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Current year
                   </p>
                 </div>
+                
+                <div className={`p-3 rounded-lg border ${
+                  remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                  remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                  'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                }`}>
+                  <p className="text-xs text-muted-foreground mb-1">Available</p>
+                  <p className={`text-sm font-medium ${
+                    remainingLeaves < 0 ? 'text-destructive' : 
+                    remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                    'text-green-600 dark:text-green-400'
+                  }`}>
+                    {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Max {me?.leave_limit || 10}/year</p>
+                </div>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs text-muted-foreground">
+                  💡 <strong>Leave Policy:</strong> You earn {((me?.leave_limit || 10) / 365).toFixed(2)} leave{((me?.leave_limit || 10) / 365) !== 1 ? 's' : ''} per day. Maximum {me?.leave_limit || 10} leaves per year. Leaves are calculated from January 1st to today.
+                </p>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="startDate" className="text-base font-semibold">Start Date *</Label>
                   <Input 
@@ -346,119 +343,93 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     required 
                   />
                 </div>
+              </div>
 
-                {duration > 0 && (
-                  <div className="md:col-span-2">
-                    <div className={`p-4 rounded-lg border ${
-                      validationErrors.length > 0 
-                        ? 'bg-destructive/10 border-destructive/20' 
-                        : 'bg-primary/10 border-primary/20'
-                    }`}>
-                      <div className="flex items-center gap-2">
-                        <Clock className={`w-5 h-5 ${
-                          validationErrors.length > 0 ? 'text-destructive' : 'text-primary'
-                        }`} />
-                        <span className={`font-semibold ${
-                          validationErrors.length > 0 ? 'text-destructive' : 'text-primary'
-                        }`}>Duration:</span>
-                        <span className={`text-lg font-bold ${
-                          validationErrors.length > 0 ? 'text-destructive' : 'text-primary'
-                        }`}>
-                          {duration} day{duration !== 1 ? 's' : ''}
-                        </span>
-                      </div>
+              {validationErrors.length > 0 && (
+                <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-destructive mb-2">Cannot Submit Leave Request:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {validationErrors.map((error, index) => (
+                          <li key={index} className="text-sm text-destructive">{error}</li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
-                )}
-
-                {validationErrors.length > 0 && (
-                  <div className="md:col-span-2">
-                    <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-destructive mb-2">Cannot Submit Leave Request:</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {validationErrors.map((error, index) => (
-                              <li key={index} className="text-sm text-destructive">{error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="reason" className="text-base font-semibold">Reason</Label>
-                  <Textarea 
-                    id="reason" 
-                    value={leaveForm.reason} 
-                    onChange={(e) => setLeaveForm({...leaveForm, reason: e.target.value})} 
-                    placeholder="Please provide a reason for your leave request..."
-                    className="min-h-[100px] resize-none"
-                  />
                 </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="reason" className="text-base font-semibold">Reason</Label>
+                <Textarea 
+                  id="reason" 
+                  value={leaveForm.reason} 
+                  onChange={(e) => setLeaveForm({...leaveForm, reason: e.target.value})} 
+                  placeholder="Please provide a reason for your leave request..."
+                  className="min-h-[100px] resize-none"
+                />
+              </div>
 
-                <div className="space-y-3 md:col-span-2">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" />
-                    Additional Email Recipients (Optional)
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Add people who should receive email notifications about this leave request
-                  </p>
-                  
-                  {/* List of added recipients */}
-                  {leaveForm.additionalRecipients && leaveForm.additionalRecipients.length > 0 && (
-                    <div className="space-y-2">
-                      {leaveForm.additionalRecipients.map((recipient, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center gap-2 p-3 rounded-lg bg-muted"
-                        >
-                          <Mail className="w-4 h-4 text-muted-foreground" />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{recipient.name}</p>
-                            <p className="text-xs text-muted-foreground">{recipient.email}</p>
-                          </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeRecipient(index)}
-                          >
-                            <X className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add recipient form */}
-                  <div className="grid gap-2 md:grid-cols-2 p-3 border rounded-lg bg-muted/30">
-                    <Input
-                      placeholder="Recipient name"
-                      value={newRecipient.name}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
-                    />
-                    <Input
-                      type="email"
-                      placeholder="Recipient email"
-                      value={newRecipient.email}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
-                    />
-                    <div className="md:col-span-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addRecipient}
-                        className="w-full"
+              <div className="space-y-3">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Additional Email Recipients (Optional)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Add people who should receive email notifications about this leave request
+                </p>
+                
+                {/* List of added recipients */}
+                {leaveForm.additionalRecipients && leaveForm.additionalRecipients.length > 0 && (
+                  <div className="space-y-2">
+                    {leaveForm.additionalRecipients.map((recipient, index) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center gap-2 p-3 rounded-lg bg-muted"
                       >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Recipient
-                      </Button>
-                    </div>
+                        <Mail className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{recipient.name}</p>
+                          <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeRecipient(index)}
+                        >
+                          <X className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add recipient form */}
+                <div className="grid gap-2 md:grid-cols-2 p-3 border rounded-lg bg-muted/30">
+                  <Input
+                    placeholder="Recipient name"
+                    value={newRecipient.name}
+                    onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Recipient email"
+                    value={newRecipient.email}
+                    onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
+                  />
+                  <div className="md:col-span-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addRecipient}
+                      className="w-full"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Recipient
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -493,7 +464,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         <div className="bg-gradient-to-r from-cyan-50 to-sky-100 dark:from-cyan-950 dark:to-sky-950 p-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-cyan-200 dark:bg-cyan-800 flex items-center justify-center">
-              <CalendarIcon className="w-6 h-6 text-cyan-700 dark:text-cyan-200" />
+              <FileText className="w-6 h-6 text-cyan-700 dark:text-cyan-200" />
             </div>
             <div>
               <h3 className="font-semibold text-cyan-900 dark:text-cyan-100 text-lg">My Leave Requests</h3>
@@ -506,7 +477,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
           {leaves.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center mx-auto mb-4">
-                <CalendarIcon className="w-8 h-8 text-cyan-600" />
+                <FileText className="w-8 h-8 text-cyan-600" />
               </div>
               <p className="font-medium">No leave requests yet</p>
               <p className="text-sm mt-2">Click &ldquo;Request Leave&rdquo; to submit your first request</p>
@@ -618,7 +589,10 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                                 key={idx} 
                                 className="flex items-center justify-between p-2 rounded-md bg-muted/50"
                               >
-                                <span className="text-sm font-medium">{recipient.name}</span>
+                                <div className="flex-1">
+                                  <span className="text-sm font-medium">{recipient.name}</span>
+                                  <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                                </div>
                                 <Badge 
                                   variant={
                                     recipient.status === 'Approved' ? 'default' :

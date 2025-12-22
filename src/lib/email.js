@@ -175,19 +175,26 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
           ${leaveStats ? `
           <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">Employee Leave Statistics</h3>
+            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">Employee Leave Statistics (Annual)</h3>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Leave Limit</div>
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Leave Limit/Year</div>
                 <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
               </div>
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Year</div>
-                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.thisYear || 0}</div>
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
+                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedLeaves || 0}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Jan 1 - Today</div>
               </div>
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Quarter</div>
-                <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisQuarter || 0}</div>
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
+                <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Approved days</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available Balance</div>
+                <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Days remaining</div>
               </div>
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
                 <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
@@ -197,9 +204,10 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
                 <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
                 <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
               </div>
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.approvedLeavesCount || 0) <= 2 ? '#ef4444' : '#10b981'};">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Approved (Half)</div>
-                <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.approvedLeavesCount || 0) <= 2 ? '#ef4444' : '#10b981'};">${leaveStats.approvedLeavesCount || 0}</div>
+            </div>
+            <div style="margin-top: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+              <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
+                💡 <strong>Annual Calculation:</strong> Employee earns ${((leaveStats.leaveLimit || 10) / 365).toFixed(2)} leave per day. Total ${leaveStats.leaveLimit || 10} leaves per year calculated from January 1st.
               </div>
             </div>
           </div>

@@ -51,8 +51,8 @@ export async function POST(req) {
         
         await leave.save();
 
-        // Calculate leave statistics for email
-        const leaveStats = await calculateLeaveStats(user.id);
+        // Calculate leave statistics for email (pass user object for leave_limit)
+        const leaveStats = await calculateLeaveStats(user.id, user);
 
         // Send approval emails to all reporting managers with 3 second gap
         for (let i = 0; i < managersToNotify.length; i++) {
@@ -92,8 +92,8 @@ export async function POST(req) {
 
       // Send emails to additional recipients with status tracking
       if (additionalRecipients && additionalRecipients.length > 0) {
-        // Calculate leave statistics for email (reuse if already calculated above)
-        const leaveStats = await calculateLeaveStats(user.id);
+        // Calculate leave statistics for email (pass user object, reuse if already calculated above)
+        const leaveStats = await calculateLeaveStats(user.id, user);
         
         // Initialize additional recipients with status tracking (already set in Leave.create above)
         for (let i = 0; i < additionalRecipients.length; i++) {

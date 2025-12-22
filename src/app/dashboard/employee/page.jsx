@@ -177,6 +177,7 @@ export default function EmployeeDashboard() {
               stats={stats}
               leaves={leaves}
               isLoading={isLoadingStats}
+              me={me}
             />
           )}
 
