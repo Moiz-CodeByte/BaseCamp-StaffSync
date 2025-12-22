@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Eye, EyeOff } from 'lucide-react';
 import UserManagementTable from '@/components/dashboard/UserManagementTable';
 
 export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', previousLeavesAvailed: 0 });
 
   const addUser = async (e) => {
@@ -71,13 +73,22 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Password</label>
-                <Input 
-                  type="password" 
-                  placeholder="Password" 
-                  value={newUser.password} 
-                  onChange={e => setNewUser({ ...newUser, password: e.target.value })} 
-                  required 
-                />
+                <div className="relative">
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Password" 
+                    value={newUser.password} 
+                    onChange={e => setNewUser({ ...newUser, password: e.target.value })} 
+                    required 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Role</label>

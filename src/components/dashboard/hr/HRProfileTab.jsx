@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function HRProfileTab({ me, profileForm, setProfileForm, updateProfile }) {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
   if (!me) return null;
 
   return (
@@ -46,23 +51,41 @@ export default function HRProfileTab({ me, profileForm, setProfileForm, updatePr
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Current Password</Label>
-                <Input 
-                  id="currentPassword" 
-                  type="password" 
-                  value={profileForm.currentPassword} 
-                  onChange={(e) => setProfileForm({...profileForm, currentPassword: e.target.value})} 
-                  placeholder="Required to change password" 
-                />
+                <div className="relative">
+                  <Input 
+                    id="currentPassword" 
+                    type={showCurrentPassword ? "text" : "password"} 
+                    value={profileForm.currentPassword} 
+                    onChange={(e) => setProfileForm({...profileForm, currentPassword: e.target.value})} 
+                    placeholder="Required to change password" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">New Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={profileForm.password} 
-                  onChange={(e) => setProfileForm({...profileForm, password: e.target.value})} 
-                  placeholder="Leave blank to keep current" 
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    value={profileForm.password} 
+                    onChange={(e) => setProfileForm({...profileForm, password: e.target.value})} 
+                    placeholder="Leave blank to keep current" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
             <Button type="submit" className="w-full">Update Profile</Button>
