@@ -42,14 +42,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
       ? new Date(me.leaveEntitlementDate)
       : new Date(currentYear, 0, 1);
     
-    // Ensure entitlement date is in current year
-    const entitlementYear = entitlementDate.getFullYear();
-    const effectiveEntitlementDate = entitlementYear === currentYear 
-      ? entitlementDate 
-      : new Date(currentYear, 0, 1);
-    
-    const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
-    const leaveLimit = me?.leave_limit || 10;
+    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
     const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
     return earned;
   }, [me?.leave_limit, me?.leaveEntitlementDate]);
@@ -198,7 +191,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            💡 You earn {((me?.leave_limit || 10) / 365).toFixed(2)} leave{((me?.leave_limit || 10) / 365) !== 1 ? 's' : ''} per day. Maximum {me?.leave_limit || 10} leaves per year. Leaves are calculated from January 1st to today.
+            💡 <strong>Leave Policy:</strong> You earn 0.03 leaves per day. Calculation: (Days from entitlement date × 10) ÷ 365. Maximum {me?.leave_limit || 10} leaves per year.
           </p>
         </CardContent>
       </Card>

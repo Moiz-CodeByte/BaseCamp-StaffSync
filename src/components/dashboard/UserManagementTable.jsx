@@ -347,21 +347,16 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         <p className="text-xs text-muted-foreground">Defaults to Jan 1 if not set</p>
                         {editForm.leaveEntitlementDate && (() => {
                           const now = new Date();
-                          const currentYear = now.getFullYear();
                           const entitlementDate = new Date(editForm.leaveEntitlementDate);
-                          const entitlementYear = entitlementDate.getFullYear();
-                          const effectiveDate = entitlementYear === currentYear ? entitlementDate : new Date(currentYear, 0, 1);
-                          const endOfYear = new Date(currentYear, 11, 31);
-                          const daysFromEntitlementToYearEnd = Math.floor((endOfYear - effectiveDate) / (1000 * 60 * 60 * 24)) + 1;
-                          const baseLeaveLimit = 10; // Base calculation value
-                          const earnedLeaves = Math.round((daysFromEntitlementToYearEnd * baseLeaveLimit) / 365);
+                          const daysSinceEntitlement = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
+                          const earnedLeaves = Math.round((daysSinceEntitlement * 10) / 365);
                           return (
                             <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
                               <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
                                 📊 Calculated Earned Leaves: <span className="font-bold">{earnedLeaves}</span> days
                               </p>
                               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                {daysFromEntitlementToYearEnd} days × {baseLeaveLimit} ÷ 365
+                                {daysSinceEntitlement} days × 10 ÷ 365
                               </p>
                             </div>
                           );
@@ -668,10 +663,11 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       {(() => {
                         const now = new Date();
                         const currentYear = now.getFullYear();
-                        const startOfYear = new Date(currentYear, 0, 1);
-                        const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
-                        const leaveLimit = viewingUser.leave_limit || 10;
-                        const earnedLeaves = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+                        const entitlementDate = viewingUser.leaveEntitlementDate 
+                          ? new Date(viewingUser.leaveEntitlementDate)
+                          : new Date(currentYear, 0, 1);
+                        const daysSinceEntitlement = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
+                        const earnedLeaves = Math.round((daysSinceEntitlement * 10) / 365);
                         
                         // Calculate business days function
                         const calculateBusinessDays = (startDate, endDate) => {
@@ -716,7 +712,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                                 {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
                               </p>
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{(leaveLimit / 365).toFixed(2)} per day</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
                             </div>
                             
                             <div className="p-3 rounded-lg bg-muted border">
@@ -740,7 +736,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                               }`}>
                                 {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
                               </p>
-                              <p className="text-xs text-muted-foreground mt-1">Max {leaveLimit}/year</p>
+                              <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.leave_limit || 10}/year</p>
                             </div>
                           </div>
                         );

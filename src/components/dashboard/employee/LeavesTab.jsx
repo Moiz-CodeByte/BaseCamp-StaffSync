@@ -59,16 +59,8 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       ? new Date(me.leaveEntitlementDate)
       : new Date(currentYear, 0, 1);
     
-    // Ensure entitlement date is in current year
-    const entitlementYear = entitlementDate.getFullYear();
-    const effectiveEntitlementDate = entitlementYear === currentYear 
-      ? entitlementDate 
-      : new Date(currentYear, 0, 1);
-    
     // Calculate days from entitlement date to today (not year-end)
-    const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
-    
-    const leaveLimit = me?.leave_limit || 10;
+    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
     
     // Calculate earned leaves: days(entitlementDate, today) * 10 / 365
     const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
@@ -324,7 +316,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
               
               <div className="p-3 rounded-lg bg-muted/50 border">
                 <p className="text-xs text-muted-foreground">
-                  💡 <strong>Leave Policy:</strong> You earn leaves based on days from your entitlement date to today. Maximum {me?.leave_limit || 10} leaves per year.
+                  💡 <strong>Leave Policy:</strong> You earn 0.03 leaves per day. Calculation: (Days from entitlement date × 10) ÷ 365. Maximum {me?.leave_limit || 10} leaves per year.
                   {me?.leaveEntitlementDate && (
                     <span className="block mt-1">
                       Your entitlement starts from: {new Date(me.leaveEntitlementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

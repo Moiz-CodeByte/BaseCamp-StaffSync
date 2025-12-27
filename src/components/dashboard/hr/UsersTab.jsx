@@ -564,74 +564,170 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                   </div>
                 </div>
               ) : userStats && (
-                <div className="rounded-lg border bg-card shadow-sm">
-                  <div className="p-4 border-b">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      Leave History
-                    </h3>
+                <>
+                  {/* Leave Balance Cards */}
+                  <div className="rounded-lg border bg-card shadow-sm">
+                    <div className="p-4 border-b">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-emerald-600" />
+                        Leave Balance (Current Year)
+                      </h3>
+                    </div>
+                    <div className="p-4">
+                      {(() => {
+                        const now = new Date();
+                        const currentYear = now.getFullYear();
+                        const entitlementDate = viewingUser.leaveEntitlementDate 
+                          ? new Date(viewingUser.leaveEntitlementDate)
+                          : new Date(currentYear, 0, 1);
+                        const daysSinceEntitlement = Math.round((now - entitlementDate) / (1000 * 60 * 60 * 24));
+                        const earnedLeaves = Math.round((daysSinceEntitlement * 10) / 365);
+                        
+                        // Calculate business days function
+                        const calculateBusinessDays = (startDate, endDate) => {
+                          let start = new Date(startDate);
+                          let end = new Date(endDate);
+                          start.setHours(0, 0, 0, 0);
+                          end.setHours(0, 0, 0, 0);
+                          if (end < start) return 0;
+                          let businessDays = 0;
+                          const current = new Date(start);
+                          while (current <= end) {
+                            const dayOfWeek = current.getDay();
+                            if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+                            current.setDate(current.getDate() + 1);
+                          }
+                          return businessDays;
+                        };
+                        
+                        const yearStartDate = new Date(currentYear, 0, 1);
+                        const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
+                        const approvedLeaveDaysCurrentYear = (userStats.leaves || [])
+                          .filter(l => {
+                            if (l.status !== 'Approved') return false;
+                            const leaveStart = new Date(l.startDate);
+                            return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+                          })
+                          .reduce((total, leave) => {
+                            const days = calculateBusinessDays(leave.startDate, leave.endDate);
+                            return total + days;
+                          }, 0);
+                        
+                        const historicalLeaves = (viewingUser.previousLeavesAvailedYear === currentYear) 
+                          ? (viewingUser.previousLeavesAvailed || 0) 
+                          : 0;
+                        const usedThisYear = approvedLeaveDaysCurrentYear + historicalLeaves;
+                        const remainingLeaves = earnedLeaves - usedThisYear;
+                        
+                        return (
+                          <div className="grid gap-3 md:grid-cols-3">
+                            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+                              <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
+                              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
+                            </div>
+                            
+                            <div className="p-3 rounded-lg bg-muted border">
+                              <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
+                              <p className="text-sm font-medium">
+                                {usedThisYear} day{usedThisYear !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">Current year</p>
+                            </div>
+                            
+                            <div className={`p-3 rounded-lg border ${
+                              remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                              remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                              'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                            }`}>
+                              <p className="text-xs text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-medium ${
+                                remainingLeaves < 0 ? 'text-destructive' : 
+                                remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                                'text-green-600 dark:text-green-400'
+                              }`}>
+                                {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.leave_limit || 10}/year</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
-                  <div className="p-4">
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                          <p className="text-xs text-muted-foreground">Total Requests</p>
-                          <p className="text-2xl font-bold text-blue-600">{userStats.leaves?.length || 0}</p>
-                        </div>
-                        <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
-                          <p className="text-xs text-muted-foreground">Approved</p>
-                          <p className="text-2xl font-bold text-green-600">
-                            {userStats.leaves?.filter(l => l.status === 'Approved').length || 0}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
-                          <p className="text-xs text-muted-foreground">Pending</p>
-                          <p className="text-2xl font-bold text-yellow-600">
-                            {userStats.leaves?.filter(l => l.status === 'Pending').length || 0}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
-                          <p className="text-xs text-muted-foreground">Rejected</p>
-                          <p className="text-2xl font-bold text-red-600">
-                            {userStats.leaves?.filter(l => l.status === 'Rejected').length || 0}
-                          </p>
-                        </div>
-                        {viewingUser.previousLeavesAvailed != null && viewingUser.previousLeavesAvailed > 0 && (
-                          <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg md:col-span-2">
-                            <p className="text-xs text-muted-foreground">Previous Leaves Used (Pre-System)</p>
-                            <p className="text-2xl font-bold text-purple-600">
-                              {viewingUser.previousLeavesAvailed}
-                              <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
+
+                  {/* Leave History */}
+                  <div className="rounded-lg border bg-card shadow-sm">
+                    <div className="p-4 border-b">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        Leave History
+                      </h3>
+                    </div>
+                    <div className="p-4">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Total Requests</p>
+                            <p className="text-2xl font-bold text-blue-600">{userStats.leaves?.length || 0}</p>
+                          </div>
+                          <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Approved</p>
+                            <p className="text-2xl font-bold text-green-600">
+                              {userStats.leaves?.filter(l => l.status === 'Approved').length || 0}
                             </p>
+                          </div>
+                          <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Pending</p>
+                            <p className="text-2xl font-bold text-yellow-600">
+                              {userStats.leaves?.filter(l => l.status === 'Pending').length || 0}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Rejected</p>
+                            <p className="text-2xl font-bold text-red-600">
+                              {userStats.leaves?.filter(l => l.status === 'Rejected').length || 0}
+                            </p>
+                          </div>
+                          {viewingUser.previousLeavesAvailed != null && viewingUser.previousLeavesAvailed > 0 && (
+                            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg md:col-span-2">
+                              <p className="text-xs text-muted-foreground">Previous Leaves Used (Pre-System)</p>
+                              <p className="text-2xl font-bold text-purple-600">
+                                {viewingUser.previousLeavesAvailed}
+                                <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        {userStats.leaves && userStats.leaves.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="font-semibold text-sm">Recent Leave Requests</p>
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                              {userStats.leaves.slice(0, 10).map((leave, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-sm">
+                                  <div>
+                                    <p className="font-medium">{leave.type}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <Badge variant={
+                                    leave.status === 'Approved' ? 'default' :
+                                    leave.status === 'Pending' ? 'secondary' : 'destructive'
+                                  }>
+                                    {leave.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-                      {userStats.leaves && userStats.leaves.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="font-semibold text-sm">Recent Leave Requests</p>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {userStats.leaves.slice(0, 10).map((leave, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-sm">
-                                <div>
-                                  <p className="font-medium">{leave.type}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                <Badge variant={
-                                  leave.status === 'Approved' ? 'default' :
-                                  leave.status === 'Pending' ? 'secondary' : 'destructive'
-                                }>
-                                  {leave.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
