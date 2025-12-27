@@ -33,6 +33,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       // basic_salary: user.basic_salary || 0,
       //allowance: user.allowance || 0,
       leave_limit: user.leave_limit || 10,
+      leaveEntitlementDate: user.leaveEntitlementDate || '',
       reportingManagers: user.reportingManagers || []
     });
   };
@@ -333,6 +334,40 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         />
                       </div>
                     )}
+
+                    {editForm.role !== 'Admin' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</Label>
+                        <Input 
+                          type="date"
+                          value={editForm.leaveEntitlementDate ? new Date(editForm.leaveEntitlementDate).toISOString().split('T')[0] : ''}
+                          onChange={(e) => setEditForm({...editForm, leaveEntitlementDate: e.target.value})}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">Defaults to Jan 1 if not set</p>
+                        {editForm.leaveEntitlementDate && (() => {
+                          const now = new Date();
+                          const currentYear = now.getFullYear();
+                          const entitlementDate = new Date(editForm.leaveEntitlementDate);
+                          const entitlementYear = entitlementDate.getFullYear();
+                          const effectiveDate = entitlementYear === currentYear ? entitlementDate : new Date(currentYear, 0, 1);
+                          const endOfYear = new Date(currentYear, 11, 31);
+                          const daysFromEntitlementToYearEnd = Math.floor((endOfYear - effectiveDate) / (1000 * 60 * 60 * 24)) + 1;
+                          const baseLeaveLimit = 10; // Base calculation value
+                          const earnedLeaves = Math.round((daysFromEntitlementToYearEnd * baseLeaveLimit) / 365);
+                          return (
+                            <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                📊 Calculated Earned Leaves: <span className="font-bold">{earnedLeaves}</span> days
+                              </p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                {daysFromEntitlementToYearEnd} days × {baseLeaveLimit} ÷ 365
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   {isAdmin && (
@@ -458,10 +493,20 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     )}
 
                     {user.role !== 'Admin' && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
-                        <p className="text-2xl font-bold text-primary">{user.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days</span></p>
-                      </div>
+                      <>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
+                          <p className="text-2xl font-bold text-primary">{user.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days</span></p>
+                        </div>
+                        {/* <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Entitlement Date</p>
+                          <p className="text-sm font-medium">
+                            {user.leaveEntitlementDate 
+                              ? new Date(user.leaveEntitlementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                              : 'Jan 1'}
+                          </p>
+                        </div> */}
+                      </>
                     )}
 
                     {user.role !== 'Admin' && (
@@ -553,6 +598,16 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
                         <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 12} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                      </div>
+                    )}
+                    {viewingUser.role !== 'Admin' && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                        <p className="text-sm font-medium">
+                          {viewingUser.leaveEntitlementDate 
+                            ? new Date(viewingUser.leaveEntitlementDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                            : 'January 1'}
+                        </p>
                       </div>
                     )}
                    

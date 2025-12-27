@@ -32,16 +32,27 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     return businessDays;
   };
 
-  // Calculate earned leaves based on days elapsed in current year (annual basis)
+  // Calculate earned leaves based on days from entitlement date to today (annual basis)
   const earnedLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1);
-    const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
+    const entitlementDate = me?.leaveEntitlementDate 
+      ? new Date(me.leaveEntitlementDate)
+      : new Date(currentYear, 0, 1);
+    
+    // Ensure entitlement date is in current year
+    const entitlementYear = entitlementDate.getFullYear();
+    const effectiveEntitlementDate = entitlementYear === currentYear 
+      ? entitlementDate 
+      : new Date(currentYear, 0, 1);
+    
+    const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
     const leaveLimit = me?.leave_limit || 10;
-    const earned = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+    const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
     return earned;
-  }, [me?.leave_limit]);
+  }, [me?.leave_limit, me?.leaveEntitlementDate]);
 
   // Calculate approved leave days for current year only
   const approvedLeaveDaysCurrentYear = useMemo(() => {

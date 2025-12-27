@@ -184,7 +184,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
                 <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
                 <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedLeaves || 0}</div>
-                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Jan 1 - Today</div>
+                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">From entitlement date</div>
               </div>
               <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
                 <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
@@ -207,7 +207,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
             </div>
             <div style="margin-top: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
               <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
-                💡 <strong>Annual Calculation:</strong> Employee earns ${((leaveStats.leaveLimit || 10) / 365).toFixed(2)} leave per day. Total ${leaveStats.leaveLimit || 10} leaves per year calculated from January 1st.
+                💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date. Leave limit is set based on entitlement date.
               </div>
             </div>
           </div>

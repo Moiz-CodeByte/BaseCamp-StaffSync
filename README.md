@@ -15,8 +15,10 @@ A streamlined Leave Management System built for BaseCamp, featuring role-based d
 - **Employees**: Submit leave requests (Annual, Sick, Casual, Unpaid)
 - **HR/Admin**: Approve or reject pending requests
 - Leave status tracking (Pending, Approved, Rejected)
-- Leave balance calculation
-- Multi-level approval workflow
+- Dynamic leave balance calculation based on entitlement date
+- Customizable leave entitlement date per employee
+- Multi-level approval workflow with email notifications
+- Real-time earned leave calculations
 - View past leave history
 - Delete pending leave requests
 
@@ -154,22 +156,25 @@ BaseCamp StaffSync/
 
 ### Admin Dashboard
 - **User Statistics**: Total users, role breakdown
-- **User Management Table**: Add, view all users
+- **User Management Table**: Add, view, edit all users with leave entitlement dates
+- **Leave Entitlement Management**: Set custom entitlement dates for accurate leave calculations
 - **Payroll Generation**: One-click payroll for current month
 - **System Overview**: Comprehensive admin controls
 
 ### HR Dashboard
 - **Leave Management**: Approve/reject pending requests with detailed table
+- **Employee Management**: Edit user details including leave entitlement dates
 - **Corporate Calendar**: Create holidays, meetings, events
 - **Employee Directory**: Quick access to all employees
 - **Statistics**: Pending leaves, employee count, upcoming events
 
 ### Employee Dashboard
-- **Profile Card**: Personal information display
+- **Profile Card**: Personal information display with leave entitlement date
 - **Attendance**: Check-in/out with today's status and history
-- **Leave Requests**: Submit and track leave applications
+- **Leave Requests**: Submit and track leave applications with real-time balance
+- **Dynamic Leave Balance**: Earned leaves calculated from entitlement date to today
 - **Payslips**: Detailed monthly salary breakdown
-- **Statistics**: Total attendance days, leave balance
+- **Statistics**: Total attendance days, earned leave balance
 
 ## 🔐 API Endpoints
 
@@ -248,6 +253,9 @@ The application includes a built-in dark mode toggle available in the navbar. Th
 
 ### User
 - name, email, password (hashed), role (Admin/HR/Employee)
+- leave_limit (default: 10), leaveEntitlementDate (optional Date)
+- previousLeavesAvailed, previousLeavesAvailedYear (for historical data)
+- designation, department (ref), reportingManagers (array)
 - Timestamps: createdAt, updatedAt
 
 ### Attendance
@@ -264,9 +272,34 @@ The application includes a built-in dark mode toggle available in the navbar. Th
 ### CalendarEvent
 - title, description, date, type (Holiday/Meeting/Event), createdBy (ref)
 
+## ✨ Key Features
+
+### Leave Entitlement System
+The application features a sophisticated leave calculation system:
+
+- **Custom Entitlement Dates**: Set individual start dates for each employee's leave entitlement
+- **Dynamic Calculation**: Earned leaves = (Days from entitlement date to today × 10) ÷ 365
+- **Real-time Preview**: Admin and HR see calculated earned leaves when setting entitlement dates
+- **Automatic Updates**: Leave limits auto-recalculate when entitlement dates change
+- **Default Behavior**: If no date is set, defaults to January 1 of the current year
+- **Smart Rounding**: Uses Math.round for fair rounding (0.5 rounds up)
+
+**Calculation Example:**
+- Employee joins on July 1, 2025
+- Days from July 1 to December 27, 2025 = 179 days
+- Earned leaves = (179 × 10) ÷ 365 = 4.9 ≈ 5 days
+
+### Email Notification System
+Automated email workflows for leave requests:
+- Managers receive email notifications with one-click approve/reject buttons
+- Employees get notified when their requests are processed
+- Leave statistics emails with calculation breakdowns
+- Password reset email functionality
+
 ## 🚧 Future Enhancements
 
-- [ ] Email notifications for leave approvals
+- [x] Email notifications for leave approvals
+- [x] Dynamic leave entitlement calculation
 - [ ] Attendance reports and analytics
 - [ ] Role-based dashboard customization
 - [ ] Advanced payroll calculations (tax, benefits)

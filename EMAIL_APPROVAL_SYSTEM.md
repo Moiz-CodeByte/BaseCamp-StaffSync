@@ -1,9 +1,35 @@
 # Email Approval System for Leave Requests
 
 ## Overview
-The system now supports email notifications to reporting managers when employees submit leave requests. Managers can approve or reject leave requests directly from their email or through the dashboard.
+The system supports email notifications to reporting managers when employees submit leave requests. Managers can approve or reject leave requests directly from their email or through the dashboard. The system also features dynamic leave balance calculations based on customizable entitlement dates.
 
-## How It Works
+## Leave Entitlement System
+
+### How Leave Balance is Calculated
+Each employee has a customizable **Leave Entitlement Date** that determines when they start earning leaves:
+
+**Formula:** Earned Leaves = (Days from Entitlement Date to Today × 10) ÷ 365
+
+- **Base Multiplier**: Always 10 (standard annual leave quota)
+- **Rounding**: Math.round (0.5 rounds up to 1)
+- **Default**: If no entitlement date is set, defaults to January 1 of current year
+
+**Examples:**
+- Employee joined July 1, 2025 → 179 days to Dec 27 → (179 × 10) ÷ 365 = 4.9 ≈ **5 days**
+- Employee joined Jan 1, 2025 → 360 days to Dec 27 → (360 × 10) ÷ 365 = 9.9 ≈ **10 days**
+- Employee joined Nov 1, 2025 → 56 days to Dec 27 → (56 × 10) ÷ 365 = 1.5 ≈ **2 days**
+
+### Setting Entitlement Dates
+Admins and HR can set entitlement dates when:
+1. Creating new users
+2. Editing existing user profiles
+3. Managing employees in their departments
+
+The system provides **real-time calculation preview** showing earned leaves as dates are entered.
+
+## Email Approval Workflow
+
+### How It Works
 
 ### 1. Leave Request Submission
 When an employee submits a leave request:
@@ -104,6 +130,21 @@ Manually send approval emails (for existing leave requests).
 
 ## Data Model
 
+### User Schema Updates
+```javascript
+{
+  // ... existing fields
+  leave_limit: { type: Number, default: 10 },
+  leaveEntitlementDate: { type: Date }, // Custom entitlement start date
+  previousLeavesAvailed: { type: Number, default: 0 }, // Historical leaves (pre-system)
+  previousLeavesAvailedYear: { type: Number }, // Year of historical leaves
+  reportingManagers: [{
+    name: String,
+    email: String
+  }]
+}
+```
+
 ### Leave Schema Updates
 ```javascript
 {
@@ -187,15 +228,23 @@ NEXT_PUBLIC_APP_URL=https://yourapp.com
 ## UI Components
 
 ### HR Dashboard - LeavesTab.jsx
-Displays manager approvals in three sections:
-1. **My Leave Requests**: Shows approval status for HR's own requests
+Displays manager approvals and leave balance calculations:
+1. **My Leave Requests**: Shows approval status for HR's own requests with earned leave calculation
 2. **Employee Leave Requests**: Shows pending requests with manager approval tracking
 3. **Recently Submitted**: Shows all recent requests with approval statuses
+4. **Real-time Balance**: Calculates earned leaves based on entitlement date to today
 
 ### Admin Dashboard - LeavesTab.jsx
-Shows all leave requests with manager approval tracking:
-1. **All Leave Requests**: Pending requests with approval details
+Shows all leave requests with manager approval tracking and entitlement management:
+1. **All Leave Requests**: Pending requests with approval details and earned leave display
 2. **Past Leave Requests**: Historical requests with final approval statuses
+3. **User Management**: Edit employee entitlement dates with calculation preview
+
+### Employee Dashboard - LeavesTab.jsx
+Employee leave request form with real-time balance:
+1. **Leave Balance Card**: Shows earned leaves from entitlement date to today
+2. **Leave Request Form**: Submit new requests
+3. **Leave History**: View past requests and their statuses
 
 ### Display Format
 ```
@@ -205,6 +254,13 @@ Manager Approvals column:
 │ Jane Lead     ⏳ Pending  │
 │ Bob Director  ✉          │
 └─────────────────────────┘
+
+Leave Balance Display:
+┌──────────────────────────────────────┐
+│ Earned: 5 days (179 days × 10 ÷ 365) │
+│ Used: 2 days                         │
+│ Available: 3 days                    │
+└──────────────────────────────────────┘
 ```
 
 ## Testing the System
@@ -241,6 +297,12 @@ http://localhost:3000/api/leaves/[leaveId]/manager-action?action=approve&email=m
 
 ## Future Enhancements
 
+### Implemented Features:
+✅ **Dynamic Leave Calculation**: Earned leaves based on entitlement date  
+✅ **Real-time Previews**: Instant calculation display when setting dates  
+✅ **Email Notifications**: Manager approval emails with one-click actions  
+✅ **Historical Leave Tracking**: Support for pre-system leave data
+
 ### Possible Improvements:
 1. **Email Templates**: Custom branded email templates with company logo
 2. **Reminder Emails**: Send reminders for pending approvals after X days
@@ -250,6 +312,8 @@ http://localhost:3000/api/leaves/[leaveId]/manager-action?action=approve&email=m
 6. **Conditional Approval**: Auto-approve leaves under certain conditions
 7. **Calendar Integration**: Sync approved leaves to Google Calendar/Outlook
 8. **Analytics**: Track average approval times and manager response rates
+9. **Carry Forward**: Auto-calculate and carry forward unused leaves to next year
+10. **Leave Forecasting**: Predict leave usage patterns and balance projections
 
 ## Troubleshooting
 

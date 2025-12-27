@@ -48,22 +48,27 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
 
-  // Calculate earned leaves based on days elapsed in current year (annual basis)
+  // Calculate earned leaves based on days from entitlement date to today (annual basis)
   const earnedLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1); // January 1st of current year
     
-    // Calculate days from Jan 1 to today
-    const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+    // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
+    const entitlementDate = me?.leaveEntitlementDate 
+      ? new Date(me.leaveEntitlementDate)
+      : new Date(currentYear, 0, 1);
     
-    const leaveLimit = me?.leave_limit || 10; // Use leave_limit from user model
+    // Ensure entitlement date is in current year
+    const entitlementYear = entitlementDate.getFullYear();
+    const effectiveEntitlementDate = entitlementYear === currentYear 
+      ? entitlementDate 
+      : new Date(currentYear, 0, 1);
     
-    // Calculate earned leaves: (days from Jan 1 to today) * leave_limit / 365
-    const earned = Math.floor((daysSinceYearStart * leaveLimit) / 365);
-    
+    const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+    const leaveLimit = me?.leave_limit || 10;
+    const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
     return earned;
-  }, [me?.leave_limit]);
+  }, [me?.leave_limit, me?.leaveEntitlementDate]);
 
   // Calculate approved leave days for current year only
   const approvedLeaveDaysCurrentYear = useMemo(() => {

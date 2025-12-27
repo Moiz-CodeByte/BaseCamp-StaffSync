@@ -49,22 +49,32 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate earned leaves based on days elapsed in current year (annual basis)
+  // Calculate earned leaves based on days from entitlement date to today (annual basis)
   const earnedLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1); // January 1st of current year
     
-    // Calculate days from Jan 1 to today
-    const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+    // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
+    const entitlementDate = me?.leaveEntitlementDate 
+      ? new Date(me.leaveEntitlementDate)
+      : new Date(currentYear, 0, 1);
     
-    const leaveLimit = me?.leave_limit || 10; // Use leave_limit from user model
+    // Ensure entitlement date is in current year
+    const entitlementYear = entitlementDate.getFullYear();
+    const effectiveEntitlementDate = entitlementYear === currentYear 
+      ? entitlementDate 
+      : new Date(currentYear, 0, 1);
     
-    // Calculate earned leaves: (days from Jan 1 to today) * leave_limit / 365
-    const earned = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+    // Calculate days from entitlement date to today (not year-end)
+    const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+    
+    const leaveLimit = me?.leave_limit || 10;
+    
+    // Calculate earned leaves: days(entitlementDate, today) * 10 / 365
+    const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
     
     return earned;
-  }, [me?.leave_limit]);
+  }, [me?.leave_limit, me?.leaveEntitlementDate]);
 
   // Calculate approved leave days for current year only
   const approvedLeaveDaysCurrentYear = useMemo(() => {
@@ -314,7 +324,12 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
               
               <div className="p-3 rounded-lg bg-muted/50 border">
                 <p className="text-xs text-muted-foreground">
-                  💡 <strong>Leave Policy:</strong> You earn {((me?.leave_limit || 10) / 365).toFixed(2)} leave{((me?.leave_limit || 10) / 365) !== 1 ? 's' : ''} per day. Maximum {me?.leave_limit || 10} leaves per year. Leaves are calculated from January 1st to today.
+                  💡 <strong>Leave Policy:</strong> You earn leaves based on days from your entitlement date to today. Maximum {me?.leave_limit || 10} leaves per year.
+                  {me?.leaveEntitlementDate && (
+                    <span className="block mt-1">
+                      Your entitlement starts from: {new Date(me.leaveEntitlementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
                 </p>
               </div>
 

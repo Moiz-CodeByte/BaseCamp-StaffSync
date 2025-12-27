@@ -87,10 +87,19 @@ export async function calculateLeaveStats(userId, user = null) {
   const lastMonthDays = lastMonthLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisQuarterDays = thisQuarterLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
 
-  // Calculate earned leaves based on days elapsed in current year (annual basis)
-  const daysSinceYearStart = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+  // Calculate earned leaves based on days from entitlement date to today (annual basis)
+  const entitlementDate = user?.leaveEntitlementDate 
+    ? new Date(user.leaveEntitlementDate)
+    : new Date(currentYear, 0, 1);
+  
+  const entitlementYear = entitlementDate.getFullYear();
+  const effectiveEntitlementDate = entitlementYear === currentYear 
+    ? entitlementDate 
+    : new Date(currentYear, 0, 1);
+  
+  const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
   const leaveLimit = user?.leave_limit || 10;
-  const earnedLeaves = Math.floor((daysSinceYearStart * leaveLimit) / 365);
+  const earnedLeaves = Math.round((daysFromEntitlementToToday * 10) / 365);
   
   // Add historical leaves if from current year
   const historicalLeaves = (user?.previousLeavesAvailedYear === currentYear) 

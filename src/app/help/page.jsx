@@ -63,7 +63,7 @@ export default function HelpPage() {
           tips: [
             'Available leave balance varies by employee depending on your leave limit',
             'Leaves are earned daily based on your annual limit',
-            'Formula: (Days from Jan 1 to Today) × Leave Limit ÷ 365',
+            'Formula: (Days from Jan 1 to Today) × 10 ÷ 365',
             'Your leave limit is set by HR and may differ from other employees',
             'You cannot request more days than available',
             'Pending requests block new submissions until approved/rejected',

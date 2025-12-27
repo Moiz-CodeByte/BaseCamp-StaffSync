@@ -31,7 +31,7 @@ export async function PATCH(req, { params }) {
     // Allowed fields to update
     const allowedFields = [
       'name', 'email', 'department', 'role', 'designation',
-      'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers'
+      'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers', 'leaveEntitlementDate'
     ];
     
     const updateData = {};
@@ -43,11 +43,35 @@ export async function PATCH(req, { params }) {
         } else if (field === 'reportingManagers') {
           // Allow empty array or array of managers
           updateData[field] = Array.isArray(updates[field]) ? updates[field] : [];
+        } else if (field === 'leaveEntitlementDate') {
+          // Convert to Date object if provided, otherwise set to null
+          updateData[field] = updates[field] ? new Date(updates[field]) : null;
         } else {
           updateData[field] = updates[field];
         }
       }
     });
+    
+    // Auto-calculate leave_limit when leaveEntitlementDate is updated
+    if (updateData.leaveEntitlementDate) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const entitlementDate = new Date(updateData.leaveEntitlementDate);
+      const entitlementYear = entitlementDate.getFullYear();
+      
+      // Use entitlement date if in current year, otherwise use Jan 1
+      const effectiveDate = entitlementYear === currentYear 
+        ? entitlementDate 
+        : new Date(currentYear, 0, 1);
+      
+      const endOfYear = new Date(currentYear, 11, 31);
+      const daysFromEntitlementToYearEnd = Math.floor((endOfYear - effectiveDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Calculate leave_limit: days(entitlementDate, yearEnd) × 10 ÷ 365
+      // Round: if decimal >= 0.5, round up; otherwise round down
+      const calculatedLeaveLimit = Math.round((daysFromEntitlementToYearEnd * 10) / 365);
+      updateData.leave_limit = calculatedLeaveLimit;
+    }
     
     // Only Admin can change roles - check if role is actually being changed
     if (updateData.role && updateData.role !== existingUser.role && user.role !== 'Admin') {

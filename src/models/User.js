@@ -27,6 +27,7 @@ const UserSchema = new Schema(
     // },
     //_allowance: { type: Number, default: 0 }, // Default monthly allowance
     leave_limit: { type: Number, default: 10 }, // Annual leave limit (in days)
+    leaveEntitlementDate: { type: Date }, // Date when leave entitlement starts (defaults to Jan 1 of current year if not set)
     
     // Historical leave data (for migration purposes)
     previousLeavesAvailed: { type: Number, default: 0 }, // Leaves already used before system migration

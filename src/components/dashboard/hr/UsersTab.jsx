@@ -30,6 +30,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
     setEditForm({
       designation: user.designation || '',
       leave_limit: user.leave_limit || 10,
+      leaveEntitlementDate: user.leaveEntitlementDate || '',
       reportingManagers: user.reportingManagers || []
     });
   };
@@ -303,6 +304,28 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         className="w-full"
                       />
                     </div>
+
+                    <div>
+                      <Label htmlFor="leaveEntitlementDate" className="text-xs text-muted-foreground mb-2 block">Date of Leave Entitlement</Label>
+                      <Input 
+                        id="leaveEntitlementDate"
+                        type="date"
+                        value={editForm.leaveEntitlementDate ? new Date(editForm.leaveEntitlementDate).toISOString().split('T')[0] : ''}
+                        onChange={(e) => setEditForm({...editForm, leaveEntitlementDate: e.target.value})}
+                        className="w-full"
+                      />
+                      {editForm.leaveEntitlementDate && (() => {
+                        const entitlementDate = new Date(editForm.leaveEntitlementDate);
+                        const today = new Date();
+                        const daysSince = Math.floor((today - entitlementDate) / (1000 * 60 * 60 * 24));
+                        const earnedLeaves = Math.round((daysSince * 10) / 365);
+                        return (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            Earned: {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''} ({daysSince} days × 10 ÷ 365)
+                          </p>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* Reporting Managers */}
@@ -394,6 +417,15 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                       </p>
                     </div>
 
+                    {/* <div>
+                      <p className="text-xs text-muted-foreground mb-1">Leave Entitlement Date</p>
+                      <p className="text-sm font-medium">
+                        {user.leaveEntitlementDate 
+                          ? new Date(user.leaveEntitlementDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                          : 'January 1'}
+                      </p>
+                    </div> */}
+
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Reporting Managers</p>
                       {user.reportingManagers && user.reportingManagers.length > 0 ? (
@@ -480,6 +512,14 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
                       <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                      <p className="text-sm font-medium">
+                        {viewingUser.leaveEntitlementDate 
+                          ? new Date(viewingUser.leaveEntitlementDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                          : 'January 1 (Default)'}
+                      </p>
                     </div>
                     {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
                       <div className="space-y-1">
