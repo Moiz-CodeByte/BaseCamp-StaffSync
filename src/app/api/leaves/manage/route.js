@@ -96,11 +96,7 @@ export async function GET(req) {
       return total + calculateDays(leave.startDate, leave.endDate);
     }, 0);
     
-    // Add previous leaves only if from current year (auto-resets at year-end)
-    const historicalLeaves = (leave.user.previousLeavesAvailedYear === currentYear) 
-      ? (leave.user.previousLeavesAvailed || 0) 
-      : 0;
-    const yearlyApprovedLeaves = systemRecordedDays + historicalLeaves;
+    const yearlyApprovedLeaves = systemRecordedDays;
     
     // Get approved leaves for current month and calculate total days
     const monthlyLeaves = await Leave.find({

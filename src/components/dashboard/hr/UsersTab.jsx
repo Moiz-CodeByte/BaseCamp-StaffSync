@@ -63,7 +63,6 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
       ]);
       
       console.log('Fetched user data:', userRes.data.user);
-      console.log('previousLeavesAvailed:', userRes.data.user?.previousLeavesAvailed);
       
       setViewingUser(userRes.data.user || user);
       setUserStats({
@@ -613,10 +612,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                             return total + days;
                           }, 0);
                         
-                        const historicalLeaves = (viewingUser.previousLeavesAvailedYear === currentYear) 
-                          ? (viewingUser.previousLeavesAvailed || 0) 
-                          : 0;
-                        const usedThisYear = approvedLeaveDaysCurrentYear + historicalLeaves;
+                        const usedThisYear = approvedLeaveDaysCurrentYear;
                         const remainingLeaves = earnedLeaves - usedThisYear;
                         
                         return (
@@ -691,15 +687,6 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                               {userStats.leaves?.filter(l => l.status === 'Rejected').length || 0}
                             </p>
                           </div>
-                          {viewingUser.previousLeavesAvailed != null && viewingUser.previousLeavesAvailed > 0 && (
-                            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg md:col-span-2">
-                              <p className="text-xs text-muted-foreground">Previous Leaves Used (Pre-System)</p>
-                              <p className="text-2xl font-bold text-purple-600">
-                                {viewingUser.previousLeavesAvailed}
-                                <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
-                              </p>
-                            </div>
-                          )}
                         </div>
                         {userStats.leaves && userStats.leaves.length > 0 && (
                           <div className="space-y-2">

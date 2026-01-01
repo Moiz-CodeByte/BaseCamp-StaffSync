@@ -75,12 +75,7 @@ export default function EmployeeDashboard() {
           return total + days;
         }, 0);
       
-      // Add previous leaves availed (pre-migration data) - only if from current year
-      const currentYear = new Date().getFullYear();
-      const historicalLeaves = (meData.user.previousLeavesAvailedYear === currentYear) 
-        ? (meData.user.previousLeavesAvailed || 0) 
-        : 0;
-      const totalLeaveDays = systemRecordedDays + historicalLeaves;
+      const totalLeaveDays = systemRecordedDays;
       
       setStats({
         totalLeaveDays,

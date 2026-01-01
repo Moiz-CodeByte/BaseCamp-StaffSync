@@ -29,9 +29,8 @@ const UserSchema = new Schema(
     leave_limit: { type: Number, default: 10 }, // Annual leave limit (in days)
     leaveEntitlementDate: { type: Date }, // Date when leave entitlement starts (defaults to Jan 1 of current year if not set)
     
-    // Historical leave data (for migration purposes)
-    previousLeavesAvailed: { type: Number, default: 0 }, // Leaves already used before system migration
-    previousLeavesAvailedYear: { type: Number }, // Year when previousLeavesAvailed was set (auto-resets at year-end)
+    // Sick leave fields (separate from regular leaves)
+    sick_leave_limit: { type: Number, default: 3 }, // Annual sick leave limit (in days)
     
     // Password reset tokens
     passwordResetToken: { type: String },

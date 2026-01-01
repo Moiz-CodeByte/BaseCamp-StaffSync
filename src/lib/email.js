@@ -175,39 +175,73 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
           ${leaveStats ? `
           <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">Employee Leave Statistics (Annual)</h3>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Leave Limit/Year</div>
-                <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
-              </div>
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
-                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedLeaves || 0}</div>
-                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">From entitlement date</div>
-              </div>
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
-                <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
-                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Approved days</div>
-              </div>
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available Balance</div>
-                <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
-                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Days remaining</div>
-              </div>
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
-                <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
-              </div>
-              <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
-                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
-                <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+            <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics (Annual)</h3>
+            <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+              <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
+                💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date.
+                <br>• <strong>Regular Leaves:</strong> 10 days/year ≈ 0.027 days per day
+                <br>• <strong>Sick Leaves:</strong> 3 days/year ≈ 0.008 days per day
+                <br>• Both types use the <strong>same entitlement date</strong> but track separately
               </div>
             </div>
-            <div style="margin-top: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
-              <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
-                💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date. Leave limit is set based on entitlement date.
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Regular Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
+              <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedSickLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.sickThisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.sickLastMonth || 0}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -467,8 +501,11 @@ function generateHRNotificationHTML({
               <span class="value">${endDate}</span>
             </div>
             <div class="detail-row">
-              <span class="label">Leave Limit:</span>
-              <span class="value">${employee.leave_limit || 10} days/year</span>
+              <span class="label">Leave Limits:</span>
+              <span class="value">
+                <strong>Regular:</strong> ${employee.leave_limit || 10} days/year &nbsp;|&nbsp; 
+                <strong>Sick:</strong> ${employee.sick_leave_limit || 3} days/year
+              </span>
             </div>
             <div class="detail-row">
               <span class="label">Status:</span>
@@ -483,26 +520,82 @@ function generateHRNotificationHTML({
           </div>
 
           <div class="section-title">📊 Employee Leave Statistics</div>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">This Month</div>
-              <div class="stat-value">${leaveStats.thisMonth}</div>
-              <div class="stat-unit">days</div>
+          <p style="font-size: 12px; color: #6b7280; margin: 10px 0 15px 0; line-height: 1.6;">
+            💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date.
+            <br>• <strong>Regular Leaves:</strong> 10 days/year ≈ 0.027 days per day
+            <br>• <strong>Sick Leaves:</strong> 3 days/year ≈ 0.008 days per day
+            <br>• Both types use the <strong>same entitlement date</strong> but track separately
+          </p>
+
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+            <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Regular Leaves</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">This Month</div>
+                <div class="stat-value">${leaveStats.thisMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value">${leaveStats.lastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Quarter</div>
+                <div class="stat-value">${leaveStats.thisQuarter || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Year</div>
+                <div class="stat-value">${leaveStats.thisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Earned So Far</div>
+                <div class="stat-value">${leaveStats.earnedLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : '#0c4a6e'};">${leaveStats.remainingLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-label">Last Month</div>
-              <div class="stat-value">${leaveStats.lastMonth}</div>
-              <div class="stat-unit">days</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">This Quarter</div>
-              <div class="stat-value">${leaveStats.thisQuarter}</div>
-              <div class="stat-unit">days</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">This Year</div>
-              <div class="stat-value">${leaveStats.thisYear}</div>
-              <div class="stat-unit">days</div>
+          </div>
+
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
+            <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">This Month</div>
+                <div class="stat-value">${leaveStats.sickThisMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value">${leaveStats.sickLastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Quarter</div>
+                <div class="stat-value">${leaveStats.sickThisQuarter || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Year</div>
+                <div class="stat-value">${leaveStats.sickThisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Earned So Far</div>
+                <div class="stat-value">${leaveStats.earnedSickLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : '#0c4a6e'};">${leaveStats.remainingSickLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
             </div>
           </div>
 

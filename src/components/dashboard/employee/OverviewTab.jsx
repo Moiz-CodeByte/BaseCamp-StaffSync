@@ -47,7 +47,22 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     return earned;
   }, [me?.leave_limit, me?.leaveEntitlementDate]);
 
-  // Calculate approved leave days for current year only
+  // Calculate earned sick leaves using same entitlement date
+  const earnedSickLeaves = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Use same leaveEntitlementDate for sick leaves
+    const entitlementDate = me?.leaveEntitlementDate 
+      ? new Date(me.leaveEntitlementDate)
+      : new Date(currentYear, 0, 1);
+    
+    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
+    const earned = Math.round((daysFromEntitlementToToday * 3) / 365);
+    return earned;
+  }, [me?.sick_leave_limit, me?.leaveEntitlementDate]);
+
+  // Calculate approved leave days for current year only (excluding sick leaves)
   const approvedLeaveDaysCurrentYear = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -57,6 +72,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     const systemRecordedDays = (leaves || [])
       .filter(l => {
         if (l.status !== 'Approved') return false;
+        if (l.type === 'Sick') return false; // Exclude sick leaves
         const leaveStart = new Date(l.startDate);
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
       })
@@ -65,17 +81,40 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
         return total + days;
       }, 0);
     
-    const currentYearCheck = new Date().getFullYear();
-    const historicalLeaves = (me?.previousLeavesAvailedYear === currentYearCheck) 
-      ? (me?.previousLeavesAvailed || 0) 
-      : 0;
-    return systemRecordedDays + historicalLeaves;
-  }, [leaves, me?.previousLeavesAvailed, me?.previousLeavesAvailedYear]);
+    return systemRecordedDays;
+  }, [leaves]);
+
+  // Calculate approved sick leave days for current year only
+  const approvedSickLeaveDaysCurrentYear = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const yearStartDate = new Date(currentYear, 0, 1);
+    const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
+    
+    const systemRecordedDays = (leaves || [])
+      .filter(l => {
+        if (l.status !== 'Approved') return false;
+        if (l.type !== 'Sick') return false; // Only sick leaves
+        const leaveStart = new Date(l.startDate);
+        return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+      })
+      .reduce((total, leave) => {
+        const days = calculateBusinessDays(leave.startDate, leave.endDate);
+        return total + days;
+      }, 0);
+    
+    return systemRecordedDays;
+  }, [leaves]);
 
   // Calculate available leave balance
   const remainingLeaves = useMemo(() => {
     return earnedLeaves - approvedLeaveDaysCurrentYear;
   }, [earnedLeaves, approvedLeaveDaysCurrentYear]);
+
+  // Calculate available sick leave balance
+  const remainingSickLeaves = useMemo(() => {
+    return earnedSickLeaves - approvedSickLeaveDaysCurrentYear;
+  }, [earnedSickLeaves, approvedSickLeaveDaysCurrentYear]);
 
   const statCards = [
     { 
@@ -145,10 +184,10 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
         })}
       </div>
 
-      {/* Leave Balance Summary */}
+      {/* Regular Leave Balance Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Leave Balance (Annual)</CardTitle>
+          <CardTitle>Regular Leave Balance (Annual)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -192,6 +231,57 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
           </div>
           <p className="text-xs text-muted-foreground mt-4">
             💡 <strong>Leave Policy:</strong> You earn 0.03 leaves per day. Calculation: (Days from entitlement date × 10) ÷ 365. Maximum {me?.leave_limit || 10} leaves per year.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Sick Leave Balance Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sick Leave Balance (Annual)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-900">
+              <p className="text-xs text-purple-700 dark:text-purple-300 mb-2 font-medium">Sick Leave Earned</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                {earnedSickLeaves} day{earnedSickLeaves !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                {((me?.sick_leave_limit || 3) / 365).toFixed(3)} per day
+              </p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-muted border">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Sick Leave Used</p>
+              <p className="text-2xl font-bold">
+                {approvedSickLeaveDaysCurrentYear} day{approvedSickLeaveDaysCurrentYear !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Current year
+              </p>
+            </div>
+            
+            <div className={`p-4 rounded-lg border ${
+              remainingSickLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+              remainingSickLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+              'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+            }`}>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Sick Leave Available</p>
+              <p className={`text-2xl font-bold ${
+                remainingSickLeaves < 0 ? 'text-destructive' : 
+                remainingSickLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                'text-green-600 dark:text-green-400'
+              }`}>
+                {remainingSickLeaves} day{remainingSickLeaves !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Max {me?.sick_leave_limit || 3}/year
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            💡 <strong>Sick Leave Policy:</strong> You earn 0.008 sick days per day. Calculation: (Days from sick entitlement date × 3) ÷ 365. Maximum {me?.sick_leave_limit || 3} sick days per year.
           </p>
         </CardContent>
       </Card>

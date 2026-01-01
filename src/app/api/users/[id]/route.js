@@ -31,7 +31,8 @@ export async function PATCH(req, { params }) {
     // Allowed fields to update
     const allowedFields = [
       'name', 'email', 'department', 'role', 'designation',
-      'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers', 'leaveEntitlementDate'
+      'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers', 'leaveEntitlementDate',
+      'sick_leave_limit'
     ];
     
     const updateData = {};
@@ -45,14 +46,28 @@ export async function PATCH(req, { params }) {
           updateData[field] = Array.isArray(updates[field]) ? updates[field] : [];
         } else if (field === 'leaveEntitlementDate') {
           // Convert to Date object if provided, otherwise set to null
-          updateData[field] = updates[field] ? new Date(updates[field]) : null;
+          if (updates[field]) {
+            const entitlementDate = new Date(updates[field]);
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const entitlementYear = entitlementDate.getFullYear();
+            
+            // Validate: entitlement date must not be in previous year
+            if (entitlementYear < currentYear) {
+              throw new Error('Entitlement date cannot be in a previous year');
+            }
+            
+            updateData[field] = entitlementDate;
+          } else {
+            updateData[field] = null;
+          }
         } else {
           updateData[field] = updates[field];
         }
       }
     });
     
-    // Auto-calculate leave_limit when leaveEntitlementDate is updated
+    // Auto-calculate both leave limits when leaveEntitlementDate is updated
     if (updateData.leaveEntitlementDate) {
       const now = new Date();
       const currentYear = now.getFullYear();
@@ -68,9 +83,12 @@ export async function PATCH(req, { params }) {
       const daysFromEntitlementToYearEnd = Math.floor((endOfYear - effectiveDate) / (1000 * 60 * 60 * 24)) + 1;
       
       // Calculate leave_limit: days(entitlementDate, yearEnd) × 10 ÷ 365
-      // Round: if decimal >= 0.5, round up; otherwise round down
       const calculatedLeaveLimit = Math.round((daysFromEntitlementToYearEnd * 10) / 365);
       updateData.leave_limit = calculatedLeaveLimit;
+      
+      // Calculate sick_leave_limit: days(entitlementDate, yearEnd) × 3 ÷ 365
+      const calculatedSickLeaveLimit = Math.round((daysFromEntitlementToYearEnd * 3) / 365);
+      updateData.sick_leave_limit = calculatedSickLeaveLimit;
     }
     
     // Only Admin can change roles - check if role is actually being changed

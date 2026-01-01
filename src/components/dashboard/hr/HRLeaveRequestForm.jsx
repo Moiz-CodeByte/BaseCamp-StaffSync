@@ -91,13 +91,8 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
         return total + days;
       }, 0);
     
-    // Add previous leaves availed (historical pre-migration data) - only if from current year
-    const currentYearCheck = new Date().getFullYear();
-    const historicalLeaves = (me?.previousLeavesAvailedYear === currentYearCheck) 
-      ? (me?.previousLeavesAvailed || 0) 
-      : 0;
-    return systemRecordedDays + historicalLeaves;
-  }, [myLeaves, me?.previousLeavesAvailed, me?.previousLeavesAvailedYear]);
+    return systemRecordedDays;
+  }, [myLeaves]);
 
   const calculateDays = () => {
     if (formData.startDate && formData.endDate) {

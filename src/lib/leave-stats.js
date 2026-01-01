@@ -66,26 +66,53 @@ export async function calculateLeaveStats(userId, user = null) {
     return calculateBusinessDays(leave.startDate, leave.endDate);
   };
 
-  // Filter and sum by date range
-  const thisMonthLeaves = approvedLeaves.filter(leave => {
+  // Separate regular and sick leaves
+  const regularLeaves = approvedLeaves.filter(leave => leave.type !== 'Sick Leave');
+  const sickLeaves = approvedLeaves.filter(leave => leave.type === 'Sick Leave');
+
+  // Filter and sum regular leaves by date range
+  const thisMonthLeaves = regularLeaves.filter(leave => {
     const startDate = new Date(leave.startDate);
     return startDate >= startOfCurrentMonth && startDate <= endOfCurrentMonth;
   });
 
-  const lastMonthLeaves = approvedLeaves.filter(leave => {
+  const lastMonthLeaves = regularLeaves.filter(leave => {
     const startDate = new Date(leave.startDate);
     return startDate >= startOfLastMonth && startDate <= endOfLastMonth;
   });
 
-  const thisQuarterLeaves = approvedLeaves.filter(leave => {
+  const thisQuarterLeaves = regularLeaves.filter(leave => {
     const startDate = new Date(leave.startDate);
     return startDate >= startOfQuarter && startDate <= endOfQuarter;
   });
 
-  const thisYearDays = approvedLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
+  // Filter sick leaves by date range
+  const thisMonthSickLeaves = sickLeaves.filter(leave => {
+    const startDate = new Date(leave.startDate);
+    return startDate >= startOfCurrentMonth && startDate <= endOfCurrentMonth;
+  });
+
+  const lastMonthSickLeaves = sickLeaves.filter(leave => {
+    const startDate = new Date(leave.startDate);
+    return startDate >= startOfLastMonth && startDate <= endOfLastMonth;
+  });
+
+  const thisQuarterSickLeaves = sickLeaves.filter(leave => {
+    const startDate = new Date(leave.startDate);
+    return startDate >= startOfQuarter && startDate <= endOfQuarter;
+  });
+
+  // Calculate regular leave days
+  const thisYearDays = regularLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisMonthDays = thisMonthLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const lastMonthDays = lastMonthLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisQuarterDays = thisQuarterLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
+
+  // Calculate sick leave days
+  const thisYearSickDays = sickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
+  const thisMonthSickDays = thisMonthSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
+  const lastMonthSickDays = lastMonthSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
+  const thisQuarterSickDays = thisQuarterSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
 
   // Calculate earned leaves based on days from entitlement date to today (annual basis)
   const entitlementDate = user?.leaveEntitlementDate 
@@ -98,27 +125,39 @@ export async function calculateLeaveStats(userId, user = null) {
     : new Date(currentYear, 0, 1);
   
   const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+  
+  // Calculate regular leaves (10 days/year)
   const leaveLimit = user?.leave_limit || 10;
   const earnedLeaves = Math.round((daysFromEntitlementToToday * 10) / 365);
-  
-  // Add historical leaves if from current year
-  const historicalLeaves = (user?.previousLeavesAvailedYear === currentYear) 
-    ? (user?.previousLeavesAvailed || 0) 
-    : 0;
-  const totalUsedThisYear = thisYearDays + historicalLeaves;
-  
-  // Calculate remaining leaves
+  const totalUsedThisYear = thisYearDays;
   const remainingLeaves = earnedLeaves - totalUsedThisYear;
 
+  // Calculate sick leaves (3 days/year) using same entitlement date
+  const sickLeaveLimit = user?.sick_leave_limit || 3;
+  const earnedSickLeaves = Math.round((daysFromEntitlementToToday * 3) / 365);
+  const totalUsedSickThisYear = thisYearSickDays;
+  const remainingSickLeaves = earnedSickLeaves - totalUsedSickThisYear;
+
   return {
+    // Regular leave stats
     thisYear: totalUsedThisYear,
     thisMonth: thisMonthDays,
     lastMonth: lastMonthDays,
     thisQuarter: thisQuarterDays,
-    approvedLeavesCount: approvedLeaves.length,
+    approvedLeavesCount: regularLeaves.length,
     leaveLimit: leaveLimit,
     earnedLeaves: earnedLeaves,
-    remainingLeaves: remainingLeaves
+    remainingLeaves: remainingLeaves,
+    
+    // Sick leave stats
+    sickThisYear: totalUsedSickThisYear,
+    sickThisMonth: thisMonthSickDays,
+    sickLastMonth: lastMonthSickDays,
+    sickThisQuarter: thisQuarterSickDays,
+    approvedSickLeavesCount: sickLeaves.length,
+    sickLeaveLimit: sickLeaveLimit,
+    earnedSickLeaves: earnedSickLeaves,
+    remainingSickLeaves: remainingSickLeaves
   };
 }
 

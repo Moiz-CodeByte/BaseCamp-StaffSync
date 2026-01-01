@@ -9,7 +9,7 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
-  const users = await User.find({}, 'name email role department designation reportingManagers leave_limit leaveEntitlementDate previousLeavesAvailed createdAt')
+  const users = await User.find({}, 'name email role department designation reportingManagers leave_limit leaveEntitlementDate sick_leave_limit createdAt')
     .lean();
   
   // Manually populate departments with HR and set reporting managers

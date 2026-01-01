@@ -9,14 +9,14 @@ import UserManagementTable from '@/components/dashboard/UserManagementTable';
 export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', previousLeavesAvailed: 0, leaveEntitlementDate: '' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leaveEntitlementDate: '' });
 
   const addUser = async (e) => {
     e.preventDefault();
     try {
       const { api } = await import('@/lib/api');
       await api.post('/api/auth/register', newUser);
-      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', previousLeavesAvailed: 0, leaveEntitlementDate: '' });
+      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leaveEntitlementDate: '' });
       setShowAddUser(false);
       onUpdate();
     } catch (e) {
@@ -122,17 +122,6 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
                   value={newUser.designation} 
                   onChange={e => setNewUser({ ...newUser, designation: e.target.value })} 
                 />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Previous Leaves Used (Optional)</label>
-                <Input 
-                  type="number"
-                  min="0"
-                  placeholder="Pre-migration leaves" 
-                  value={newUser.previousLeavesAvailed || ''} 
-                  onChange={e => setNewUser({ ...newUser, previousLeavesAvailed: parseInt(e.target.value) || 0 })} 
-                />
-                <p className="text-xs text-muted-foreground mt-1">Historical leaves before system migration</p>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Leave Entitlement Date (Optional)</label>
