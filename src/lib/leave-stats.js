@@ -126,15 +126,15 @@ export async function calculateLeaveStats(userId, user = null) {
   
   const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
   
-  // Calculate regular leaves (10 days/year)
+  // Calculate regular leaves (using user's leave_limit)
   const leaveLimit = user?.leave_limit || 10;
-  const earnedLeaves = Math.round((daysFromEntitlementToToday * 10) / 365);
+  const earnedLeaves = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
   const totalUsedThisYear = thisYearDays;
   const remainingLeaves = earnedLeaves - totalUsedThisYear;
 
-  // Calculate sick leaves (3 days/year) using same entitlement date
+  // Calculate sick leaves (using user's sick_leave_limit) using same entitlement date
   const sickLeaveLimit = user?.sick_leave_limit || 3;
-  const earnedSickLeaves = Math.round((daysFromEntitlementToToday * 3) / 365);
+  const earnedSickLeaves = Math.round((daysFromEntitlementToToday * sickLeaveLimit) / 365);
   const totalUsedSickThisYear = thisYearSickDays;
   const remainingSickLeaves = earnedSickLeaves - totalUsedSickThisYear;
 

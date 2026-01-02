@@ -596,6 +596,12 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     )}
                     {viewingUser.role !== 'Admin' && (
                       <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
+                        <p className="text-2xl font-bold text-red-600">{viewingUser.sick_leave_limit || 3} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                      </div>
+                    )}
+                    {viewingUser.role !== 'Admin' && (
+                      <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
                         <p className="text-sm font-medium">
                           {viewingUser.leaveEntitlementDate 
@@ -666,7 +672,10 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           ? new Date(viewingUser.leaveEntitlementDate)
                           : new Date(currentYear, 0, 1);
                         const daysSinceEntitlement = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
-                        const earnedLeaves = Math.round((daysSinceEntitlement * 10) / 365);
+                        const leaveLimit = viewingUser.leave_limit || 10;
+                        const sickLeaveLimit = viewingUser.sick_leave_limit || 3;
+                        const earnedLeaves = Math.round((daysSinceEntitlement * leaveLimit) / 365);
+                        const earnedSickLeaves = Math.round((daysSinceEntitlement * sickLeaveLimit) / 365);
                         
                         // Calculate business days function
                         const calculateBusinessDays = (startDate, endDate) => {
@@ -687,7 +696,23 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         
                         const yearStartDate = new Date(currentYear, 0, 1);
                         const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
-                        const approvedLeaveDaysCurrentYear = (userStats.leaves || [])
+                        
+                        // Separate regular and sick leaves
+                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave');
+                        const sickLeaves = (userStats.leaves || []).filter(l => l.type === 'Sick Leave');
+                        
+                        const approvedLeaveDaysCurrentYear = regularLeaves
+                          .filter(l => {
+                            if (l.status !== 'Approved') return false;
+                            const leaveStart = new Date(l.startDate);
+                            return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+                          })
+                          .reduce((total, leave) => {
+                            const days = calculateBusinessDays(leave.startDate, leave.endDate);
+                            return total + days;
+                          }, 0);
+                        
+                        const approvedSickLeaveDaysCurrentYear = sickLeaves
                           .filter(l => {
                             if (l.status !== 'Approved') return false;
                             const leaveStart = new Date(l.startDate);
@@ -699,40 +724,86 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           }, 0);
                         
                         const usedThisYear = approvedLeaveDaysCurrentYear;
+                        const usedSickThisYear = approvedSickLeaveDaysCurrentYear;
                         const remainingLeaves = earnedLeaves - usedThisYear;
+                        const remainingSickLeaves = earnedSickLeaves - usedSickThisYear;
                         
                         return (
-                          <div className="grid gap-3 md:grid-cols-3">
-                            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
-                              <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
-                              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
-                              </p>
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
+                          <div className="space-y-4">
+                            {/* Regular Leaves */}
+                            <div>
+                              <h4 className="text-sm font-semibold mb-2 text-emerald-700 dark:text-emerald-400">🌴 Regular Leaves</h4>
+                              <div className="grid gap-3 md:grid-cols-3">
+                                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+                                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
+                                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                    {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
+                                </div>
+                                
+                                <div className="p-3 rounded-lg bg-muted border">
+                                  <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
+                                  <p className="text-sm font-medium">
+                                    {usedThisYear} day{usedThisYear !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">Current year</p>
+                                </div>
+                                
+                                <div className={`p-3 rounded-lg border ${
+                                  remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                                  remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                                  'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                                }`}>
+                                  <p className="text-xs text-muted-foreground mb-1">Available</p>
+                                  <p className={`text-sm font-medium ${
+                                    remainingLeaves < 0 ? 'text-destructive' : 
+                                    remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                                    'text-green-600 dark:text-green-400'
+                                  }`}>
+                                    {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.leave_limit || 10}/year</p>
+                                </div>
+                              </div>
                             </div>
-                            
-                            <div className="p-3 rounded-lg bg-muted border">
-                              <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
-                              <p className="text-sm font-medium">
-                                {usedThisYear} day{usedThisYear !== 1 ? 's' : ''}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">Current year</p>
-                            </div>
-                            
-                            <div className={`p-3 rounded-lg border ${
-                              remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
-                              remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
-                              'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
-                            }`}>
-                              <p className="text-xs text-muted-foreground mb-1">Available</p>
-                              <p className={`text-sm font-medium ${
-                                remainingLeaves < 0 ? 'text-destructive' : 
-                                remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
-                                'text-green-600 dark:text-green-400'
-                              }`}>
-                                {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.leave_limit || 10}/year</p>
+
+                            {/* Sick Leaves */}
+                            <div>
+                              <h4 className="text-sm font-semibold mb-2 text-red-700 dark:text-red-400">🤒 Sick Leaves</h4>
+                              <div className="grid gap-3 md:grid-cols-3">
+                                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
+                                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
+                                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                    {earnedSickLeaves} day{earnedSickLeaves !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
+                                </div>
+                                
+                                <div className="p-3 rounded-lg bg-muted border">
+                                  <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
+                                  <p className="text-sm font-medium">
+                                    {usedSickThisYear} day{usedSickThisYear !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">Current year</p>
+                                </div>
+                                
+                                <div className={`p-3 rounded-lg border ${
+                                  remainingSickLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                                  remainingSickLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                                  'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                                }`}>
+                                  <p className="text-xs text-muted-foreground mb-1">Available</p>
+                                  <p className={`text-sm font-medium ${
+                                    remainingSickLeaves < 0 ? 'text-destructive' : 
+                                    remainingSickLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                                    'text-green-600 dark:text-green-400'
+                                  }`}>
+                                    {remainingSickLeaves} day{remainingSickLeaves !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.sick_leave_limit || 3}/year</p>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         );

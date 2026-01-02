@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,9 +66,9 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     
     const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
     const leaveLimit = me?.leave_limit || 10;
-    const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
+    const earned = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
     return earned;
-  }, [me?.leave_limit, me?.leaveEntitlementDate]);
+  }, [me]);
 
   // Calculate approved leave days for current year only
   const approvedLeaveDaysCurrentYear = useMemo(() => {
@@ -94,12 +94,12 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     return systemRecordedDays;
   }, [myLeaves]);
 
-  const calculateDays = () => {
+  const calculateDays = useCallback(() => {
     if (formData.startDate && formData.endDate) {
       return calculateBusinessDays(formData.startDate, formData.endDate);
     }
     return 0;
-  };
+  }, [formData.startDate, formData.endDate]);
 
   // Calculate available leave balance (earned - used in current year)
   const remainingLeaves = useMemo(() => {
@@ -158,7 +158,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     }
     
     return errors;
-  }, [formData.startDate, formData.endDate, earnedLeaves, approvedLeaveDaysCurrentYear, remainingLeaves, hasPendingLeaves]);
+  }, [formData.startDate, formData.endDate, earnedLeaves, approvedLeaveDaysCurrentYear, remainingLeaves, hasPendingLeaves, calculateDays, me?.leave_limit]);
 
   const addRecipient = () => {
     if (!newRecipient.name.trim() || !newRecipient.email.trim()) {

@@ -62,11 +62,12 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     // Calculate days from entitlement date to today (not year-end)
     const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
     
-    // Calculate earned leaves: days(entitlementDate, today) * 10 / 365
-    const earned = Math.round((daysFromEntitlementToToday * 10) / 365);
+    // Calculate earned leaves: days(entitlementDate, today) * leave_limit / 365
+    const leaveLimit = me?.leave_limit || 10;
+    const earned = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
     
     return earned;
-  }, [me?.leave_limit, me?.leaveEntitlementDate]);
+  }, [me]);
 
   // Calculate earned sick leaves using same entitlement date
   const earnedSickLeaves = useMemo(() => {
@@ -81,11 +82,12 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     // Calculate days from entitlement date to today
     const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
     
-    // Calculate earned sick leaves: days(entitlementDate, today) * 3 / 365
-    const earned = Math.round((daysFromEntitlementToToday * 3) / 365);
+    // Calculate earned sick leaves: days(entitlementDate, today) * sick_leave_limit / 365
+    const sickLeaveLimit = me?.sick_leave_limit || 3;
+    const earned = Math.round((daysFromEntitlementToToday * sickLeaveLimit) / 365);
     
     return earned;
-  }, [me?.sick_leave_limit, me?.leaveEntitlementDate]);
+  }, [me]);
 
   // Calculate approved leave days for current year only (excluding sick leaves)
   const approvedLeaveDaysCurrentYear = useMemo(() => {
