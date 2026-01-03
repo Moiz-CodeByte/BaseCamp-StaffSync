@@ -15,10 +15,11 @@ A streamlined Leave Management System built for BaseCamp, featuring role-based d
 - **Employees**: Submit leave requests (Annual, Sick, Casual, Unpaid)
 - **HR/Admin**: Approve or reject pending requests
 - Leave status tracking (Pending, Approved, Rejected)
-- Dynamic leave balance calculation based on entitlement date
+- **Separate Tracking**: Regular leaves (10/year default) and Sick leaves (3/year default)
+- **Dynamic Balance Calculation**: Both leave types calculated from single entitlement date
 - Customizable leave entitlement date per employee
 - Multi-level approval workflow with email notifications
-- Real-time earned leave calculations
+- Real-time earned leave calculations for both leave types
 - View past leave history
 - Delete pending leave requests
 
@@ -253,8 +254,8 @@ The application includes a built-in dark mode toggle available in the navbar. Th
 
 ### User
 - name, email, password (hashed), role (Admin/HR/Employee)
-- leave_limit (default: 10), leaveEntitlementDate (optional Date)
-- previousLeavesAvailed, previousLeavesAvailedYear (for historical data)
+- leave_limit (default: 10), sick_leave_limit (default: 3)
+- leaveEntitlementDate (optional Date, used for both regular and sick leaves)
 - designation, department (ref), reportingManagers (array)
 - Timestamps: createdAt, updatedAt
 
@@ -275,19 +276,25 @@ The application includes a built-in dark mode toggle available in the navbar. Th
 ## ✨ Key Features
 
 ### Leave Entitlement System
-The application features a sophisticated leave calculation system:
+The application features a sophisticated leave calculation system with separate tracking for regular and sick leaves:
 
 - **Custom Entitlement Dates**: Set individual start dates for each employee's leave entitlement
-- **Dynamic Calculation**: Earned leaves = (Days from entitlement date to today × 10) ÷ 365
+- **Dual Leave Types**: 
+  - **Regular Leaves**: (Days from entitlement date to today × leave_limit) ÷ 365
+  - **Sick Leaves**: (Days from entitlement date to today × sick_leave_limit) ÷ 365
+- **Single Entitlement Date**: Both leave types use the same entitlement date but track separately
 - **Real-time Preview**: Admin and HR see calculated earned leaves when setting entitlement dates
 - **Automatic Updates**: Leave limits auto-recalculate when entitlement dates change
 - **Default Behavior**: If no date is set, defaults to January 1 of the current year
 - **Smart Rounding**: Uses Math.round for fair rounding (0.5 rounds up)
 
-**Calculation Example:**
-- Employee joins on July 1, 2025
-- Days from July 1 to December 27, 2025 = 179 days
-- Earned leaves = (179 × 10) ÷ 365 = 4.9 ≈ 5 days
+**Calculation Examples:**
+- Employee joins on July 1, 2025 (179 days to December 27, 2025)
+  - Regular: (179 × 10) ÷ 365 = 4.9 ≈ **5 days**
+  - Sick: (179 × 3) ÷ 365 = 1.5 ≈ **2 days**
+- Employee joins on January 1, 2025 (360 days to December 27, 2025)
+  - Regular: (360 × 10) ÷ 365 = 9.9 ≈ **10 days**
+  - Sick: (360 × 3) ÷ 365 = 3.0 = **3 days**
 
 ### Email Notification System
 Automated email workflows for leave requests:

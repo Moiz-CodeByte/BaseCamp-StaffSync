@@ -6,18 +6,28 @@ The system supports email notifications to reporting managers when employees sub
 ## Leave Entitlement System
 
 ### How Leave Balance is Calculated
-Each employee has a customizable **Leave Entitlement Date** that determines when they start earning leaves:
+Each employee has a customizable **Leave Entitlement Date** that determines when they start earning leaves. The system tracks two separate leave types:
 
-**Formula:** Earned Leaves = (Days from Entitlement Date to Today × 10) ÷ 365
+**Regular Leaves Formula:** (Days from Entitlement Date to Today × leave_limit) ÷ 365  
+**Sick Leaves Formula:** (Days from Entitlement Date to Today × sick_leave_limit) ÷ 365
 
-- **Base Multiplier**: Always 10 (standard annual leave quota)
+- **Regular Leave Limit**: Default 10 days/year (configurable per employee)
+- **Sick Leave Limit**: Default 3 days/year (configurable per employee)
+- **Single Entitlement Date**: Both leave types use the same date but track separately
 - **Rounding**: Math.round (0.5 rounds up to 1)
 - **Default**: If no entitlement date is set, defaults to January 1 of current year
 
-**Examples:**
-- Employee joined July 1, 2025 → 179 days to Dec 27 → (179 × 10) ÷ 365 = 4.9 ≈ **5 days**
-- Employee joined Jan 1, 2025 → 360 days to Dec 27 → (360 × 10) ÷ 365 = 9.9 ≈ **10 days**
-- Employee joined Nov 1, 2025 → 56 days to Dec 27 → (56 × 10) ÷ 365 = 1.5 ≈ **2 days**
+**Examples (179 days from July 1 to Dec 27, 2025):**
+- **Regular Leaves**: (179 × 10) ÷ 365 = 4.9 ≈ **5 days**
+- **Sick Leaves**: (179 × 3) ÷ 365 = 1.5 ≈ **2 days**
+
+**Examples (360 days from Jan 1 to Dec 27, 2025):**
+- **Regular Leaves**: (360 × 10) ÷ 365 = 9.9 ≈ **10 days**
+- **Sick Leaves**: (360 × 3) ÷ 365 = 3.0 = **3 days**
+
+**Examples (56 days from Nov 1 to Dec 27, 2025):**
+- **Regular Leaves**: (56 × 10) ÷ 365 = 1.5 ≈ **2 days**
+- **Sick Leaves**: (56 × 3) ÷ 365 = 0.5 ≈ **1 day**
 
 ### Setting Entitlement Dates
 Admins and HR can set entitlement dates when:
@@ -228,23 +238,28 @@ NEXT_PUBLIC_APP_URL=https://yourapp.com
 ## UI Components
 
 ### HR Dashboard - LeavesTab.jsx
-Displays manager approvals and leave balance calculations:
+Displays manager approvals and separate leave balance calculations for regular and sick leaves:
 1. **My Leave Requests**: Shows approval status for HR's own requests with earned leave calculation
 2. **Employee Leave Requests**: Shows pending requests with manager approval tracking
 3. **Recently Submitted**: Shows all recent requests with approval statuses
-4. **Real-time Balance**: Calculates earned leaves based on entitlement date to today
+4. **Dual Balance Tracking**: Calculates both regular (10/year) and sick leaves (3/year) separately
+5. **Real-time Balance**: Both calculated from single entitlement date to today
 
 ### Admin Dashboard - LeavesTab.jsx
 Shows all leave requests with manager approval tracking and entitlement management:
 1. **All Leave Requests**: Pending requests with approval details and earned leave display
 2. **Past Leave Requests**: Historical requests with final approval statuses
-3. **User Management**: Edit employee entitlement dates with calculation preview
+3. **User Management**: Edit employee entitlement dates and leave limits with calculation preview
+4. **Separate Balances**: View both regular and sick leave balances for each employee
 
 ### Employee Dashboard - LeavesTab.jsx
-Employee leave request form with real-time balance:
-1. **Leave Balance Card**: Shows earned leaves from entitlement date to today
-2. **Leave Request Form**: Submit new requests
+Employee leave request form with real-time balance for both leave types:
+1. **Leave Balance Cards**: Shows earned leaves from entitlement date separately for:
+   - 🌴 Regular Leaves (10 days/year default)
+   - 🤒 Sick Leaves (3 days/year default)
+2. **Leave Request Form**: Submit new requests with type selection
 3. **Leave History**: View past requests and their statuses
+4. **Smart Validation**: Checks against appropriate balance based on selected leave type
 
 ### Display Format
 ```
@@ -256,11 +271,15 @@ Manager Approvals column:
 └─────────────────────────┘
 
 Leave Balance Display:
-┌──────────────────────────────────────┐
-│ Earned: 5 days (179 days × 10 ÷ 365) │
-│ Used: 2 days                         │
-│ Available: 3 days                    │
-└──────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ 🌴 Regular Leaves (10 days/year)              │
+│ Earned: 5 days (179 days × 10 ÷ 365)          │
+│ Used: 2 days | Available: 3 days              │
+│                                                │
+│ 🤒 Sick Leaves (3 days/year)                  │
+│ Earned: 2 days (179 days × 3 ÷ 365)           │
+│ Used: 0 days | Available: 2 days              │
+└────────────────────────────────────────────────┘
 ```
 
 ## Testing the System

@@ -49,7 +49,7 @@ export default function HelpPage() {
           title: 'Request Leave',
           description: 'Click "Request Leave" button on the Leaves tab in your dashboard.',
           tips: [
-            'Select leave type (Annual, Sick, Emergency, etc.)',
+            'Select leave type (Annual, Sick, Casual, Unpaid)',
             'Choose start and end dates',
             'Weekend days (Saturday & Sunday) are automatically excluded',
             'Provide a clear reason for your leave request',
@@ -59,15 +59,17 @@ export default function HelpPage() {
         {
           step: '2',
           title: 'Check Available Balance',
-          description: 'Before requesting leave, check your available balance shown on the dashboard.',
+          description: 'Before requesting leave, check your available balance shown on the dashboard. The system tracks Regular Leaves and Sick Leaves separately.',
           tips: [
-            'Available leave balance varies by employee depending on your leave limit',
-            'Leaves are earned daily based on your annual limit',
-            'Formula: (Days from Jan 1 to Today) × 10 ÷ 365',
-            'Your leave limit is set by HR and may differ from other employees',
-            'You cannot request more days than available',
+            '🌴 Regular Leaves: Default 10 days/year (configurable by HR)',
+            '🤒 Sick Leaves: Default 3 days/year (configurable by HR)',
+            'Both leave types use the same entitlement date but track separately',
+            'Regular formula: (Days since entitlement × leave_limit) ÷ 365',
+            'Sick formula: (Days since entitlement × sick_leave_limit) ÷ 365',
+            'Selecting "Sick Leave" deducts from sick leave balance, not regular',
+            'You cannot request more days than available in each category',
             'Pending requests block new submissions until approved/rejected',
-            'Leave balance resets every January 1st'
+            'Both balances calculate from your entitlement date (not Jan 1)'
           ]
         },
         {
@@ -207,7 +209,7 @@ export default function HelpPage() {
         {
           step: 'Q1',
           title: 'How many leaves can I take per year?',
-          description: 'Your annual leave limit is set by HR (typically 10 days per year). You earn leaves daily based on this limit - calculated as (Days from January 1 to Today) × Your Leave Limit ÷ 365. For example, with a 10-day annual limit, you earn approximately 0.027 days per day. Leaves do not carry over to the next year.',
+          description: 'The system provides two types of leaves: Regular Leaves (default 10 days/year) and Sick Leaves (default 3 days/year). Both limits are configurable by HR. You earn leaves daily based on these limits - Regular: (Days since entitlement × leave_limit) ÷ 365, Sick: (Days since entitlement × sick_leave_limit) ÷ 365. Both calculate from your entitlement date set by HR. Each leave type tracks separately.',
           tips: []
         },
         {
