@@ -18,6 +18,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   const [viewingUser, setViewingUser] = useState(null);
   const [userStats, setUserStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [leaveFilter, setLeaveFilter] = useState('Annual'); // 'Annual' or 'Sick'
 
   // Get departments where this HR is assigned
   const myDepartments = useMemo(() => {
@@ -571,18 +572,48 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                   {/* Leave Balance Cards */}
                   <div className="rounded-lg border bg-card shadow-sm">
                     <div className="p-4 border-b">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-emerald-600" />
-                        Leave Balance (Current Year)
-                      </h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-emerald-600" />
+                          Leave Balance (Current Year)
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setLeaveFilter('Annual')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              leaveFilter === 'Annual'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            Annual Leaves
+                          </button>
+                          <button
+                            onClick={() => setLeaveFilter('Sick')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              leaveFilter === 'Sick'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            Sick Leaves
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <div className="p-4">
                       {(() => {
                         const now = new Date();
                         const currentYear = now.getFullYear();
-                        const entitlementDate = viewingUser.leaveEntitlementDate 
+                        let entitlementDate = viewingUser.leaveEntitlementDate 
                           ? new Date(viewingUser.leaveEntitlementDate)
                           : new Date(currentYear, 0, 1);
+                        
+                        // If entitlement date is in previous year, use Jan 1 of current year
+                        if (entitlementDate.getFullYear() < currentYear) {
+                          entitlementDate = new Date(currentYear, 0, 1);
+                        }
+                        
                         const daysSinceEntitlement = Math.round((now - entitlementDate) / (1000 * 60 * 60 * 24));
                         const leaveLimit = viewingUser.leave_limit || 10;
                         const sickLeaveLimit = viewingUser.sick_leave_limit || 3;
@@ -640,82 +671,78 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         const remainingLeaves = earnedLeaves - usedThisYear;
                         const remainingSickLeaves = earnedSickLeaves - usedSickThisYear;
                         
+                        // Dynamic values based on filter
+                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : earnedSickLeaves;
+                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : usedSickThisYear;
+                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : remainingSickLeaves;
+                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit || 10) : (viewingUser.sick_leave_limit || 3);
+                        
                         return (
-                          <div className="space-y-4">
-                            {/* Regular Leaves */}
+                          <div className="space-y-3">
                             <div>
-                              <h4 className="text-sm font-semibold mb-2 text-emerald-700 dark:text-emerald-400">🌴 Regular Leaves</h4>
                               <div className="grid gap-3 md:grid-cols-3">
-                                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
-                                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
-                                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                    {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+                                <div className={`p-3 rounded-lg border ${
+                                  leaveFilter === 'Annual'
+                                    ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900'
+                                    : 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-900'
+                                }`}>
+                                  <p className={`text-xs mb-1 ${
+                                    leaveFilter === 'Annual'
+                                      ? 'text-blue-700 dark:text-blue-300'
+                                      : 'text-purple-700 dark:text-purple-300'
+                                  }`}>
+                                    {leaveFilter === 'Annual' ? 'Earned This Year' : 'Sick Leave Earned'}
                                   </p>
-                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
+                                  <p className={`text-sm font-medium ${
+                                    leaveFilter === 'Annual'
+                                      ? 'text-blue-900 dark:text-blue-100'
+                                      : 'text-purple-900 dark:text-purple-100'
+                                  }`}>
+                                    {displayedEarned} day{displayedEarned !== 1 ? 's' : ''}
+                                  </p>
+                                  <p className={`text-xs mt-1 ${
+                                    leaveFilter === 'Annual'
+                                      ? 'text-blue-600 dark:text-blue-400'
+                                      : 'text-purple-600 dark:text-purple-400'
+                                  }`}>
+                                    From entitlement date
+                                  </p>
                                 </div>
                                 
                                 <div className="p-3 rounded-lg bg-muted border">
-                                  <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
+                                  <p className="text-xs text-muted-foreground mb-1">
+                                    {leaveFilter === 'Annual' ? 'Used This Year' : 'Sick Leave Used'}
+                                  </p>
                                   <p className="text-sm font-medium">
-                                    {usedThisYear} day{usedThisYear !== 1 ? 's' : ''}
+                                    {displayedUsed} day{displayedUsed !== 1 ? 's' : ''}
                                   </p>
                                   <p className="text-xs text-muted-foreground mt-1">Current year</p>
                                 </div>
                                 
                                 <div className={`p-3 rounded-lg border ${
-                                  remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
-                                  remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+                                  displayedRemaining < 0 ? 'bg-destructive/10 border-destructive/50' : 
+                                  displayedRemaining === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
                                   'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
                                 }`}>
-                                  <p className="text-xs text-muted-foreground mb-1">Available</p>
+                                  <p className="text-xs text-muted-foreground mb-1">
+                                    {leaveFilter === 'Annual' ? 'Available' : 'Sick Leave Available'}
+                                  </p>
                                   <p className={`text-sm font-medium ${
-                                    remainingLeaves < 0 ? 'text-destructive' : 
-                                    remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                                    displayedRemaining < 0 ? 'text-destructive' : 
+                                    displayedRemaining === 0 ? 'text-orange-600 dark:text-orange-400' : 
                                     'text-green-600 dark:text-green-400'
                                   }`}>
-                                    {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                                    {displayedRemaining} day{displayedRemaining !== 1 ? 's' : ''}
                                   </p>
-                                  <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.leave_limit || 10}/year</p>
+                                  <p className="text-xs text-muted-foreground mt-1">Max {displayedLimit}/year</p>
                                 </div>
                               </div>
                             </div>
-
-                            {/* Sick Leaves */}
-                            <div>
-                              <h4 className="text-sm font-semibold mb-2 text-red-700 dark:text-red-400">🤒 Sick Leaves</h4>
-                              <div className="grid gap-3 md:grid-cols-3">
-                                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
-                                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Earned This Year</p>
-                                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                    {earnedSickLeaves} day{earnedSickLeaves !== 1 ? 's' : ''}
-                                  </p>
-                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From entitlement date</p>
-                                </div>
-                                
-                                <div className="p-3 rounded-lg bg-muted border">
-                                  <p className="text-xs text-muted-foreground mb-1">Used This Year</p>
-                                  <p className="text-sm font-medium">
-                                    {usedSickThisYear} day{usedSickThisYear !== 1 ? 's' : ''}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">Current year</p>
-                                </div>
-                                
-                                <div className={`p-3 rounded-lg border ${
-                                  remainingSickLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
-                                  remainingSickLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
-                                  'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
-                                }`}>
-                                  <p className="text-xs text-muted-foreground mb-1">Available</p>
-                                  <p className={`text-sm font-medium ${
-                                    remainingSickLeaves < 0 ? 'text-destructive' : 
-                                    remainingSickLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
-                                    'text-green-600 dark:text-green-400'
-                                  }`}>
-                                    {remainingSickLeaves} day{remainingSickLeaves !== 1 ? 's' : ''}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">Max {viewingUser.sick_leave_limit || 3}/year</p>
-                                </div>
-                              </div>
+                            
+                            <div className="p-3 rounded-lg bg-muted/50 border">
+                              <p className="text-xs text-muted-foreground">
+                                💡 <strong>{leaveFilter === 'Annual' ? 'Leave Policy' : 'Sick Leave Policy'}:</strong> Earns {((displayedLimit / 365)).toFixed(3)} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per day. Maximum {displayedLimit} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per year.
+                              </p>
                             </div>
                           </div>
                         );

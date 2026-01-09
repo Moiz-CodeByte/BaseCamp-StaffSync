@@ -39,9 +39,14 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     const currentYear = now.getFullYear();
     
     // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
-    const entitlementDate = me?.leaveEntitlementDate 
+    // If entitlement date is in previous year, use Jan 1 of current year
+    let entitlementDate = me?.leaveEntitlementDate 
       ? new Date(me.leaveEntitlementDate)
       : new Date(currentYear, 0, 1);
+    
+    if (entitlementDate.getFullYear() < currentYear) {
+      entitlementDate = new Date(currentYear, 0, 1);
+    }
     
     const leaveLimit = me?.leave_limit || 10;
     const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
@@ -55,9 +60,14 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     const currentYear = now.getFullYear();
     
     // Use same leaveEntitlementDate for sick leaves
-    const entitlementDate = me?.leaveEntitlementDate 
+    // If entitlement date is in previous year, use Jan 1 of current year
+    let entitlementDate = me?.leaveEntitlementDate 
       ? new Date(me.leaveEntitlementDate)
       : new Date(currentYear, 0, 1);
+    
+    if (entitlementDate.getFullYear() < currentYear) {
+      entitlementDate = new Date(currentYear, 0, 1);
+    }
     
     const sickLeaveLimit = me?.sick_leave_limit || 3;
     const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
