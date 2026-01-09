@@ -53,18 +53,28 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
   const earnedLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
-    const entitlementDate = me?.leaveEntitlementDate 
+    let entitlementDate = me?.leaveEntitlementDate 
       ? new Date(me.leaveEntitlementDate)
       : new Date(currentYear, 0, 1);
     
-    // Calculate days from entitlement date to today (not year-end)
-    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
+    // If entitlement date is in previous year, set to Jan 1 of current year
+    if (entitlementDate.getFullYear() < currentYear) {
+      entitlementDate = new Date(currentYear, 0, 1);
+    }
     
-    // Calculate earned leaves: days(entitlementDate, today) * leave_limit / 365
+    // Calculate to the last day of current month
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+    
+    // Calculate days from entitlement date to end of month
+    const daysFromEntitlementToMonthEnd = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
+    
+    // Calculate earned leaves: days(entitlementDate, monthEnd) * leave_limit / 365
     const leaveLimit = me?.leave_limit || 10;
-    const earned = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
+    const calculated = Math.round((daysFromEntitlementToMonthEnd * leaveLimit) / 365);
+    const earned = Math.min(calculated, leaveLimit);
     
     return earned;
   }, [me]);
@@ -73,18 +83,28 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
   const earnedSickLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     // Use same leaveEntitlementDate for sick leaves
-    const entitlementDate = me?.leaveEntitlementDate 
+    let entitlementDate = me?.leaveEntitlementDate 
       ? new Date(me.leaveEntitlementDate)
       : new Date(currentYear, 0, 1);
     
-    // Calculate days from entitlement date to today
-    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
+    // If entitlement date is in previous year, set to Jan 1 of current year
+    if (entitlementDate.getFullYear() < currentYear) {
+      entitlementDate = new Date(currentYear, 0, 1);
+    }
     
-    // Calculate earned sick leaves: days(entitlementDate, today) * sick_leave_limit / 365
+    // Calculate to the last day of current month
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+    
+    // Calculate days from entitlement date to end of month
+    const daysFromEntitlementToMonthEnd = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
+    
+    // Calculate earned sick leaves: days(entitlementDate, monthEnd) * sick_leave_limit / 365
     const sickLeaveLimit = me?.sick_leave_limit || 3;
-    const earned = Math.round((daysFromEntitlementToToday * sickLeaveLimit) / 365);
+    const calculated = Math.round((daysFromEntitlementToMonthEnd * sickLeaveLimit) / 365);
+    const earned = Math.min(calculated, sickLeaveLimit);
     
     return earned;
   }, [me]);
@@ -343,15 +363,15 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
                   <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">
-                    {leaveForm.type === 'Sick' ? 'Sick Leave Earned' : 'Leave Earned'}
+                    {leaveForm.type === 'Sick' ? 'Sick Leave Earned (Month-End)' : 'Leave Earned (Month-End)'}
                   </p>
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                     {leaveForm.type === 'Sick' ? earnedSickLeaves : earnedLeaves} day{(leaveForm.type === 'Sick' ? earnedSickLeaves : earnedLeaves) !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                     {leaveForm.type === 'Sick' 
-                      ? `${((me?.sick_leave_limit || 3) / 365).toFixed(2)} per day` 
-                      : `${((me?.leave_limit || 10) / 365).toFixed(2)} per day`}
+                      ? `Max ${me?.sick_leave_limit || 3}/year` 
+                      : `Max ${me?.leave_limit || 10}/year`}
                   </p>
                 </div>
                 
@@ -372,7 +392,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                   (leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
                   'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
                 }`}>
-                  <p className="text-xs text-muted-foreground mb-1">Available</p>
+                  <p className="text-xs text-muted-foreground mb-1">Available (Month-End)</p>
                   <p className={`text-sm font-medium ${
                     (leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) < 0 ? 'text-destructive' : 
                     (leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) === 0 ? 'text-orange-600 dark:text-orange-400' : 

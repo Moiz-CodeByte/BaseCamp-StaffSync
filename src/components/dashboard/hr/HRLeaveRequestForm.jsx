@@ -48,10 +48,11 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
 
-  // Calculate earned leaves based on days from entitlement date to today (annual basis)
+  // Calculate earned leaves by end of current month (projected)
   const earnedLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
     let entitlementDate = me?.leaveEntitlementDate 
@@ -63,16 +64,21 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
       entitlementDate = new Date(currentYear, 0, 1);
     }
     
-    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+    // Calculate to last day of current month instead of today
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
+    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24)) + 1;
     const leaveLimit = me?.leave_limit || 10;
-    const earned = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
+    const calculated = Math.round((daysFromEntitlementToEndOfMonth * leaveLimit) / 365);
+    // Cap at annual limit to prevent exceeding
+    const earned = Math.min(calculated, leaveLimit);
     return earned;
   }, [me]);
 
-  // Calculate earned sick leaves
+  // Calculate earned sick leaves by end of current month (projected)
   const earnedSickLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     let entitlementDate = me?.leaveEntitlementDate 
       ? new Date(me.leaveEntitlementDate)
@@ -83,9 +89,13 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
       entitlementDate = new Date(currentYear, 0, 1);
     }
     
-    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+    // Calculate to last day of current month instead of today
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
+    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24)) + 1;
     const sickLeaveLimit = me?.sick_leave_limit || 3;
-    const earned = Math.round((daysFromEntitlementToToday * sickLeaveLimit) / 365);
+    const calculated = Math.round((daysFromEntitlementToEndOfMonth * sickLeaveLimit) / 365);
+    // Cap at sick leave limit to prevent exceeding
+    const earned = Math.min(calculated, sickLeaveLimit);
     return earned;
   }, [me]);
 
@@ -461,7 +471,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                     ? 'text-purple-700 dark:text-purple-300'
                     : 'text-blue-700 dark:text-blue-300'
                 }`}>
-                  {formData.type === 'Sick' ? 'Sick Leave Earned' : 'Earned This Year'}
+                  {formData.type === 'Sick' ? 'Sick Leave (Month-End)' : 'Earned (Month-End)'}
                 </p>
                 <p className={`text-sm font-medium ${
                   formData.type === 'Sick'
@@ -500,7 +510,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
               }`}>
                 <p className="text-xs text-muted-foreground mb-1">
-                  {formData.type === 'Sick' ? 'Sick Leave Available' : 'Available'}
+                  {formData.type === 'Sick' ? 'Available (Month-End)' : 'Available (Month-End)'}
                 </p>
                 <p className={`text-sm font-medium ${
                   (formData.type === 'Sick' ? remainingSickLeaves : remainingLeaves) < 0 ? 'text-destructive' : 
@@ -522,7 +532,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                   ? `${((me?.sick_leave_limit || 3) / 365).toFixed(3)} sick day${((me?.sick_leave_limit || 3) / 365) !== 1 ? 's' : ''} per day. Maximum ${me?.sick_leave_limit || 3} sick days per year.`
                   : `${((me?.leave_limit || 10) / 365).toFixed(2)} leave${((me?.leave_limit || 10) / 365) !== 1 ? 's' : ''} per day. Maximum ${me?.leave_limit || 10} leaves per year.`
                 }
-                {' '}Leaves are calculated from January 1st to today.
+                {' '}You can request leaves up to what will be available by month-end.
               </p>
             </div>
 

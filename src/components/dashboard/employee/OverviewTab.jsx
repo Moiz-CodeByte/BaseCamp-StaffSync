@@ -33,10 +33,11 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     return businessDays;
   };
 
-  // Calculate earned leaves based on days from entitlement date to today (annual basis)
+  // Calculate earned leaves by end of current month (projected)
   const earnedLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
     // If entitlement date is in previous year, use Jan 1 of current year
@@ -49,15 +50,20 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     }
     
     const leaveLimit = me?.leave_limit || 10;
-    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
-    const earned = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
+    // Calculate to last day of current month instead of today
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
+    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
+    const calculated = Math.round((daysFromEntitlementToEndOfMonth * leaveLimit) / 365);
+    // Cap at annual limit to prevent exceeding
+    const earned = Math.min(calculated, leaveLimit);
     return earned;
   }, [me]);
 
-  // Calculate earned sick leaves using same entitlement date
+  // Calculate earned sick leaves by end of current month (projected)
   const earnedSickLeaves = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     // Use same leaveEntitlementDate for sick leaves
     // If entitlement date is in previous year, use Jan 1 of current year
@@ -70,8 +76,12 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     }
     
     const sickLeaveLimit = me?.sick_leave_limit || 3;
-    const daysFromEntitlementToToday = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
-    const earned = Math.round((daysFromEntitlementToToday * sickLeaveLimit) / 365);
+    // Calculate to last day of current month instead of today
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
+    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
+    const calculated = Math.round((daysFromEntitlementToEndOfMonth * sickLeaveLimit) / 365);
+    // Cap at sick leave limit to prevent exceeding
+    const earned = Math.min(calculated, sickLeaveLimit);
     return earned;
   }, [me]);
 
@@ -245,7 +255,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
                   ? 'text-blue-700 dark:text-blue-300' 
                   : 'text-purple-700 dark:text-purple-300'
               }`}>
-                {leaveFilter === 'Annual' ? 'Earned This Year' : 'Sick Leave Earned'}
+                {leaveFilter === 'Annual' ? 'Earned (Month-End)' : 'Sick Leave (Month-End)'}
               </p>
               <p className={`text-2xl font-bold ${
                 leaveFilter === 'Annual' 
@@ -281,7 +291,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
               'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
             }`}>
               <p className="text-xs text-muted-foreground mb-2 font-medium">
-                {leaveFilter === 'Annual' ? 'Available Balance' : 'Sick Leave Available'}
+                {leaveFilter === 'Annual' ? 'Available (Month-End)' : 'Sick Leave Available (Month-End)'}
               </p>
               <p className={`text-2xl font-bold ${
                 displayedRemaining < 0 ? 'text-destructive' : 
@@ -296,7 +306,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            💡 <strong>{leaveFilter === 'Annual' ? 'Leave Policy' : 'Sick Leave Policy'}:</strong> You earn {displayedRate} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per day. Calculation: (Days from entitlement date × {displayedLimit}) ÷ 365. Maximum {displayedLimit} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per year.
+            💡 <strong>{leaveFilter === 'Annual' ? 'Leave Policy' : 'Sick Leave Policy'}:</strong> You earn {displayedRate} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per day. Calculation: (Days from entitlement to month-end × {displayedLimit}) ÷ 365. Maximum {displayedLimit} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per year. You can request up to your month-end available balance.
           </p>
         </CardContent>
       </Card>

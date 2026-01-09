@@ -34,6 +34,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       // basic_salary: user.basic_salary || 0,
       //allowance: user.allowance || 0,
       leave_limit: user.leave_limit || 10,
+      sick_leave_limit: user.sick_leave_limit || 3,
       leaveEntitlementDate: user.leaveEntitlementDate || '',
       reportingManagers: user.reportingManagers || []
     });
@@ -330,6 +331,18 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           type="number"
                           value={editForm.leave_limit}
                           onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+
+                    {editForm.role !== 'Admin' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</Label>
+                        <Input 
+                          type="number"
+                          value={editForm.sick_leave_limit}
+                          onChange={(e) => setEditForm({...editForm, sick_leave_limit: parseInt(e.target.value) || 3})}
                           className="w-full"
                         />
                       </div>

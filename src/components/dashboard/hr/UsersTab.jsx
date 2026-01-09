@@ -31,6 +31,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
     setEditForm({
       designation: user.designation || '',
       leave_limit: user.leave_limit || 10,
+      sick_leave_limit: user.sick_leave_limit || 3,
       leaveEntitlementDate: user.leaveEntitlementDate || '',
       reportingManagers: user.reportingManagers || []
     });
@@ -301,6 +302,17 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         type="number"
                         value={editForm.leave_limit}
                         onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="sick_leave_limit" className="text-xs text-muted-foreground mb-2 block">Sick Leave Limit (days/year)</Label>
+                      <Input 
+                        id="sick_leave_limit"
+                        type="number"
+                        value={editForm.sick_leave_limit}
+                        onChange={(e) => setEditForm({...editForm, sick_leave_limit: parseInt(e.target.value) || 3})}
                         className="w-full"
                       />
                     </div>
