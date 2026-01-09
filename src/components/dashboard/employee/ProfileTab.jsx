@@ -23,11 +23,13 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={profileForm.name} onChange={(e) => setProfileForm({...profileForm, name: e.target.value})} required />
+                <Input id="name" value={profileForm.name} disabled className="bg-muted cursor-not-allowed" />
+                <p className="text-xs text-gray-500">Contact HR to update</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={profileForm.email} onChange={(e) => setProfileForm({...profileForm, email: e.target.value})} required />
+                <Input id="email" type="email" value={profileForm.email} disabled className="bg-muted cursor-not-allowed" />
+                <p className="text-xs text-gray-500">Contact HR to update</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Current Password</Label>

@@ -35,9 +35,10 @@ export default function HRProfileTab({ me, profileForm, setProfileForm, updatePr
                 <Input 
                   id="name" 
                   value={profileForm.name} 
-                  onChange={(e) => setProfileForm({...profileForm, name: e.target.value})} 
-                  required 
+                  disabled 
+                  className="bg-muted cursor-not-allowed"
                 />
+                <p className="text-xs text-gray-500">Contact Admin to update</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -45,9 +46,10 @@ export default function HRProfileTab({ me, profileForm, setProfileForm, updatePr
                   id="email" 
                   type="email" 
                   value={profileForm.email} 
-                  onChange={(e) => setProfileForm({...profileForm, email: e.target.value})} 
-                  required 
+                  disabled 
+                  className="bg-muted cursor-not-allowed"
                 />
+                <p className="text-xs text-gray-500">Contact Admin to update</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Current Password</Label>

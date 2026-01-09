@@ -27,13 +27,13 @@ export default function HelpPage() {
           step: '1',
           title: 'Login to Your Account',
           description: 'Visit the login page and enter your company email and password.',
-          tips: ['Keep your password secure and don\'t share it with anyone', 'Contact HR if you forget your password']
+          tips: ['Contact HR if you forget your password']
         },
         {
           step: '2',
           title: 'Access Your Dashboard',
-          description: 'After logging in, you\'ll be redirected to your employee dashboard where you can see your leave balance and recent activities.',
-          tips: ['The dashboard shows your earned leaves and used leaves for the current year (January 1 - Today)']
+          description: 'After logging in, you\'ll see your dashboard with leave balance and activities.',
+          tips: ['Dashboard shows your available leaves and recent requests']
         }
       ]
     },
@@ -49,27 +49,24 @@ export default function HelpPage() {
           title: 'Request Leave',
           description: 'Click "Request Leave" button on the Leaves tab in your dashboard.',
           tips: [
-            'Select leave type (Annual, Sick, Casual, Unpaid)',
+            'Select leave type: Annual, Sick, Casual, or Unpaid',
             'Choose start and end dates',
-            'Weekend days (Saturday & Sunday) are automatically excluded',
-            'Provide a clear reason for your leave request',
-            'You can add additional email recipients who should be notified'
+            'Weekends are automatically excluded',
+            'Write a clear reason for your request',
+            'Check your available balance before submitting'
           ]
         },
         {
           step: '2',
           title: 'Check Available Balance',
-          description: 'Before requesting leave, check your available balance shown on the dashboard. The system tracks Regular Leaves and Sick Leaves separately.',
+          description: 'View your leave balance on the dashboard. The system shows two types of leaves.',
           tips: [
-            '🌴 Regular Leaves: Default 10 days/year (configurable by HR)',
-            '🤒 Sick Leaves: Default 3 days/year (configurable by HR)',
-            'Both leave types use the same entitlement date but track separately',
-            'Regular formula: (Days since entitlement × leave_limit) ÷ 365',
-            'Sick formula: (Days since entitlement × sick_leave_limit) ÷ 365',
-            'Selecting "Sick Leave" deducts from sick leave balance, not regular',
-            'You cannot request more days than available in each category',
-            'Pending requests block new submissions until approved/rejected',
-            'Both balances calculate from your entitlement date (not Jan 1)'
+            '🌴 Annual Leaves: 10 days per year (default)',
+            '🤒 Sick Leaves: 3 days per year (default)',
+            '📊 Use the filter buttons to switch between Annual and Sick leave views',
+            '📅 Balance shows projected availability by end of current month',
+            '⚠️ You cannot request more days than available',
+            '⚠️ Only one pending request allowed at a time'
           ]
         },
         {
@@ -77,20 +74,11 @@ export default function HelpPage() {
           title: 'Track Leave Status',
           description: 'View all your leave requests with their current status.',
           tips: [
-            'Pending: Waiting for manager approval',
-            'Approved: Your leave has been approved',
-            'Rejected: Your leave was not approved (check reason)',
-            'You can delete pending leave requests if plans change'
-          ]
-        },
-        {
-          step: '4',
-          title: 'Email Notifications',
-          description: 'You\'ll receive email notifications about your leave request status.',
-          tips: [
-            'Approval confirmation emails',
-            'Rejection notification with reason',
-            'Additional recipients will also receive notifications'
+            '🟡 Pending: Waiting for approval',
+            '✅ Approved: Leave confirmed',
+            '❌ Rejected: Leave not approved',
+            'Delete pending requests if plans change',
+            'You\'ll receive email notifications for status updates'
           ]
         }
       ]
@@ -104,23 +92,22 @@ export default function HelpPage() {
       content: [
         {
           step: '1',
-          title: 'View Profile Information',
-          description: 'Access your profile from the Profile tab to view your details.',
+          title: 'View Your Information',
+          description: 'Access the Profile tab to see your details.',
           tips: [
-            'Name and email',
-            'Department and designation',
-            'Reporting managers',
-            'Leave limit and role'
+            'View your name, email, and department',
+            'See your assigned managers',
+            'Check your leave limits'
           ]
         },
         {
           step: '2',
-          title: 'Update Profile',
-          description: 'You can update your name, email, and password.',
+          title: 'Change Password',
+          description: 'Update your password for security.',
           tips: [
-            'Enter current password to make changes',
-            'Leave new password blank to keep current password',
-            'Contact HR to update department or designation'
+            'Enter your current password first',
+            'Set a strong new password',
+            'Contact HR to update name or email'
           ]
         }
       ]
@@ -135,34 +122,11 @@ export default function HelpPage() {
         {
           step: '1',
           title: 'Submit Feedback',
-          description: 'Use the Feedback link in the navigation menu.',
+          description: 'Share your thoughts or report issues.',
           tips: [
-            'Report bugs you encounter',
-            'Request new features',
-            'Share general feedback',
-            'Submit complaints if needed'
-          ]
-        },
-        {
-          step: '2',
-          title: 'Track Your Feedback',
-          description: 'View all your submitted feedback and their status.',
-          tips: [
-            'Open: Newly submitted',
-            'In Progress: Being worked on',
-            'Resolved: Issue fixed or feedback addressed',
-            'Closed: Completed'
-          ]
-        },
-        {
-          step: '3',
-          title: 'Priority Levels',
-          description: 'Choose appropriate priority when submitting feedback.',
-          tips: [
-            'Low: Minor issues or suggestions',
-            'Medium: Regular feedback',
-            'High: Important issues affecting work',
-            'Critical: Urgent problems requiring immediate attention'
+            'Use the Feedback menu to submit',
+            'Choose appropriate category and priority',
+            'Track your feedback status'
           ]
         }
       ]
@@ -177,24 +141,13 @@ export default function HelpPage() {
         {
           step: '1',
           title: 'Leave Requests',
-          description: 'Tips for smooth leave approval process.',
+          description: 'Tips for smooth leave approval.',
           tips: [
-            'Submit leave requests in advance (at least 3-5 days)',
-            'Provide clear and honest reasons',
-            'Check your leave balance before requesting',
+            'Submit requests at least 15-30 days in advance',
+            'Check your balance before requesting',
+            'Provide clear reasons',
             'Inform your team about planned leaves',
-            'Only submit one request at a time'
-          ]
-        },
-        {
-          step: '3',
-          title: 'Communication',
-          description: 'Stay informed and communicate effectively.',
-          tips: [
-            'Check your email regularly for notifications',
-            'Add relevant people as additional recipients in leave requests',
-            'Use feedback system for suggestions and issues',
-            'Keep your profile information up to date'
+            'Wait for approval before submitting another request'
           ]
         }
       ]
@@ -209,43 +162,37 @@ export default function HelpPage() {
         {
           step: 'Q1',
           title: 'How many leaves can I take per year?',
-          description: 'The system provides two types of leaves: Regular Leaves (default 10 days/year) and Sick Leaves (default 3 days/year). Both limits are configurable by HR. You earn leaves daily based on these limits - Regular: (Days since entitlement × leave_limit) ÷ 365, Sick: (Days since entitlement × sick_leave_limit) ÷ 365. Both calculate from your entitlement date set by HR. Each leave type tracks separately.',
+          description: 'You have 10 Annual leaves and 3 Sick leaves per year (default). Your HR can adjust these limits. Leaves are earned gradually throughout the year.',
           tips: []
         },
         {
           step: 'Q2',
-          title: 'Are weekends counted in leave duration?',
-          description: 'No, Saturdays and Sundays are automatically excluded from leave calculations. Only business days (Monday-Friday) are counted.',
+          title: 'Are weekends counted in my leave?',
+          description: 'No, Saturdays and Sundays are automatically excluded. Only weekdays count.',
           tips: []
         },
         {
           step: 'Q3',
-          title: 'Can I request leave if I have a pending request?',
+          title: 'Can I have multiple pending requests?',
           description: 'No, you must wait for your current request to be approved or rejected before submitting a new one.',
           tips: []
         },
         {
           step: 'Q4',
-          title: 'Can I delete my leave request?',
-          description: 'Yes, you can delete pending leave requests if your plans change. Once approved or rejected, requests cannot be deleted.',
+          title: 'Can I cancel my leave request?',
+          description: 'Yes, you can delete pending requests. Once approved or rejected, they cannot be deleted.',
           tips: []
         },
         {
           step: 'Q5',
-          title: 'Who approves my leave requests?',
-          description: 'Your reporting managers approve leave requests. If you have multiple managers, all must approve. Additional recipients can also approve if added.',
+          title: 'Who approves my leaves?',
+          description: 'Your reporting managers approve your leave requests. You can see who they are in your Profile tab.',
           tips: []
         },
         {
           step: 'Q6',
-          title: 'How do I change my password?',
-          description: 'Go to Profile tab, enter your current password and new password, then click Update Profile.',
-          tips: []
-        },
-        {
-          step: 'Q7',
-          title: 'Who can I contact for help?',
-          description: 'Contact your HR and development department for any issues with the system, leave approvals, or account-related questions.',
+          title: 'How do I contact support?',
+          description: 'Contact your HR department for any issues with leave approvals, account access, or system questions.',
           tips: []
         }
       ]
@@ -264,10 +211,10 @@ export default function HelpPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Employee User Manual</h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-            Complete guide to using BaseCamp StaffSync - Your workplace management system
+            Quick guide to using the system effectively
           </p>
           <Badge variant="secondary" className="text-sm px-4 py-1">
-            Last Updated: December 2025
+            Last Updated: January 2026
           </Badge>
         </div>
 
