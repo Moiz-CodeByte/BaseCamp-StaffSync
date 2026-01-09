@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Leave } from '@/models/Leave';
 import { authenticateRequest } from '@/lib/auth';
+import { autoRejectExpiredLeaves } from '@/lib/leave-utils';
 
 // GET /api/leaves/all-recent - Get all recent leave requests (all statuses)
 export async function GET(req) {
@@ -16,6 +17,9 @@ export async function GET(req) {
   }
 
   await connectDB();
+
+  // Auto-reject expired pending leaves
+  await autoRejectExpiredLeaves();
 
   try {
     // Fetch recent leave requests (all statuses) sorted by creation date

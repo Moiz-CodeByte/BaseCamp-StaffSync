@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
+import { autoRejectExpiredLeaves } from '@/lib/leave-utils';
 
 // Business days calculation function (excludes weekends)
 const calculateBusinessDays = (startDate, endDate) => {
@@ -34,6 +35,9 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
+
+  // Auto-reject expired pending leaves
+  await autoRejectExpiredLeaves();
 
   // Get status filter from query params
   const { searchParams } = new URL(req.url);

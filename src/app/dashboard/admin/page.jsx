@@ -188,7 +188,7 @@ export default function AdminDashboard() {
         
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto">
-            {activeTab === 'overview' && <OverviewTab stats={stats} isLoading={isLoadingStats} />}
+            {activeTab === 'overview' && <OverviewTab stats={stats} isLoading={isLoadingStats} leaves={leaves} pastLeaves={pastLeaves} />}
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
             {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
             {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}

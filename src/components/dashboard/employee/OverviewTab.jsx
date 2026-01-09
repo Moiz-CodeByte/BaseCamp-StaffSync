@@ -3,9 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
+  const [leaveFilter, setLeaveFilter] = useState('Annual'); // 'Annual' or 'Sick'
   // Calculate business days (excluding weekends)
   const calculateBusinessDays = (startDate, endDate) => {
     let start, end;
@@ -151,6 +152,13 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
 
   const recentLeaves = leaves?.slice(0, 5) || [];
 
+  // Dynamic values based on filter
+  const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : earnedSickLeaves;
+  const displayedUsed = leaveFilter === 'Annual' ? approvedLeaveDaysCurrentYear : approvedSickLeaveDaysCurrentYear;
+  const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : remainingSickLeaves;
+  const displayedLimit = leaveFilter === 'Annual' ? (me?.leave_limit || 10) : (me?.sick_leave_limit || 3);
+  const displayedRate = leaveFilter === 'Annual' ? ((me?.leave_limit || 10) / 365).toFixed(2) : ((me?.sick_leave_limit || 3) / 365).toFixed(3);
+
   return (
     <div className="space-y-6">
       <div>
@@ -186,27 +194,71 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
         })}
       </div>
 
-      {/* Regular Leave Balance Summary */}
+      {/* Leave Balance Summary with Filter */}
       <Card>
         <CardHeader>
-          <CardTitle>Regular Leave Balance (Annual)</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Leave Balance (Annual)</CardTitle>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLeaveFilter('Annual')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  leaveFilter === 'Annual'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                Annual Leaves
+              </button>
+              <button
+                onClick={() => setLeaveFilter('Sick')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  leaveFilter === 'Sick'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                Sick Leaves
+              </button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
-              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2 font-medium">Earned This Year</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {earnedLeaves} day{earnedLeaves !== 1 ? 's' : ''}
+            <div className={`p-4 rounded-lg border ${
+              leaveFilter === 'Annual' 
+                ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900' 
+                : 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-900'
+            }`}>
+              <p className={`text-xs mb-2 font-medium ${
+                leaveFilter === 'Annual' 
+                  ? 'text-blue-700 dark:text-blue-300' 
+                  : 'text-purple-700 dark:text-purple-300'
+              }`}>
+                {leaveFilter === 'Annual' ? 'Earned This Year' : 'Sick Leave Earned'}
               </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                {((me?.leave_limit || 10) / 365).toFixed(2)} per day
+              <p className={`text-2xl font-bold ${
+                leaveFilter === 'Annual' 
+                  ? 'text-blue-900 dark:text-blue-100' 
+                  : 'text-purple-900 dark:text-purple-100'
+              }`}>
+                {displayedEarned} day{displayedEarned !== 1 ? 's' : ''}
+              </p>
+              <p className={`text-xs mt-2 ${
+                leaveFilter === 'Annual' 
+                  ? 'text-blue-600 dark:text-blue-400' 
+                  : 'text-purple-600 dark:text-purple-400'
+              }`}>
+                {displayedRate} per day
               </p>
             </div>
             
             <div className="p-4 rounded-lg bg-muted border">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Used This Year</p>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">
+                {leaveFilter === 'Annual' ? 'Used This Year' : 'Sick Leave Used'}
+              </p>
               <p className="text-2xl font-bold">
-                {approvedLeaveDaysCurrentYear} day{approvedLeaveDaysCurrentYear !== 1 ? 's' : ''}
+                {displayedUsed} day{displayedUsed !== 1 ? 's' : ''}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Current year
@@ -214,76 +266,27 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
             </div>
             
             <div className={`p-4 rounded-lg border ${
-              remainingLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
-              remainingLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
+              displayedRemaining < 0 ? 'bg-destructive/10 border-destructive/50' : 
+              displayedRemaining === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
               'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
             }`}>
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Available Balance</p>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">
+                {leaveFilter === 'Annual' ? 'Available Balance' : 'Sick Leave Available'}
+              </p>
               <p className={`text-2xl font-bold ${
-                remainingLeaves < 0 ? 'text-destructive' : 
-                remainingLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
+                displayedRemaining < 0 ? 'text-destructive' : 
+                displayedRemaining === 0 ? 'text-orange-600 dark:text-orange-400' : 
                 'text-green-600 dark:text-green-400'
               }`}>
-                {remainingLeaves} day{remainingLeaves !== 1 ? 's' : ''}
+                {displayedRemaining} day{displayedRemaining !== 1 ? 's' : ''}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                Max {me?.leave_limit || 10}/year
+                Max {displayedLimit}/year
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            💡 <strong>Leave Policy:</strong> You earn 0.03 leaves per day. Calculation: (Days from entitlement date × 10) ÷ 365. Maximum {me?.leave_limit || 10} leaves per year.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Sick Leave Balance Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sick Leave Balance (Annual)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-900">
-              <p className="text-xs text-purple-700 dark:text-purple-300 mb-2 font-medium">Sick Leave Earned</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                {earnedSickLeaves} day{earnedSickLeaves !== 1 ? 's' : ''}
-              </p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                {((me?.sick_leave_limit || 3) / 365).toFixed(3)} per day
-              </p>
-            </div>
-            
-            <div className="p-4 rounded-lg bg-muted border">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Sick Leave Used</p>
-              <p className="text-2xl font-bold">
-                {approvedSickLeaveDaysCurrentYear} day{approvedSickLeaveDaysCurrentYear !== 1 ? 's' : ''}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Current year
-              </p>
-            </div>
-            
-            <div className={`p-4 rounded-lg border ${
-              remainingSickLeaves < 0 ? 'bg-destructive/10 border-destructive/50' : 
-              remainingSickLeaves === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
-              'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
-            }`}>
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Sick Leave Available</p>
-              <p className={`text-2xl font-bold ${
-                remainingSickLeaves < 0 ? 'text-destructive' : 
-                remainingSickLeaves === 0 ? 'text-orange-600 dark:text-orange-400' : 
-                'text-green-600 dark:text-green-400'
-              }`}>
-                {remainingSickLeaves} day{remainingSickLeaves !== 1 ? 's' : ''}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Max {me?.sick_leave_limit || 3}/year
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            💡 <strong>Sick Leave Policy:</strong> You earn 0.008 sick days per day. Calculation: (Days from sick entitlement date × 3) ÷ 365. Maximum {me?.sick_leave_limit || 3} sick days per year.
+            💡 <strong>{leaveFilter === 'Annual' ? 'Leave Policy' : 'Sick Leave Policy'}:</strong> You earn {displayedRate} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per day. Calculation: (Days from entitlement date × {displayedLimit}) ÷ 365. Maximum {displayedLimit} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per year.
           </p>
         </CardContent>
       </Card>
