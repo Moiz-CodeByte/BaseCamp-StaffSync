@@ -114,27 +114,33 @@ export async function calculateLeaveStats(userId, user = null) {
   const lastMonthSickDays = lastMonthSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisQuarterSickDays = thisQuarterSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
 
-  // Calculate earned leaves based on days from entitlement date to today (annual basis)
+  // Calculate earned leaves based on days from entitlement date to month-end (annual basis)
   const entitlementDate = user?.leaveEntitlementDate 
     ? new Date(user.leaveEntitlementDate)
     : new Date(currentYear, 0, 1);
   
+  // If entitlement date is in previous year, set to Jan 1 of current year
   const entitlementYear = entitlementDate.getFullYear();
-  const effectiveEntitlementDate = entitlementYear === currentYear 
-    ? entitlementDate 
-    : new Date(currentYear, 0, 1);
+  const effectiveEntitlementDate = entitlementYear < currentYear 
+    ? new Date(currentYear, 0, 1)
+    : entitlementDate;
   
-  const daysFromEntitlementToToday = Math.floor((now - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+  // Calculate to the last day of current month (month-end projection)
+  const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
   
-  // Calculate regular leaves (using user's leave_limit)
+  const daysFromEntitlementToMonthEnd = Math.floor((endOfMonth - effectiveEntitlementDate) / (1000 * 60 * 60 * 24)) + 1;
+  
+  // Calculate regular leaves (using user's leave_limit) with month-end projection and cap
   const leaveLimit = user?.leave_limit || 10;
-  const earnedLeaves = Math.round((daysFromEntitlementToToday * leaveLimit) / 365);
+  const calculatedLeaves = Math.round((daysFromEntitlementToMonthEnd * leaveLimit) / 365);
+  const earnedLeaves = Math.min(calculatedLeaves, leaveLimit);
   const totalUsedThisYear = thisYearDays;
   const remainingLeaves = earnedLeaves - totalUsedThisYear;
 
-  // Calculate sick leaves (using user's sick_leave_limit) using same entitlement date
+  // Calculate sick leaves (using user's sick_leave_limit) with month-end projection and cap
   const sickLeaveLimit = user?.sick_leave_limit || 3;
-  const earnedSickLeaves = Math.round((daysFromEntitlementToToday * sickLeaveLimit) / 365);
+  const calculatedSickLeaves = Math.round((daysFromEntitlementToMonthEnd * sickLeaveLimit) / 365);
+  const earnedSickLeaves = Math.min(calculatedSickLeaves, sickLeaveLimit);
   const totalUsedSickThisYear = thisYearSickDays;
   const remainingSickLeaves = earnedSickLeaves - totalUsedSickThisYear;
 

@@ -175,13 +175,14 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
           ${leaveStats ? `
           <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-            <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics (Annual)</h3>
+            <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics</h3>
             <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
               <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
-                💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date.
-                <br>• <strong>Regular Leaves:</strong> 10 days/year ≈ 0.027 days per day
-                <br>• <strong>Sick Leaves:</strong> 3 days/year ≈ 0.008 days per day
+                💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
+                <br>• <strong>Regular Leaves:</strong> ${leaveStats.leaveLimit || 10} days/year (calculated to month-end, capped at limit)
+                <br>• <strong>Sick Leaves:</strong> ${leaveStats.sickLeaveLimit || 3} days/year (calculated to month-end, capped at limit)
                 <br>• Both types use the <strong>same entitlement date</strong> but track separately
+                <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
               </div>
             </div>
 
@@ -193,7 +194,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
                   <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned (Month-End)</div>
                   <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
@@ -201,7 +202,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
                   <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available (Month-End)</div>
                   <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
@@ -223,7 +224,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
                   <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned So Far</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned (Month-End)</div>
                   <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedSickLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
@@ -231,7 +232,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
                   <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available (Month-End)</div>
                   <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
@@ -521,10 +522,11 @@ function generateHRNotificationHTML({
 
           <div class="section-title">📊 Employee Leave Statistics</div>
           <p style="font-size: 12px; color: #6b7280; margin: 10px 0 15px 0; line-height: 1.6;">
-            💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date.
-            <br>• <strong>Regular Leaves:</strong> 10 days/year ≈ 0.027 days per day
-            <br>• <strong>Sick Leaves:</strong> 3 days/year ≈ 0.008 days per day
+            💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
+            <br>• <strong>Regular Leaves:</strong> ${employee.leave_limit || 10} days/year (calculated to month-end, capped at limit)
+            <br>• <strong>Sick Leaves:</strong> ${employee.sick_leave_limit || 3} days/year (calculated to month-end, capped at limit)
             <br>• Both types use the <strong>same entitlement date</strong> but track separately
+            <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
           </p>
 
           <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
@@ -551,12 +553,12 @@ function generateHRNotificationHTML({
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Earned So Far</div>
+                <div class="stat-label">Earned (Month-End)</div>
                 <div class="stat-value">${leaveStats.earnedLeaves || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Available</div>
+                <div class="stat-label">Available (Month-End)</div>
                 <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : '#0c4a6e'};">${leaveStats.remainingLeaves || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
@@ -587,12 +589,12 @@ function generateHRNotificationHTML({
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Earned So Far</div>
+                <div class="stat-label">Earned (Month-End)</div>
                 <div class="stat-value">${leaveStats.earnedSickLeaves || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Available</div>
+                <div class="stat-label">Available (Month-End)</div>
                 <div class="stat-value" style="color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : '#0c4a6e'};">${leaveStats.remainingSickLeaves || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
