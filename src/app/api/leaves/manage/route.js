@@ -62,107 +62,103 @@ export async function GET(req) {
 
   const leaves = await Leave.find(query)
     .populate('user', 'name email role leave_limit')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
   
   // Filter out leaves based on user role after population
   const filteredLeaves = leaves.filter(leave => {
     if (user.role === 'HR') {
-      // HR should only see Employee leaves, not their own or other HR/Admin leaves
       return leave.user && leave.user.role === 'Employee';
     }
-    // Admin sees Employee and HR leaves (but not other Admin leaves)
     return leave.user && (leave.user.role === 'Employee' || leave.user.role === 'HR');
   });
   
-  // Calculate leave statistics for each employee
-  const leavesWithStats = await Promise.all(filteredLeaves.map(async (leave) => {
-    const userId = leave.user._id;
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const previousMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  // Get unique user IDs for batch query
+  const uniqueUserIds = [...new Set(filteredLeaves.map(l => l.user._id.toString()))];
+  
+  // Date calculations
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const previousMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const currentHalf = currentMonth <= 6 ? 'first' : 'second';
+  const halfStartMonth = currentHalf === 'first' ? 0 : 6;
+  const halfEndMonth = currentHalf === 'first' ? 6 : 12;
+  
+  // Batch fetch all approved leaves for all users at once
+  const allApprovedLeaves = await Leave.find({
+    user: { $in: uniqueUserIds },
+    status: 'Approved',
+    startDate: {
+      $gte: new Date(previousMonthYear, previousMonth - 1, 1)
+    }
+  }).select('user startDate endDate').lean();
+  
+  // Pre-calculate stats for all users
+  const userStatsMap = {};
+  uniqueUserIds.forEach(userId => {
+    const userLeaves = allApprovedLeaves.filter(l => l.user.toString() === userId);
     
-    // Helper function to calculate days between dates
-    const calculateDays = (startDate, endDate) => {
-      return calculateBusinessDays(startDate, endDate);
+    let yearlyTaken = 0;
+    let halfYearTaken = 0;
+    let currentMonthTaken = 0;
+    let previousMonthTaken = 0;
+    
+    userLeaves.forEach(leave => {
+      const days = calculateBusinessDays(leave.startDate, leave.endDate);
+      const leaveDate = new Date(leave.startDate);
+      const leaveYear = leaveDate.getFullYear();
+      const leaveMonth = leaveDate.getMonth() + 1;
+      
+      // Yearly
+      if (leaveYear === currentYear) {
+        yearlyTaken += days;
+        
+        // Half year
+        if ((currentHalf === 'first' && leaveMonth <= 6) || (currentHalf === 'second' && leaveMonth > 6)) {
+          halfYearTaken += days;
+        }
+        
+        // Current month
+        if (leaveMonth === currentMonth) {
+          currentMonthTaken += days;
+        }
+      }
+      
+      // Previous month
+      if (leaveYear === previousMonthYear && leaveMonth === previousMonth) {
+        previousMonthTaken += days;
+      }
+    });
+    
+    userStatsMap[userId] = {
+      yearlyTaken,
+      halfYearTaken,
+      currentMonthTaken,
+      previousMonthTaken
     };
-    
-    // Get approved leaves for this year and calculate total days
-    const yearlyLeaves = await Leave.find({
-      user: userId,
-      status: 'Approved',
-      startDate: {
-        $gte: new Date(currentYear, 0, 1),
-        $lte: new Date(currentYear, 11, 31)
-      }
-    });
-    const systemRecordedDays = yearlyLeaves.reduce((total, leave) => {
-      return total + calculateDays(leave.startDate, leave.endDate);
-    }, 0);
-    
-    const yearlyApprovedLeaves = systemRecordedDays;
-    
-    // Get approved leaves for current month and calculate total days
-    const monthlyLeaves = await Leave.find({
-      user: userId,
-      status: 'Approved',
-      startDate: {
-        $gte: new Date(currentYear, currentMonth - 1, 1),
-        $lt: new Date(currentYear, currentMonth, 1)
-      }
-    });
-    const monthlyApprovedLeaves = monthlyLeaves.reduce((total, leave) => {
-      return total + calculateDays(leave.startDate, leave.endDate);
-    }, 0);
-    
-    // Get approved leaves for previous month and calculate total days
-    const prevMonthLeaves = await Leave.find({
-      user: userId,
-      status: 'Approved',
-      startDate: {
-        $gte: new Date(previousMonthYear, previousMonth - 1, 1),
-        $lt: new Date(previousMonthYear, previousMonth, 1)
-      }
-    });
-    const previousMonthLeaves = prevMonthLeaves.reduce((total, leave) => {
-      return total + calculateDays(leave.startDate, leave.endDate);
-    }, 0);
-    
-    // Determine current half (First Half: Jan-Jun, Second Half: Jul-Dec)
-    // currentMonth is 1-based (1-12), so Jan=1, Jun=6, Jul=7, Dec=12
-    const currentHalf = currentMonth <= 6 ? 'first' : 'second';
-    const halfStartMonth = currentHalf === 'first' ? 0 : 6; // JS months are 0-based
-    const halfEndMonth = currentHalf === 'first' ? 6 : 12;
-    
-    // Get approved leaves for current half year and calculate total days
-    const halfYearLeaves = await Leave.find({
-      user: userId,
-      status: 'Approved',
-      startDate: {
-        $gte: new Date(currentYear, halfStartMonth, 1),
-        $lte: new Date(currentYear, halfEndMonth === 12 ? 11 : halfEndMonth - 1, 31, 23, 59, 59)
-      }
-    });
-    const halfYearApprovedLeaves = halfYearLeaves.reduce((total, leave) => {
-      return total + calculateDays(leave.startDate, leave.endDate);
-    }, 0);
-    
+  });
+  
+  // Attach stats to leaves
+  const leavesWithStats = filteredLeaves.map(leave => {
+    const userId = leave.user._id.toString();
+    const stats = userStatsMap[userId] || { yearlyTaken: 0, halfYearTaken: 0, currentMonthTaken: 0, previousMonthTaken: 0 };
     const leaveLimit = leave.user.leave_limit || 10;
-    const remaining = leaveLimit - yearlyApprovedLeaves;
+    const remaining = Math.max(0, leaveLimit - stats.yearlyTaken);
     
     return {
-      ...leave.toObject(),
+      ...leave,
       leaveStats: {
         leaveLimit,
-        yearlyTaken: yearlyApprovedLeaves,
-        halfYearTaken: halfYearApprovedLeaves,
-        currentHalf: currentHalf,
-        remaining: remaining > 0 ? remaining : 0,
-        currentMonth: monthlyApprovedLeaves,
-        previousMonth: previousMonthLeaves
+        yearlyTaken: stats.yearlyTaken,
+        halfYearTaken: stats.halfYearTaken,
+        currentHalf,
+        remaining,
+        currentMonth: stats.currentMonthTaken,
+        previousMonth: stats.previousMonthTaken
       }
     };
-  }));
+  });
   
   return NextResponse.json({ leaves: leavesWithStats });
 }

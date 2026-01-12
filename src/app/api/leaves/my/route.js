@@ -19,6 +19,9 @@ export async function GET(req) {
   // Use provided userId if available, otherwise use authenticated user's id
   const targetUserId = userId || user.id;
 
-  const leaves = await Leave.find({ user: targetUserId }).sort({ createdAt: -1 }).limit(30);
+  const leaves = await Leave.find({ user: targetUserId })
+    .sort({ createdAt: -1 })
+    .limit(30)
+    .lean();
   return NextResponse.json({ leaves });
 }

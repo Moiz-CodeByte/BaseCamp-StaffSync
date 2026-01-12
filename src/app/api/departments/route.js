@@ -15,20 +15,49 @@ export async function GET(req) {
   await connectDB();
 
   try {
-    const departments = await Department.find()
-      .populate('hr', 'name email role')
-      .sort({ createdAt: -1 });
-    
-    // Get employee count for each department
-    const departmentsWithCount = await Promise.all(
-      departments.map(async (dept) => {
-        const employeeCount = await User.countDocuments({ department: dept._id });
-        return {
-          ...dept.toObject(),
-          employeeCount
-        };
-      })
-    );
+    // Use aggregation to get departments with employee counts in one query
+    const departmentsWithCount = await Department.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: 'department',
+          as: 'employees'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'hr',
+          foreignField: '_id',
+          as: 'hrUser'
+        }
+      },
+      {
+        $unwind: {
+          path: '$hrUser',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          employeeCount: { $size: '$employees' },
+          hr: {
+            _id: '$hrUser._id',
+            name: '$hrUser.name',
+            email: '$hrUser.email',
+            role: '$hrUser.role'
+          }
+        }
+      },
+      {
+        $project: {
+          employees: 0,
+          hrUser: 0
+        }
+      },
+      { $sort: { createdAt: -1 } }
+    ]);
 
     return NextResponse.json({ departments: departmentsWithCount });
   } catch (error) {

@@ -26,7 +26,8 @@ export async function GET(req) {
     const leaves = await Leave.find()
       .populate('user', 'name email role department')
       .sort({ createdAt: -1 })
-      .limit(15);
+      .limit(15)
+      .lean();
 
     return NextResponse.json({ leaves });
   } catch (error) {

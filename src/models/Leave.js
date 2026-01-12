@@ -29,4 +29,10 @@ const LeaveSchema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for common queries
+LeaveSchema.index({ user: 1, status: 1 });
+LeaveSchema.index({ user: 1, startDate: -1 });
+LeaveSchema.index({ status: 1, createdAt: -1 });
+LeaveSchema.index({ status: 1, updatedAt: -1 });
+
 export const Leave = models.Leave || model('Leave', LeaveSchema);

@@ -81,29 +81,16 @@ export default function AdminDashboard() {
     
     const fetchData = async () => {
       try {
-        const [
-          { data: usersData }, 
-          { data: departmentsData },
-          { data: leavesData }, 
-          { data: pastLeavesData }, 
-          { data: meData }
-        ] = await Promise.all([
-          api.get('/api/users/list'),
-          api.get('/api/departments'),
-          api.get('/api/leaves/manage'),
-          api.get('/api/leaves/manage?status=past'),
-          api.get('/api/users/me')
-        ]);
+        // Use combined endpoint for better performance
+        const { data } = await api.get('/api/dashboard/admin');
 
         if (!ignore) {
-          const userList = Array.isArray(usersData?.users) ? usersData.users : [];
-          const deptList = Array.isArray(departmentsData?.departments) ? departmentsData.departments : [];
-          const leavesList = Array.isArray(leavesData?.leaves) ? leavesData.leaves : [];
-          const pastLeavesList = Array.isArray(pastLeavesData?.leaves) ? pastLeavesData.leaves : [];
-          const userData = meData?.user;
-
-          // Filter HR users for department assignment
-          const hrList = userList.filter(u => u.role === 'HR');
+          const userList = Array.isArray(data?.users) ? data.users : [];
+          const deptList = Array.isArray(data?.departments) ? data.departments : [];
+          const hrList = Array.isArray(data?.hrUsers) ? data.hrUsers : [];
+          const leavesList = Array.isArray(data?.leaves) ? data.leaves : [];
+          const pastLeavesList = Array.isArray(data?.pastLeaves) ? data.pastLeaves : [];
+          const userData = data?.me;
 
           setUsers(userList);
           setDepartments(deptList);
@@ -111,7 +98,7 @@ export default function AdminDashboard() {
           setLeaves(leavesList);
           setPastLeaves(pastLeavesList);
           setMe(userData);
-          setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
+          setProfileForm({ name: userData?.name || '', email: userData?.email || '', currentPassword: '', password: '' });
 
           const allLeaves = [...leavesList, ...pastLeavesList];
           const currentMonth = new Date().getMonth();

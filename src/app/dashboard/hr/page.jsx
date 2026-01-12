@@ -37,22 +37,17 @@ export default function HRDashboard() {
     
     const fetchData = async () => {
       try {
-        const [{ data: leaves }, { data: recentData }, { data: allRecentData }, { data: usersData }, { data: departmentsData }, { data: meData }] = await Promise.all([
-          api.get('/api/leaves/manage'),
-          api.get('/api/leaves/recent'),
-          api.get('/api/leaves/all-recent'),
-          api.get('/api/users/list'),
-          api.get('/api/departments'),
-          api.get('/api/users/me'),
-        ]);
+        // Use combined endpoint for better performance
+        const { data } = await api.get('/api/dashboard/hr');
+        
         if (!ignore) {
-          const pendingList = Array.isArray(leaves?.leaves) ? leaves.leaves : [];
-          const recentList = Array.isArray(recentData?.leaves) ? recentData.leaves : [];
-          const allRecentList = Array.isArray(allRecentData?.leaves) ? allRecentData.leaves : [];
-          const usersList = Array.isArray(usersData?.users) ? usersData.users : [];
-          const deptList = Array.isArray(departmentsData?.departments) ? departmentsData.departments : [];
-          const userData = meData?.user;
-          const hrList = usersList.filter(u => u.role === 'HR');
+          const pendingList = Array.isArray(data?.pending) ? data.pending : [];
+          const recentList = Array.isArray(data?.recentlyApproved) ? data.recentlyApproved : [];
+          const allRecentList = Array.isArray(data?.allRecentLeaves) ? data.allRecentLeaves : [];
+          const usersList = Array.isArray(data?.users) ? data.users : [];
+          const deptList = Array.isArray(data?.departments) ? data.departments : [];
+          const hrList = Array.isArray(data?.hrUsers) ? data.hrUsers : [];
+          const userData = data?.me;
           
           setPending(pendingList);
           setRecentlyApproved(recentList);
@@ -61,7 +56,7 @@ export default function HRDashboard() {
           setDepartments(deptList);
           setHrUsers(hrList);
           setMe(userData);
-          setProfileForm({ name: userData.name, email: userData.email, currentPassword: '', password: '' });
+          setProfileForm({ name: userData?.name || '', email: userData?.email || '', currentPassword: '', password: '' });
           
           const currentMonth = new Date().getMonth();
           const currentYear = new Date().getFullYear();

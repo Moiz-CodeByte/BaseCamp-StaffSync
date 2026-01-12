@@ -17,7 +17,8 @@ export async function GET(req) {
   const leaves = await Leave.find({ status: 'Approved' })
     .populate('user', 'name email role department')
     .sort({ updatedAt: -1 })
-    .limit(10);
+    .limit(10)
+    .lean();
   
   return NextResponse.json({ leaves });
 }
