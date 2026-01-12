@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
+import { User } from '@/models/User';
 import { autoRejectExpiredLeaves } from '@/lib/leave-utils';
+import { sendLeaveStatusEmail } from '@/lib/email';
 
 // Business days calculation function (excludes weekends)
 const calculateBusinessDays = (startDate, endDate) => {
@@ -178,6 +180,24 @@ export async function POST(req) {
   leave.status = action === 'approve' ? 'Approved' : 'Rejected';
   leave.approver = user.id;
   await leave.save();
+  
+  // Get populated leave with user data for notification
+  const populatedLeave = await Leave.findById(leaveId).populate('user');
+  const hrUser = await User.findById(user.id);
+  
+  // Send employee notification
+  try {
+    await sendLeaveStatusEmail({
+      employeeEmail: populatedLeave.user.email,
+      employeeName: populatedLeave.user.name,
+      leave: populatedLeave,
+      status: action === 'approve' ? 'Approved' : 'Rejected',
+      managerName: hrUser.name,
+      approverType: 'HR'
+    });
+  } catch (emailError) {
+    console.error('Failed to send employee notification:', emailError);
+  }
   
   return NextResponse.json({ 
     leave,

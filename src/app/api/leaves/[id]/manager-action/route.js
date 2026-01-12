@@ -168,7 +168,8 @@ export async function GET(req, { params }) {
         employeeName: leave.user.name,
         leave: leave,
         status: action === 'approve' ? 'Approved' : 'Rejected',
-        managerName: approverName
+        managerName: approverName,
+        approverType: isAdditionalRecipient ? 'CC' : 'Manager'
       });
     } catch (emailError) {
       console.error('Failed to send status email:', emailError);
@@ -418,7 +419,8 @@ export async function POST(req, { params }) {
         employeeName: leave.user.name,
         leave: leave,
         status: action === 'approve' ? 'Approved' : 'Rejected',
-        managerName: approverName
+        managerName: approverName,
+        approverType: isAdditionalRecipient ? 'CC' : 'Manager'
       });
     } catch (emailError) {
       console.error('Failed to send status email:', emailError);

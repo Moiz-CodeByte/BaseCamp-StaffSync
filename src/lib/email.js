@@ -178,11 +178,11 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
             <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics</h3>
             <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
               <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
-                💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
+                // 💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
                 <br>• <strong>Regular Leaves:</strong> ${leaveStats.leaveLimit || 10} days/year (calculated to month-end, capped at limit)
                 <br>• <strong>Sick Leaves:</strong> ${leaveStats.sickLeaveLimit || 3} days/year (calculated to month-end, capped at limit)
-                <br>• Both types use the <strong>same entitlement date</strong> but track separately
-                <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
+                // <br>• Both types use the <strong>same entitlement date</strong> but track separately
+                // <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
               </div>
             </div>
 
@@ -267,17 +267,204 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
 /**
  * Send leave status notification to employee
+ * @param {Object} params - Email parameters
+ * @param {string} params.employeeEmail - Employee's email address
+ * @param {string} params.employeeName - Employee's name
+ * @param {Object} params.leave - Leave request object
+ * @param {string} params.status - 'Approved' | 'Rejected'
+ * @param {string} params.managerName - Name of person who approved/rejected
+ * @param {string} params.approverType - 'Manager' | 'CC' | 'HR' (for final approval)
+ * @returns {Promise<boolean>} - Success status
  */
-export async function sendLeaveStatusEmail({ employeeEmail, employeeName, leave, status, managerName }) {
+export async function sendLeaveStatusEmail({ 
+  employeeEmail, 
+  employeeName, 
+  leave, 
+  status, 
+  managerName,
+  approverType = 'Manager'
+}) {
   try {
-    // TODO: Implement actual email sending
-    console.log('📧 Leave status email would be sent to:', employeeEmail);
-    console.log(`Your ${leave.type} leave has been ${status} by ${managerName}`);
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    const isFinalApproval = approverType === 'HR';
+    const subject = isFinalApproval 
+      ? `Leave ${status}: Final Approval - ${leave.type} Leave`
+      : `Leave Update: ${status} by ${approverType} - ${leave.type} Leave`;
+    
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'BaseCamp StaffSync <onboarding@resend.dev>',
+      to: employeeEmail,
+      subject: subject,
+      html: generateLeaveStatusHTML({ 
+        employeeName, 
+        leave, 
+        status, 
+        managerName,
+        approverType,
+        isFinalApproval
+      })
+    });
+
+    console.log(`📧 Leave status email sent to: ${employeeEmail} (${status} by ${approverType})`);
     return true;
   } catch (error) {
     console.error('Error sending leave status email:', error);
     return false;
   }
+}
+
+/**
+ * Generate HTML template for employee leave status notification
+ */
+function generateLeaveStatusHTML({ 
+  employeeName, 
+  leave, 
+  status, 
+  managerName,
+  approverType,
+  isFinalApproval
+}) {
+  const startDate = new Date(leave.startDate).toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  const endDate = new Date(leave.endDate).toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
+  const leaveDays = calculateBusinessDays(leave.startDate, leave.endDate);
+
+  // Status colors and icons
+  const isApproved = status === 'Approved';
+  const statusColor = isApproved ? '#10b981' : '#ef4444';
+  const statusIcon = isApproved ? '✅' : '❌';
+  const headerGradient = isApproved 
+    ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)'
+    : 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)';
+
+  // Message based on approver type
+  let statusMessage = '';
+  if (isFinalApproval) {
+    statusMessage = `Your <strong>${leave.type}</strong> leave request has been <strong style="color: ${statusColor};">${status.toLowerCase()}</strong> by <strong>HR (${managerName})</strong>. This is the <strong style="color: #f58327;">FINAL APPROVAL</strong>.`;
+  } else if (approverType === 'CC') {
+    statusMessage = `Your <strong>${leave.type}</strong> leave request has been <strong style="color: ${statusColor};">${status.toLowerCase()}</strong> by <strong>Additional Recipient (${managerName})</strong>.`;
+  } else {
+    statusMessage = `Your <strong>${leave.type}</strong> leave request has been <strong style="color: ${statusColor};">${status.toLowerCase()}</strong> by <strong>Reporting Manager (${managerName})</strong>.`;
+  }
+
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/employee`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: ${headerGradient}; color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .content { background: #ffffff; padding: 30px; }
+        .detail-box { margin: 20px 0; padding: 20px; background: #fff7f0; border-left: 4px solid #f58327; border-radius: 4px; }
+        .detail-row { margin: 12px 0; display: flex; flex-wrap: wrap; }
+        .label { font-weight: bold; color: #f58327; min-width: 120px; }
+        .value { color: #333; flex: 1; }
+        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 600; background: ${statusColor}; color: white; font-size: 16px; margin: 10px 0; }
+        .final-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 600; background: #f58327; color: white; font-size: 14px; margin: 10px 0; }
+        .button { display: inline-block; padding: 14px 32px; margin: 20px 0; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; background: #f58327; color: white; box-shadow: 0 2px 4px rgba(245,131,39,0.3); }
+        .button:hover { background: #e66f1a; box-shadow: 0 4px 8px rgba(245,131,39,0.4); }
+        .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; }
+        .logo { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 5px; }
+        .info-box { padding: 15px; background: ${isApproved ? '#f0fdf4' : '#fef2f2'}; border-left: 4px solid ${statusColor}; border-radius: 4px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">BaseCamp StaffSync</div>
+          <h1><span>${statusIcon}</span> Leave ${status}</h1>
+        </div>
+        <div class="content">
+          <p style="font-size: 16px; color: #333;">Dear <strong>${employeeName}</strong>,</p>
+          <p style="font-size: 15px; color: #555; line-height: 1.8;">${statusMessage}</p>
+          
+          <div style="text-align: center; margin: 20px 0;">
+            <span class="status-badge">${statusIcon} ${status}</span>
+            ${isFinalApproval ? '<br><span class="final-badge">🎯 FINAL APPROVAL BY HR</span>' : ''}
+          </div>
+
+          ${isFinalApproval ? `
+          <div class="info-box">
+            <p style="margin: 0; font-size: 14px; color: ${statusColor}; font-weight: 600;">
+              ${isApproved 
+                ? '✅ Your leave has been officially approved by HR. You can now proceed with your leave plans.' 
+                : '❌ Your leave has been rejected by HR. Please contact HR for more information.'}
+            </p>
+          </div>
+          ` : `
+          <div class="info-box">
+            <p style="margin: 0; font-size: 14px; color: #6b7280;">
+              ${isApproved 
+                ? '⏳ Your leave is progressing through the approval workflow. HR will provide the final approval.' 
+                : '⚠️ Your leave was rejected at this stage. Please check your dashboard for more details.'}
+            </p>
+          </div>
+          `}
+
+          <div class="detail-box">
+            <div class="detail-row">
+              <span class="label">Leave Type:</span>
+              <span class="value">${leave.type}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Duration:</span>
+              <span class="value">${leaveDays} business day${leaveDays !== 1 ? 's' : ''} <span style="font-size: 11px; color: #6b7280;">(weekends excluded)</span></span>
+            </div>
+            <div class="detail-row">
+              <span class="label">From:</span>
+              <span class="value">${startDate}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">To:</span>
+              <span class="value">${endDate}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">${isFinalApproval ? 'Approved by HR:' : approverType === 'CC' ? 'Reviewed by:' : 'Approved by Manager:'}</span>
+              <span class="value">${managerName}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Current Status:</span>
+              <span class="value"><strong style="color: ${statusColor};">${leave.status || status}</strong></span>
+            </div>
+            ${leave.reason ? `
+            <div class="detail-row">
+              <span class="label">Reason:</span>
+              <span class="value">${leave.reason}</span>
+            </div>
+            ` : ''}
+          </div>
+
+          <div style="text-align: center;">
+            <a href="${dashboardUrl}" class="button">View in Dashboard</a>
+          </div>
+
+          <p style="font-size: 14px; color: #6b7280; margin-top: 20px; text-align: center;">
+            You can view the complete approval status and details in your employee dashboard.
+          </p>
+        </div>
+        <div class="footer">
+          <p style="margin: 5px 0;"><strong style="color: #f58327;">BaseCamp StaffSync</strong></p>
+          <p style="margin: 5px 0;">This is an automated email. Please do not reply to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
 /**
@@ -431,6 +618,52 @@ function generateHRNotificationHTML({
     }).join('');
   };
 
+  // Additional recipients section
+  const formatAdditionalRecipients = () => {
+    if (!leave.additionalRecipients || leave.additionalRecipients.length === 0) {
+      return '';
+    }
+
+    return leave.additionalRecipients.map(recipient => {
+      let recipientStatusColor = '#f59e0b';
+      let recipientIcon = '⏳';
+      
+      if (recipient.status === 'Approved') {
+        recipientStatusColor = '#10b981';
+        recipientIcon = '✅';
+      } else if (recipient.status === 'Rejected') {
+        recipientStatusColor = '#ef4444';
+        recipientIcon = '❌';
+      }
+
+      return `
+        <div style="margin: 8px 0; padding: 12px; background: #f9fafb; border-left: 3px solid ${recipientStatusColor}; border-radius: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: #333;">${recipient.name}</strong>
+              <span style="color: #6b7280; font-size: 13px; display: block; margin-top: 2px;">${recipient.email}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 16px;">${recipientIcon}</span>
+              <span style="font-weight: 600; color: ${recipientStatusColor}; font-size: 14px;">${recipient.status}</span>
+            </div>
+          </div>
+          ${recipient.approvedAt ? `
+            <div style="color: #6b7280; font-size: 12px; margin-top: 6px;">
+              Processed: ${new Date(recipient.approvedAt).toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  };
+
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/hr`;
 
   return `
@@ -522,11 +755,11 @@ function generateHRNotificationHTML({
 
           <div class="section-title">📊 Employee Leave Statistics</div>
           <p style="font-size: 12px; color: #6b7280; margin: 10px 0 15px 0; line-height: 1.6;">
-            💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
+            // 💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
             <br>• <strong>Regular Leaves:</strong> ${employee.leave_limit || 10} days/year (calculated to month-end, capped at limit)
             <br>• <strong>Sick Leaves:</strong> ${employee.sick_leave_limit || 3} days/year (calculated to month-end, capped at limit)
-            <br>• Both types use the <strong>same entitlement date</strong> but track separately
-            <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
+            // <br>• Both types use the <strong>same entitlement date</strong> but track separately
+            // <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
           </p>
 
           <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
@@ -603,6 +836,14 @@ function generateHRNotificationHTML({
 
           <div class="section-title">👥 Reporting Manager Approvals</div>
           ${formatManagerApprovals()}
+
+          ${leave.additionalRecipients && leave.additionalRecipients.length > 0 ? `
+          <div class="section-title">📧 Additional Recipients (CC)</div>
+          <p style="font-size: 13px; color: #6b7280; margin: 10px 0;">
+            These recipients were copied on the leave request for informational purposes.
+          </p>
+          ${formatAdditionalRecipients()}
+          ` : ''}
 
           <div style="text-align: center;">
             <a href="${dashboardUrl}" class="button">View in Dashboard</a>
