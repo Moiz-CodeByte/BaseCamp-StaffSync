@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import AdminSidebar from '@/components/dashboard/admin/AdminSidebar';
 import AdminHeader from '@/components/dashboard/admin/AdminHeader';
 import OverviewTab from '@/components/dashboard/admin/OverviewTab';
@@ -13,6 +15,8 @@ import FeedbackTab from '@/components/dashboard/admin/FeedbackTab';
 import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
 export default function AdminDashboard() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -142,6 +146,33 @@ export default function AdminDashboard() {
     fetchData();
     return () => { ignore = true; };
   }, []);
+
+  // Check user role and redirect if unauthorized
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role !== 'Admin') {
+        if (user.role === 'HR') {
+          router.push('/dashboard/hr');
+        } else {
+          router.push('/dashboard/employee');
+        }
+      }
+    } else if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state
+  if (loading || !user || user.role !== 'Admin') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLeaveAction = async (leaveId, action) => {
     try {

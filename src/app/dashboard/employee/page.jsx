@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { FileText, User, LayoutDashboard } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,6 +39,8 @@ import LeavesTab from '@/components/dashboard/employee/LeavesTab';
 import ProfileTab from '@/components/dashboard/employee/ProfileTab';
 
 export default function EmployeeDashboard() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -106,6 +110,33 @@ export default function EmployeeDashboard() {
       cancelled = true;
     };
   }, [fetchData]);
+
+  // Check user role and redirect if unauthorized
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role !== 'Employee') {
+        if (user.role === 'Admin') {
+          router.push('/dashboard/admin');
+        } else if (user.role === 'HR') {
+          router.push('/dashboard/hr');
+        }
+      }
+    } else if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state
+  if (loading || !user || user.role !== 'Employee') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const requestLeave = async (e) => {
     e.preventDefault();

@@ -617,6 +617,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                       {(() => {
                         const now = new Date();
                         const currentYear = now.getFullYear();
+                        const currentMonth = now.getMonth();
                         let entitlementDate = viewingUser.leaveEntitlementDate 
                           ? new Date(viewingUser.leaveEntitlementDate)
                           : new Date(currentYear, 0, 1);
@@ -626,11 +627,14 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                           entitlementDate = new Date(currentYear, 0, 1);
                         }
                         
-                        const daysSinceEntitlement = Math.round((now - entitlementDate) / (1000 * 60 * 60 * 24));
+                        // Calculate to end of current month instead of today
+                        const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+                        const daysFromEntitlementToEndOfMonth = Math.round((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
                         const leaveLimit = viewingUser.leave_limit || 10;
                         const sickLeaveLimit = viewingUser.sick_leave_limit || 3;
-                        const earnedLeaves = Math.round((daysSinceEntitlement * leaveLimit) / 365);
-                        const earnedSickLeaves = Math.round((daysSinceEntitlement * sickLeaveLimit) / 365);
+                        // Cap at annual limits to prevent exceeding
+                        const earnedLeaves = Math.min(Math.round((daysFromEntitlementToEndOfMonth * leaveLimit) / 365), leaveLimit);
+                        const earnedSickLeaves = Math.min(Math.round((daysFromEntitlementToEndOfMonth * sickLeaveLimit) / 365), sickLeaveLimit);
                         
                         // Calculate business days function
                         const calculateBusinessDays = (startDate, endDate) => {
@@ -703,7 +707,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                                       ? 'text-blue-700 dark:text-blue-300'
                                       : 'text-purple-700 dark:text-purple-300'
                                   }`}>
-                                    {leaveFilter === 'Annual' ? 'Earned This Year' : 'Sick Leave Earned'}
+                                    {leaveFilter === 'Annual' ? 'Earned (Month-End)' : 'Sick Leave (Month-End)'}
                                   </p>
                                   <p className={`text-sm font-medium ${
                                     leaveFilter === 'Annual'
@@ -737,7 +741,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                                   'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
                                 }`}>
                                   <p className="text-xs text-muted-foreground mb-1">
-                                    {leaveFilter === 'Annual' ? 'Available' : 'Sick Leave Available'}
+                                    {leaveFilter === 'Annual' ? 'Available (Month-End)' : 'Sick Leave Available (Month-End)'}
                                   </p>
                                   <p className={`text-sm font-medium ${
                                     displayedRemaining < 0 ? 'text-destructive' : 

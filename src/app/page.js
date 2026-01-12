@@ -1,7 +1,45 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      // Redirect to appropriate dashboard based on user role
+      if (user.role === 'Admin') {
+        router.push('/dashboard/admin');
+      } else if (user.role === 'HR') {
+        router.push('/dashboard/hr');
+      } else {
+        router.push('/dashboard/employee');
+      }
+    }
+  }, [user, loading, router]);
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show landing page if user is not authenticated
+  if (user) {
+    return null; // Will redirect via useEffect
+  }
+
   return (
     <div className="space-y-16 pb-16">
       {/* Hero Section */}

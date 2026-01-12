@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import HRSidebar from '@/components/dashboard/hr/HRSidebar';
 import HRHeader from '@/components/dashboard/hr/HRHeader';
 import OverviewTab from '@/components/dashboard/hr/OverviewTab';
@@ -12,6 +14,8 @@ import DepartmentsTab from '@/components/dashboard/admin/DepartmentsTab';
 import HRProfileTab from '@/components/dashboard/hr/HRProfileTab';
 
 export default function HRDashboard() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -99,6 +103,33 @@ export default function HRDashboard() {
     fetchData();
     return () => { ignore = true; };
   }, []);
+
+  // Check user role and redirect if unauthorized
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role !== 'HR') {
+        if (user.role === 'Admin') {
+          router.push('/dashboard/admin');
+        } else {
+          router.push('/dashboard/employee');
+        }
+      }
+    } else if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state
+  if (loading || !user || user.role !== 'HR') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLeaveAction = async (leaveId, action) => {
     await api.post('/api/leaves/manage', { leaveId, action });
