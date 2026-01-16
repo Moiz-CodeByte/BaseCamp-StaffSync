@@ -3,7 +3,7 @@ import mongoose, { Schema, models, model } from 'mongoose';
 const LeaveSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, enum: ['Annual', 'Sick', 'Casual', 'Unpaid'], required: true },
+    type: { type: String, enum: ['Annual', 'Sick', 'Unpaid', 'Maternity'], required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     reason: { type: String, trim: true },

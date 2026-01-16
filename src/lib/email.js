@@ -175,34 +175,28 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
           ${leaveStats ? `
           <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-            <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics</h3>
+          <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics</h3>
             <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
               <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
-                // 💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
                 <br>• <strong>Regular Leaves:</strong> ${leaveStats.leaveLimit || 10} days/year (calculated to month-end, capped at limit)
                 <br>• <strong>Sick Leaves:</strong> ${leaveStats.sickLeaveLimit || 3} days/year (calculated to month-end, capped at limit)
-                // <br>• Both types use the <strong>same entitlement date</strong> but track separately
-                // <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
               </div>
             </div>
+            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Balance</h3>
 
             <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
-              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Regular Leaves</h4>
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
                   <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
                 </div>
-                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned (Month-End)</div>
-                  <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedLeaves || 0}</div>
-                </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
                   <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available (Month-End)</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
                   <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
@@ -218,21 +212,17 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
             <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
               <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves</h4>
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
                   <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
                 </div>
-                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #10b981;">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Earned (Month-End)</div>
-                  <div style="font-size: 20px; font-weight: 700; color: #10b981;">${leaveStats.earnedSickLeaves || 0}</div>
-                </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used This Year</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
                   <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
-                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available (Month-End)</div>
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
                   <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">

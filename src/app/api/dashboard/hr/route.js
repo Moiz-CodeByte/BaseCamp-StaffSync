@@ -17,6 +17,10 @@ export async function GET(req) {
   await autoRejectExpiredLeaves();
 
   try {
+    // First, find departments managed by this HR
+    const hrDepartments = await Department.find({ hr: user.id }).select('_id').lean();
+    const departmentIds = hrDepartments.map(dept => dept._id);
+    
     // Fetch all data in parallel
     const [usersData, departmentsData, pendingLeaves, recentApproved, allRecent, meData] = await Promise.all([
       // Users with populated departments
@@ -75,22 +79,43 @@ export async function GET(req) {
         { $sort: { createdAt: -1 } }
       ]),
       
-      // Pending leaves
+      // Pending leaves - only from employees in HR's departments
       Leave.find({ status: 'Pending' })
-        .populate('user', 'name email role leave_limit')
+        .populate({
+          path: 'user',
+          select: 'name email role leave_limit department',
+          populate: {
+            path: 'department',
+            select: 'hr'
+          }
+        })
         .sort({ createdAt: -1 })
         .lean(),
       
-      // Recently approved leaves
+      // Recently approved leaves - only from employees in HR's departments
       Leave.find({ status: 'Approved' })
-        .populate('user', 'name email role department')
+        .populate({
+          path: 'user',
+          select: 'name email role department',
+          populate: {
+            path: 'department',
+            select: 'hr'
+          }
+        })
         .sort({ updatedAt: -1 })
         .limit(10)
         .lean(),
       
-      // All recent leaves
+      // All recent leaves - only from employees in HR's departments
       Leave.find()
-        .populate('user', 'name email role department')
+        .populate({
+          path: 'user',
+          select: 'name email role department',
+          populate: {
+            path: 'department',
+            select: 'hr'
+          }
+        })
         .sort({ createdAt: -1 })
         .limit(15)
         .lean(),
@@ -109,9 +134,31 @@ export async function GET(req) {
     // Filter HR users
     const hrUsers = usersData.filter(u => u.role === 'HR');
     
-    // Filter pending leaves (HR only sees Employee requests)
+    // Filter pending leaves (HR only sees Employee requests from their departments)
     const filteredPendingLeaves = pendingLeaves.filter(leave => 
-      leave.user && leave.user.role === 'Employee'
+      leave.user && 
+      leave.user.role === 'Employee' &&
+      leave.user.department &&
+      leave.user.department.hr &&
+      leave.user.department.hr.toString() === user.id
+    );
+    
+    // Filter recently approved leaves (HR only sees their department employees)
+    const filteredRecentlyApproved = recentApproved.filter(leave =>
+      leave.user &&
+      leave.user.role === 'Employee' &&
+      leave.user.department &&
+      leave.user.department.hr &&
+      leave.user.department.hr.toString() === user.id
+    );
+    
+    // Filter all recent leaves (HR only sees their department employees)
+    const filteredAllRecent = allRecent.filter(leave =>
+      leave.user &&
+      leave.user.role === 'Employee' &&
+      leave.user.department &&
+      leave.user.department.hr &&
+      leave.user.department.hr.toString() === user.id
     );
 
     return NextResponse.json({
@@ -119,8 +166,8 @@ export async function GET(req) {
       departments: departmentsData,
       hrUsers,
       pending: filteredPendingLeaves,
-      recentlyApproved: recentApproved,
-      allRecentLeaves: allRecent,
+      recentlyApproved: filteredRecentlyApproved,
+      allRecentLeaves: filteredAllRecent,
       me: meData
     });
   } catch (error) {

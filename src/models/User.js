@@ -26,11 +26,13 @@ const UserSchema = new Schema(
     //   this._basic_salary = value;
     // },
     //_allowance: { type: Number, default: 0 }, // Default monthly allowance
-    leave_limit: { type: Number, default: 10 }, // Annual leave limit (in days)
-    leaveEntitlementDate: { type: Date }, // Date when leave entitlement starts (defaults to Jan 1 of current year if not set)
+    leave_limit: { type: Number, default: 10 }, // Annual leave limit (in days per month)
     
     // Sick leave fields (separate from regular leaves)
-    sick_leave_limit: { type: Number, default: 3 }, // Annual sick leave limit (in days)
+    sick_leave_limit: { type: Number, default: 3 }, // Annual sick leave limit (in days per year)
+    
+    // Maternity leave fields
+    maternity_leave_limit: { type: Number, default: 2 }, // Annual maternity leave limit (in days per year)
     
     // Password reset tokens
     passwordResetToken: { type: String },

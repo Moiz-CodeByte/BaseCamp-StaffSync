@@ -3,10 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMemo, useState } from 'react';
 
 export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
   const [leaveFilter, setLeaveFilter] = useState('Annual'); // 'Annual' or 'Sick'
+  const [monthFilter, setMonthFilter] = useState('All'); // 'All', 'This Month', 'Last Month', 'Last 3 Months'
+  
   // Calculate business days (excluding weekends)
   const calculateBusinessDays = (startDate, endDate) => {
     let start, end;
@@ -33,56 +36,16 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     return businessDays;
   };
 
-  // Calculate earned leaves by end of current month (projected)
+  // Fixed annual leave allocation (no formula)
   const earnedLeaves = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
-    // If entitlement date is in previous year, use Jan 1 of current year
-    let entitlementDate = me?.leaveEntitlementDate 
-      ? new Date(me.leaveEntitlementDate)
-      : new Date(currentYear, 0, 1);
-    
-    if (entitlementDate.getFullYear() < currentYear) {
-      entitlementDate = new Date(currentYear, 0, 1);
-    }
-    
     const leaveLimit = me?.leave_limit || 10;
-    // Calculate to last day of current month instead of today
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
-    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
-    const calculated = Math.round((daysFromEntitlementToEndOfMonth * leaveLimit) / 365);
-    // Cap at annual limit to prevent exceeding
-    const earned = Math.min(calculated, leaveLimit);
-    return earned;
+    return leaveLimit; // Fixed allocation per year
   }, [me]);
 
-  // Calculate earned sick leaves by end of current month (projected)
+  // Fixed sick leave allocation (no formula)
   const earnedSickLeaves = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    // Use same leaveEntitlementDate for sick leaves
-    // If entitlement date is in previous year, use Jan 1 of current year
-    let entitlementDate = me?.leaveEntitlementDate 
-      ? new Date(me.leaveEntitlementDate)
-      : new Date(currentYear, 0, 1);
-    
-    if (entitlementDate.getFullYear() < currentYear) {
-      entitlementDate = new Date(currentYear, 0, 1);
-    }
-    
     const sickLeaveLimit = me?.sick_leave_limit || 3;
-    // Calculate to last day of current month instead of today
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
-    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
-    const calculated = Math.round((daysFromEntitlementToEndOfMonth * sickLeaveLimit) / 365);
-    // Cap at sick leave limit to prevent exceeding
-    const earned = Math.min(calculated, sickLeaveLimit);
-    return earned;
+    return sickLeaveLimit; // Fixed allocation per year
   }, [me]);
 
   // Calculate approved leave days for current year only (excluding sick leaves)
@@ -95,7 +58,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     const systemRecordedDays = (leaves || [])
       .filter(l => {
         if (l.status !== 'Approved') return false;
-        if (l.type === 'Sick') return false; // Exclude sick leaves
+        if (l.type === 'Sick' || l.type === 'Maternity') return false; // Exclude sick and maternity leaves
         const leaveStart = new Date(l.startDate);
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
       })
@@ -139,31 +102,76 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     return earnedSickLeaves - approvedSickLeaveDaysCurrentYear;
   }, [earnedSickLeaves, approvedSickLeaveDaysCurrentYear]);
 
+  // Calculate filtered stats by month
+  const filteredStats = useMemo(() => {
+    const now = new Date();
+    const allLeaves = leaves || [];
+    
+    let filtered = allLeaves;
+    
+    if (monthFilter === 'This Month') {
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      filtered = allLeaves.filter(l => {
+        const leaveDate = new Date(l.startDate);
+        return leaveDate.getMonth() === currentMonth && leaveDate.getFullYear() === currentYear;
+      });
+    } else if (monthFilter === 'Last Month') {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      filtered = allLeaves.filter(l => {
+        const leaveDate = new Date(l.startDate);
+        return leaveDate >= lastMonth && leaveDate <= lastMonthEnd;
+      });
+    } else if (monthFilter === 'Last 3 Months') {
+      const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+      filtered = allLeaves.filter(l => {
+        const leaveDate = new Date(l.startDate);
+        return leaveDate >= threeMonthsAgo;
+      });
+    }
+
+    // Calculate total days
+    const totalDays = filtered.reduce((total, leave) => {
+      if (leave.status === 'Approved') {
+        return total + calculateBusinessDays(leave.startDate, leave.endDate);
+      }
+      return total;
+    }, 0);
+
+    return {
+      totalLeaveDays: totalDays,
+      pendingLeaves: filtered.filter(l => l.status === 'Pending').length,
+      approvedLeaves: filtered.filter(l => l.status === 'Approved').length,
+      rejectedLeaves: filtered.filter(l => l.status === 'Rejected').length,
+    };
+  }, [monthFilter, leaves]);
+
   const statCards = [
     { 
       label: 'Total Leave Days', 
-      value: stats?.totalLeaveDays || 0, 
+      value: filteredStats.totalLeaveDays, 
       icon: Calendar,
       color: 'text-blue-600 dark:text-blue-400',
       bg: 'bg-blue-100 dark:bg-blue-900/20'
     },
     { 
       label: 'Pending Requests', 
-      value: stats?.pendingLeaves || 0, 
+      value: filteredStats.pendingLeaves, 
       icon: Clock,
       color: 'text-yellow-600 dark:text-yellow-400',
       bg: 'bg-yellow-100 dark:bg-yellow-900/20'
     },
     { 
       label: 'Approved Leaves', 
-      value: stats?.approvedLeaves || 0, 
+      value: filteredStats.approvedLeaves, 
       icon: CheckCircle,
       color: 'text-green-600 dark:text-green-400',
       bg: 'bg-green-100 dark:bg-green-900/20'
     },
     { 
       label: 'Rejected Leaves', 
-      value: stats?.rejectedLeaves || 0, 
+      value: filteredStats.rejectedLeaves, 
       icon: XCircle,
       color: 'text-red-600 dark:text-red-400',
       bg: 'bg-red-100 dark:bg-red-900/20'
@@ -172,17 +180,27 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
 
   const recentLeaves = leaves?.slice(0, 5) || [];
 
-  // Dynamic values based on filter
+  // Dynamic values based on filter (no formula calculations)
   const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : earnedSickLeaves;
   const displayedUsed = leaveFilter === 'Annual' ? approvedLeaveDaysCurrentYear : approvedSickLeaveDaysCurrentYear;
   const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : remainingSickLeaves;
   const displayedLimit = leaveFilter === 'Annual' ? (me?.leave_limit || 10) : (me?.sick_leave_limit || 3);
-  const displayedRate = leaveFilter === 'Annual' ? ((me?.leave_limit || 10) / 365).toFixed(2) : ((me?.sick_leave_limit || 3) / 365).toFixed(3);
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center justify-between">
         <p className="text-muted-foreground">Your leave statistics and recent activity</p>
+        <Select value={monthFilter} onValueChange={setMonthFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Time</SelectItem>
+            <SelectItem value="This Month">This Month</SelectItem>
+            <SelectItem value="Last Month">Last Month</SelectItem>
+            <SelectItem value="Last 3 Months">Last 3 Months</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -255,7 +273,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
                   ? 'text-blue-700 dark:text-blue-300' 
                   : 'text-purple-700 dark:text-purple-300'
               }`}>
-                {leaveFilter === 'Annual' ? 'Earned (Month-End)' : 'Sick Leave (Month-End)'}
+                {leaveFilter === 'Annual' ? 'Annual Leave Allocated' : 'Sick Leave Allocated'}
               </p>
               <p className={`text-2xl font-bold ${
                 leaveFilter === 'Annual' 
@@ -269,7 +287,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
                   ? 'text-blue-600 dark:text-blue-400' 
                   : 'text-purple-600 dark:text-purple-400'
               }`}>
-                {displayedRate} per day
+                {displayedLimit} days/year
               </p>
             </div>
             
@@ -291,7 +309,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
               'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
             }`}>
               <p className="text-xs text-muted-foreground mb-2 font-medium">
-                {leaveFilter === 'Annual' ? 'Available (Month-End)' : 'Sick Leave Available (Month-End)'}
+                {leaveFilter === 'Annual' ? 'Available' : 'Sick Leave Available'}
               </p>
               <p className={`text-2xl font-bold ${
                 displayedRemaining < 0 ? 'text-destructive' : 
@@ -305,9 +323,6 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
               </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            💡 <strong>{leaveFilter === 'Annual' ? 'Leave Policy' : 'Sick Leave Policy'}:</strong> You earn {displayedRate} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per day. Calculation: (Days from entitlement to month-end × {displayedLimit}) ÷ 365. Maximum {displayedLimit} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per year. You can request up to your month-end available balance.
-          </p>
         </CardContent>
       </Card>
 

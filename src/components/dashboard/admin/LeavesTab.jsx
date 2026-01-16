@@ -198,12 +198,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                               {stats.remaining !== undefined ? stats.remaining : 10}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">
-                              {stats.currentHalf === 'first' ? 'First Half (Jan-Jun):' : 'Second Half (Jul-Dec):'}
-                            </span>
-                            <span className="font-medium">{stats.halfYearTaken !== undefined ? stats.halfYearTaken : 0}</span>
-                          </div>
+                          
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-muted-foreground">This Month:</span>
                             <span className="font-medium">{stats.currentMonth !== undefined ? stats.currentMonth : 0}</span>
@@ -225,6 +220,9 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium truncate" title={approval.managerName}>
                                     {approval.managerName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground" title={approval.managerEmail}>
+                                    {approval.managerEmail}
                                   </p>
                                   {approval.emailSent && (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1">

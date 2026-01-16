@@ -35,7 +35,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       //allowance: user.allowance || 0,
       leave_limit: user.leave_limit || 10,
       sick_leave_limit: user.sick_leave_limit || 3,
-      leaveEntitlementDate: user.leaveEntitlementDate || '',
+      maternity_leave_limit: user.maternity_leave_limit || 2,
       reportingManagers: user.reportingManagers || []
     });
   };
@@ -350,30 +350,13 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
                     {editForm.role !== 'Admin' && (
                       <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</Label>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</Label>
                         <Input 
-                          type="date"
-                          value={editForm.leaveEntitlementDate ? new Date(editForm.leaveEntitlementDate).toISOString().split('T')[0] : ''}
-                          onChange={(e) => setEditForm({...editForm, leaveEntitlementDate: e.target.value})}
+                          type="number"
+                          value={editForm.maternity_leave_limit}
+                          onChange={(e) => setEditForm({...editForm, maternity_leave_limit: parseInt(e.target.value) || 2})}
                           className="w-full"
                         />
-                        <p className="text-xs text-muted-foreground">Defaults to Jan 1 if not set</p>
-                        {editForm.leaveEntitlementDate && (() => {
-                          const now = new Date();
-                          const entitlementDate = new Date(editForm.leaveEntitlementDate);
-                          const daysSinceEntitlement = Math.floor((now - entitlementDate) / (1000 * 60 * 60 * 24));
-                          const earnedLeaves = Math.round((daysSinceEntitlement * 10) / 365);
-                          return (
-                            <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                                📊 Calculated Earned Leaves: <span className="font-bold">{earnedLeaves}</span> days
-                              </p>
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                {daysSinceEntitlement} days × 10 ÷ 365
-                              </p>
-                            </div>
-                          );
-                        })()}
                       </div>
                     )}
                   </div>
@@ -502,10 +485,10 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
                     {user.role !== 'Admin' && (
                       <>
-                        <div className="space-y-1">
+                        {/* <div className="space-y-1">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
                           <p className="text-2xl font-bold text-primary">{user.leave_limit || 10} <span className="text-sm font-normal text-muted-foreground">days</span></p>
-                        </div>
+                        </div> */}
                         {/* <div className="space-y-1">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Entitlement Date</p>
                           <p className="text-sm font-medium">
@@ -616,12 +599,8 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     )}
                     {viewingUser.role !== 'Admin' && (
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
-                        <p className="text-sm font-medium">
-                          {viewingUser.leaveEntitlementDate 
-                            ? new Date(viewingUser.leaveEntitlementDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                            : 'January 1'}
-                        </p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
+                        <p className="text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit || 2} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                       </div>
                     )}
                    
@@ -699,6 +678,16 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           >
                             Sick Leaves
                           </button>
+                          <button
+                            onClick={() => setLeaveFilter('Maternity')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              leaveFilter === 'Maternity'
+                                ? 'bg-pink-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            Maternity
+                          </button>
                         </div>
                       </div>
                     </CardHeader>
@@ -706,24 +695,12 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       {(() => {
                         const now = new Date();
                         const currentYear = now.getFullYear();
-                        const currentMonth = now.getMonth();
-                        let entitlementDate = viewingUser.leaveEntitlementDate 
-                          ? new Date(viewingUser.leaveEntitlementDate)
-                          : new Date(currentYear, 0, 1);
                         
-                        // If entitlement date is in previous year, use Jan 1 of current year
-                        if (entitlementDate.getFullYear() < currentYear) {
-                          entitlementDate = new Date(currentYear, 0, 1);
-                        }
-                        
-                        // Calculate to end of current month instead of today
-                        const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
-                        const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
+                        // Fixed leave allocations (no formulas)
                         const leaveLimit = viewingUser.leave_limit || 10;
                         const sickLeaveLimit = viewingUser.sick_leave_limit || 3;
-                        // Cap at annual limits to prevent exceeding
-                        const earnedLeaves = Math.min(Math.round((daysFromEntitlementToEndOfMonth * leaveLimit) / 365), leaveLimit);
-                        const earnedSickLeaves = Math.min(Math.round((daysFromEntitlementToEndOfMonth * sickLeaveLimit) / 365), sickLeaveLimit);
+                        const earnedLeaves = leaveLimit; // Fixed allocation per year
+                        const earnedSickLeaves = sickLeaveLimit; // Fixed allocation per year
                         
                         // Calculate business days function
                         const calculateBusinessDays = (startDate, endDate) => {
@@ -745,9 +722,10 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         const yearStartDate = new Date(currentYear, 0, 1);
                         const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
                         
-                        // Separate regular and sick leaves
-                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave');
+                        // Separate regular, sick and maternity leaves
+                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave' && l.type !== 'Maternity');
                         const sickLeaves = (userStats.leaves || []).filter(l => l.type === 'Sick Leave');
+                        const maternityLeaves = (userStats.leaves || []).filter(l => l.type === 'Maternity');
                         
                         const approvedLeaveDaysCurrentYear = regularLeaves
                           .filter(l => {
@@ -771,16 +749,32 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                             return total + days;
                           }, 0);
                         
+                        const approvedMaternityLeaveDaysCurrentYear = maternityLeaves
+                          .filter(l => {
+                            if (l.status !== 'Approved') return false;
+                            const leaveStart = new Date(l.startDate);
+                            return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+                          })
+                          .reduce((total, leave) => {
+                            const days = calculateBusinessDays(leave.startDate, leave.endDate);
+                            return total + days;
+                          }, 0);
+                        
+                        const maternityLeaveLimit = viewingUser.maternity_leave_limit || 2;
+                        const earnedMaternityLeaves = maternityLeaveLimit;
+                        
                         const usedThisYear = approvedLeaveDaysCurrentYear;
                         const usedSickThisYear = approvedSickLeaveDaysCurrentYear;
+                        const usedMaternityThisYear = approvedMaternityLeaveDaysCurrentYear;
                         const remainingLeaves = earnedLeaves - usedThisYear;
                         const remainingSickLeaves = earnedSickLeaves - usedSickThisYear;
+                        const remainingMaternityLeaves = earnedMaternityLeaves - usedMaternityThisYear;
                         
                         // Dynamic values based on filter
-                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : earnedSickLeaves;
-                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : usedSickThisYear;
-                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : remainingSickLeaves;
-                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit || 10) : (viewingUser.sick_leave_limit || 3);
+                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : leaveFilter === 'Sick' ? earnedSickLeaves : earnedMaternityLeaves;
+                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : leaveFilter === 'Sick' ? usedSickThisYear : usedMaternityThisYear;
+                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : leaveFilter === 'Sick' ? remainingSickLeaves : remainingMaternityLeaves;
+                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit || 10) : leaveFilter === 'Sick' ? (viewingUser.sick_leave_limit || 3) : (viewingUser.maternity_leave_limit || 2);
                         
                         return (
                           <div className="space-y-3">
@@ -788,34 +782,40 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                               <div className={`p-3 rounded-lg border ${
                                 leaveFilter === 'Annual'
                                   ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900'
-                                  : 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-900'
+                                    : leaveFilter === 'Sick'
+                                    ? 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-900'
+                                    : 'bg-pink-50 dark:bg-pink-950 border-pink-200 dark:border-pink-900'
                               }`}>
                                 <p className={`text-xs mb-1 ${
                                   leaveFilter === 'Annual'
                                     ? 'text-blue-700 dark:text-blue-300'
-                                    : 'text-purple-700 dark:text-purple-300'
+                                    : leaveFilter === 'Sick'
+                                    ? 'text-purple-700 dark:text-purple-300'
+                                    : 'text-pink-700 dark:text-pink-300'
                                 }`}>
-                                  {leaveFilter === 'Annual' ? 'Earned (Month-End)' : 'Sick Leave (Month-End)'}
-                                </p>
-                                <p className={`text-sm font-medium ${
+                                  {leaveFilter === 'Annual' ? 'Annual Leave Allocated' : leaveFilter === 'Sick' ? 'Sick Leave Allocated' : 'Maternity Leave Allocated'}                             </p>                             <p className={`text-sm font-medium ${
                                   leaveFilter === 'Annual'
                                     ? 'text-blue-900 dark:text-blue-100'
-                                    : 'text-purple-900 dark:text-purple-100'
+                                    : leaveFilter === 'Sick'
+                                    ? 'text-purple-900 dark:text-purple-100'
+                                    : 'text-pink-900 dark:text-pink-100'
                                 }`}>
                                   {displayedEarned} day{displayedEarned !== 1 ? 's' : ''}
                                 </p>
                                 <p className={`text-xs mt-1 ${
                                   leaveFilter === 'Annual'
                                     ? 'text-blue-600 dark:text-blue-400'
-                                    : 'text-purple-600 dark:text-purple-400'
+                                    : leaveFilter === 'Sick'
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : 'text-pink-600 dark:text-pink-400'
                                 }`}>
-                                  From entitlement date
+                                  {displayedLimit} days/year
                                 </p>
                               </div>
                               
                               <div className="p-3 rounded-lg bg-muted border">
                                 <p className="text-xs text-muted-foreground mb-1">
-                                  {leaveFilter === 'Annual' ? 'Used This Year' : 'Sick Leave Used'}
+                                  {leaveFilter === 'Annual' ? 'Used This Year' : leaveFilter === 'Sick' ? 'Sick Leave Used' : 'Maternity Leave Used'}
                                 </p>
                                 <p className="text-sm font-medium">
                                   {displayedUsed} day{displayedUsed !== 1 ? 's' : ''}
@@ -829,7 +829,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                                 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
                               }`}>
                                 <p className="text-xs text-muted-foreground mb-1">
-                                  {leaveFilter === 'Annual' ? 'Available (Month-End)' : 'Sick Leave Available (Month-End)'}
+                                  {leaveFilter === 'Annual' ? 'Available' : leaveFilter === 'Sick' ? 'Sick Leave Available' : 'Maternity Leave Available'}
                                 </p>
                                 <p className={`text-sm font-medium ${
                                   displayedRemaining < 0 ? 'text-destructive' : 
@@ -842,11 +842,11 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                               </div>
                             </div>
                             
-                            <div className="p-3 rounded-lg bg-muted/50 border">
+                            {/* <div className="p-3 rounded-lg bg-muted/50 border">
                               <p className="text-xs text-muted-foreground">
                                 💡 <strong>{leaveFilter === 'Annual' ? 'Leave Policy' : 'Sick Leave Policy'}:</strong> Earns {((displayedLimit / 365)).toFixed(3)} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per day. Maximum {displayedLimit} {leaveFilter === 'Annual' ? 'leaves' : 'sick days'} per year.
                               </p>
-                            </div>
+                            </div> */}
                           </div>
                         );
                       })()}

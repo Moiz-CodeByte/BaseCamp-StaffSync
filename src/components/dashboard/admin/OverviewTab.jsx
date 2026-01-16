@@ -2,27 +2,56 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, CheckCircle, XCircle, Clock, Users, Building2, UserCheck, TrendingUp, Calendar, AlertTriangle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useMemo } from 'react';
 
 export default function OverviewTab({ stats, isLoading = false, leaves = [], pastLeaves = [] }) {
-  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', or 'Sick'
+  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', or 'Maternity'
+  const [monthFilter, setMonthFilter] = useState('All'); // 'All', 'This Month', 'Last Month', 'Last 3 Months'
 
-  // Calculate filtered stats based on leave type
+  // Calculate filtered stats based on leave type and month
   const filteredStats = useMemo(() => {
     const allLeaves = [...(leaves || []), ...(pastLeaves || [])];
     
+    // Apply month filter
+    let monthFiltered = allLeaves;
+    if (monthFilter !== 'All') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      monthFiltered = allLeaves.filter(l => {
+        const leaveDate = new Date(l.createdAt);
+        const leaveMonth = leaveDate.getMonth();
+        const leaveYear = leaveDate.getFullYear();
+        
+        if (monthFilter === 'This Month') {
+          return leaveMonth === currentMonth && leaveYear === currentYear;
+        } else if (monthFilter === 'Last Month') {
+          const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+          return leaveMonth === lastMonth && leaveYear === lastMonthYear;
+        } else if (monthFilter === 'Last 3 Months') {
+          const threeMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
+          return leaveDate >= threeMonthsAgo;
+        }
+        return true;
+      });
+    }
+    
     if (leaveFilter === 'All') {
       return {
-        pendingLeaves: stats?.pendingLeaves || 0,
-        approvedLeaves: stats?.approvedLeaves || 0,
-        rejectedLeaves: stats?.rejectedLeaves || 0,
-        totalRequests: stats?.totalRequests || 0,
+        pendingLeaves: monthFiltered.filter(l => l.status === 'Pending').length,
+        approvedLeaves: monthFiltered.filter(l => l.status === 'Approved').length,
+        rejectedLeaves: monthFiltered.filter(l => l.status === 'Rejected').length,
+        totalRequests: monthFiltered.length,
       };
     }
 
-    const filtered = allLeaves.filter(l => {
+    const filtered = monthFiltered.filter(l => {
       if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
       if (leaveFilter === 'Sick') return l.type === 'Sick';
+      if (leaveFilter === 'Maternity') return l.type === 'Maternity';
       return true;
     });
 
@@ -32,7 +61,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
       rejectedLeaves: filtered.filter(l => l.status === 'Rejected').length,
       totalRequests: filtered.length,
     };
-  }, [leaveFilter, stats, leaves, pastLeaves]);
+  }, [leaveFilter, monthFilter, stats, leaves, pastLeaves]);
 
   const statCards = [
     { 
@@ -69,46 +98,36 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center justify-between">
         <p className="text-muted-foreground">Leave management statistics and insights</p>
+        <Select value={monthFilter} onValueChange={setMonthFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Time</SelectItem>
+            <SelectItem value="This Month">This Month</SelectItem>
+            <SelectItem value="Last Month">Last Month</SelectItem>
+            <SelectItem value="Last 3 Months">Last 3 Months</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Leave Management Stats with Filter */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Leave Management</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setLeaveFilter('All')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                leaveFilter === 'All'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              All Leaves
-            </button>
-            <button
-              onClick={() => setLeaveFilter('Annual')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                leaveFilter === 'Annual'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              Annual Leaves
-            </button>
-            <button
-              onClick={() => setLeaveFilter('Sick')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                leaveFilter === 'Sick'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              Sick Leaves
-            </button>
-          </div>
+          <Select value={leaveFilter} onValueChange={setLeaveFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select leave type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Leaves</SelectItem>
+              <SelectItem value="Annual">Annual Leaves</SelectItem>
+              <SelectItem value="Sick">Sick Leaves</SelectItem>
+              <SelectItem value="Maternity">Maternity Leaves</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat, idx) => {

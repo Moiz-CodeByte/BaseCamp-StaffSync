@@ -3,50 +3,116 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, CheckCircle, Clock, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useMemo } from 'react';
 
 export default function OverviewTab({ stats, recentlyApproved, isLoading = false, pending = [], allRecentLeaves = [] }) {
-  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', or 'Sick'
+  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', or 'Maternity'
+  const [monthFilter, setMonthFilter] = useState('All'); // 'All', 'This Month', 'Last Month', 'Last 3 Months'
 
-  // Calculate filtered stats based on leave type
+  // Calculate filtered stats based on leave type and month
   const filteredStats = useMemo(() => {
+    // Apply month filter to pending leaves
+    let monthFilteredPending = pending || [];
+    let monthFilteredApproved = recentlyApproved || [];
+    let monthFilteredAll = allRecentLeaves || [];
+    
+    if (monthFilter !== 'All') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      const filterByMonth = (l) => {
+        const leaveDate = new Date(l.createdAt);
+        const leaveMonth = leaveDate.getMonth();
+        const leaveYear = leaveDate.getFullYear();
+        
+        if (monthFilter === 'This Month') {
+          return leaveMonth === currentMonth && leaveYear === currentYear;
+        } else if (monthFilter === 'Last Month') {
+          const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+          return leaveMonth === lastMonth && leaveYear === lastMonthYear;
+        } else if (monthFilter === 'Last 3 Months') {
+          const threeMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
+          return leaveDate >= threeMonthsAgo;
+        }
+        return true;
+      };
+      
+      monthFilteredPending = monthFilteredPending.filter(filterByMonth);
+      monthFilteredApproved = monthFilteredApproved.filter(filterByMonth);
+      monthFilteredAll = monthFilteredAll.filter(filterByMonth);
+    }
+    
     if (leaveFilter === 'All') {
       return {
-        pendingLeaves: stats?.pendingLeaves || 0,
-        recentlyApproved: recentlyApproved?.length || 0,
-        leavesThisMonth: stats?.leavesThisMonth || 0,
+        pendingLeaves: monthFilteredPending.length,
+        recentlyApproved: monthFilteredApproved.length,
+        leavesThisMonth: monthFilteredAll.length,
       };
     }
 
-    const allLeaves = [...(pending || []), ...(allRecentLeaves || [])];
-    const filtered = allLeaves.filter(l => {
+    const filterByType = (l) => {
       if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
       if (leaveFilter === 'Sick') return l.type === 'Sick';
+      if (leaveFilter === 'Maternity') return l.type === 'Maternity';
       return true;
-    });
-
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+    };
 
     return {
-      pendingLeaves: filtered.filter(l => l.status === 'Pending').length,
-      recentlyApproved: filtered.filter(l => l.status === 'Approved').length,
-      leavesThisMonth: filtered.filter(l => {
-        const date = new Date(l.createdAt);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-      }).length,
+      pendingLeaves: monthFilteredPending.filter(filterByType).length,
+      recentlyApproved: monthFilteredApproved.filter(filterByType).length,
+      leavesThisMonth: monthFilteredAll.filter(filterByType).length,
     };
-  }, [leaveFilter, stats, recentlyApproved, pending, allRecentLeaves]);
+  }, [leaveFilter, monthFilter, stats, recentlyApproved, pending, allRecentLeaves]);
 
   // Filter recentlyApproved array for display
   const filteredRecentlyApproved = useMemo(() => {
-    if (leaveFilter === 'All') return recentlyApproved || [];
-    return (recentlyApproved || []).filter(l => {
+    let filtered = recentlyApproved || [];
+    
+    // Apply month filter
+    if (monthFilter !== 'All') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      filtered = filtered.filter(l => {
+        const leaveDate = new Date(l.createdAt);
+        const leaveMonth = leaveDate.getMonth();
+        const leaveYear = leaveDate.getFullYear();
+        
+        if (monthFilter === 'This Month') {
+          return leaveMonth === currentMonth && leaveYear === currentYear;
+        } else if (monthFilter === 'Last Month') {
+          const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+          return leaveMonth === lastMonth && leaveYear === lastMonthYear;
+        } else if (monthFilter === 'Last 3 Months') {
+          const threeMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
+          return leaveDate >= threeMonthsAgo;
+        }
+        return true;
+      });
+    }
+    
+    // Apply leave type filter
+    if (leaveFilter === 'All') return filtered;
+    return filtered.filter(l => {
       if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
       if (leaveFilter === 'Sick') return l.type === 'Sick';
+      if (leaveFilter === 'Maternity') return l.type === 'Maternity';
       return true;
     });
-  }, [leaveFilter, recentlyApproved]);
+  }, [leaveFilter, monthFilter, recentlyApproved]);
+
+  // Dynamic label based on selected filters
+  const getTotalLeavesLabel = () => {
+    if (monthFilter === 'This Month') return 'This Month';
+    if (monthFilter === 'Last Month') return 'Last Month';
+    if (monthFilter === 'Last 3 Months') return 'Last 3 Months';
+    return 'Total Leaves';
+  };
 
   const statCards = [
     { 
@@ -71,7 +137,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
       bg: 'bg-blue-100 dark:bg-blue-900/20'
     },
     { 
-      label: 'This Month', 
+      label: getTotalLeavesLabel(), 
       value: filteredStats.leavesThisMonth, 
       icon: FileText,
       color: 'text-purple-600 dark:text-purple-400',
@@ -84,36 +150,28 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground">Leave management dashboard and recent activity</p>
         <div className="flex gap-2">
-          <button
-            onClick={() => setLeaveFilter('All')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              leaveFilter === 'All'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            All Leaves
-          </button>
-          <button
-            onClick={() => setLeaveFilter('Annual')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              leaveFilter === 'Annual'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            Annual
-          </button>
-          <button
-            onClick={() => setLeaveFilter('Sick')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              leaveFilter === 'Sick'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            Sick
-          </button>
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Time</SelectItem>
+              <SelectItem value="This Month">This Month</SelectItem>
+              <SelectItem value="Last Month">Last Month</SelectItem>
+              <SelectItem value="Last 3 Months">Last 3 Months</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={leaveFilter} onValueChange={setLeaveFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select leave type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Leaves</SelectItem>
+              <SelectItem value="Annual">Annual</SelectItem>
+              <SelectItem value="Sick">Sick</SelectItem>
+              <SelectItem value="Maternity">Maternity</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

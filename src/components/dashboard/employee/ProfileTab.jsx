@@ -113,7 +113,7 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
             <Label className="text-gray-500">Leave Limit</Label>
             <p className="text-lg font-medium mt-1">{me.leave_limit || 10} days per year</p>
           </div>
-          <div>
+          {/* <div>
             <Label className="text-gray-500">Leave Entitlement Date</Label>
             <p className="text-lg font-medium mt-1">
               {me.leaveEntitlementDate 
@@ -121,7 +121,7 @@ export default function ProfileTab({ me, profileForm, setProfileForm, updateProf
                 : 'January 1'}
             </p>
             <p className="text-xs text-gray-500 mt-1">Date when your leave entitlement started</p>
-          </div>
+          </div> */}
            <div>
             <Label className="text-gray-500">Account Created</Label>
             <p className="text-lg font-medium mt-1">

@@ -49,64 +49,16 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate earned leaves based on days from entitlement date to today (annual basis)
+  // Fixed annual leave allocation (no formula)
   const earnedLeaves = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
-    let entitlementDate = me?.leaveEntitlementDate 
-      ? new Date(me.leaveEntitlementDate)
-      : new Date(currentYear, 0, 1);
-    
-    // If entitlement date is in previous year, set to Jan 1 of current year
-    if (entitlementDate.getFullYear() < currentYear) {
-      entitlementDate = new Date(currentYear, 0, 1);
-    }
-    
-    // Calculate to the last day of current month
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    
-    // Calculate days from entitlement date to end of month
-    const daysFromEntitlementToMonthEnd = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
-    
-    // Calculate earned leaves: days(entitlementDate, monthEnd) * leave_limit / 365
     const leaveLimit = me?.leave_limit || 10;
-    const calculated = Math.round((daysFromEntitlementToMonthEnd * leaveLimit) / 365);
-    const earned = Math.min(calculated, leaveLimit);
-    
-    return earned;
+    return leaveLimit; // Fixed allocation per year
   }, [me]);
 
-  // Calculate earned sick leaves using same entitlement date
+  // Fixed sick leave allocation (no formula)
   const earnedSickLeaves = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    // Use same leaveEntitlementDate for sick leaves
-    let entitlementDate = me?.leaveEntitlementDate 
-      ? new Date(me.leaveEntitlementDate)
-      : new Date(currentYear, 0, 1);
-    
-    // If entitlement date is in previous year, set to Jan 1 of current year
-    if (entitlementDate.getFullYear() < currentYear) {
-      entitlementDate = new Date(currentYear, 0, 1);
-    }
-    
-    // Calculate to the last day of current month
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    
-    // Calculate days from entitlement date to end of month
-    const daysFromEntitlementToMonthEnd = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24));
-    
-    // Calculate earned sick leaves: days(entitlementDate, monthEnd) * sick_leave_limit / 365
     const sickLeaveLimit = me?.sick_leave_limit || 3;
-    const calculated = Math.round((daysFromEntitlementToMonthEnd * sickLeaveLimit) / 365);
-    const earned = Math.min(calculated, sickLeaveLimit);
-    
-    return earned;
+    return sickLeaveLimit; // Fixed allocation per year
   }, [me]);
 
   // Calculate approved leave days for current year only (excluding sick leaves)
@@ -121,7 +73,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     const systemRecordedDays = leaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
-        if (l.type === 'Sick') return false; // Exclude sick leaves
+        if (l.type === 'Sick' || l.type === 'Maternity') return false; // Exclude sick and maternity leaves
         const leaveStart = new Date(l.startDate);
         // Only count leaves that started in current year
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
@@ -225,6 +177,20 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         if (approvedSickLeaveDaysCurrentYear + duration > earnedSickLeaves) {
           errors.push(`⚠️ ALERT: Total sick leave days (${approvedSickLeaveDaysCurrentYear + duration}) would exceed your earned sick leaves (${earnedSickLeaves}). You have only ${remainingSickLeaves} sick days available.`);
         }
+      } else if (leaveForm.type === 'Maternity') {
+        // Maternity leave validation
+        const maxMaternityPerYear = me?.maternity_leave_limit || 2;
+        const approvedMaternityDays = leaves
+          .filter(l => l.status === 'Approved' && l.type === 'Maternity')
+          .reduce((total, leave) => total + calculateBusinessDays(leave.startDate, leave.endDate), 0);
+        
+        if (duration > maxMaternityPerYear) {
+          errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxMaternityPerYear} maternity days per year`);
+        }
+        
+        if (approvedMaternityDays + duration > maxMaternityPerYear) {
+          errors.push(`⚠️ ALERT: Total maternity leave days (${approvedMaternityDays + duration}) would exceed your limit (${maxMaternityPerYear}). You have only ${maxMaternityPerYear - approvedMaternityDays} maternity days available.`);
+        }
       } else {
         // Regular leave validation (Annual, Casual, Unpaid)
         const maxPerYear = me?.leave_limit || 10;
@@ -242,7 +208,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     }
     
     return errors;
-  }, [leaveForm.startDate, leaveForm.endDate, leaveForm.type, duration, earnedLeaves, earnedSickLeaves, approvedLeaveDaysCurrentYear, approvedSickLeaveDaysCurrentYear, remainingLeaves, remainingSickLeaves, hasPendingLeaves, me?.leave_limit, me?.sick_leave_limit]);
+  }, [leaveForm.startDate, leaveForm.endDate, leaveForm.type, duration, earnedLeaves, earnedSickLeaves, approvedLeaveDaysCurrentYear, approvedSickLeaveDaysCurrentYear, remainingLeaves, remainingSickLeaves, hasPendingLeaves, me?.leave_limit, me?.sick_leave_limit, me?.maternity_leave_limit, leaves]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -335,8 +301,8 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     <SelectContent>
                       <SelectItem value="Annual">Annual Leave</SelectItem>
                       <SelectItem value="Sick">Sick Leave</SelectItem>
-                      <SelectItem value="Casual">Casual Leave</SelectItem>
                       <SelectItem value="Unpaid">Unpaid Leave</SelectItem>
+                      <SelectItem value="Maternity">Maternity Leave</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -360,18 +326,19 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 </div>
               </div>
 
+              {leaveForm.type !== 'Maternity' && (
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
                   <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">
-                    {leaveForm.type === 'Sick' ? 'Sick Leave Earned (Month-End)' : 'Leave Earned (Month-End)'}
+                    {leaveForm.type === 'Sick' ? 'Sick Leave Allocated' : 'Leave Allocated'}
                   </p>
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                     {leaveForm.type === 'Sick' ? earnedSickLeaves : earnedLeaves} day{(leaveForm.type === 'Sick' ? earnedSickLeaves : earnedLeaves) !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                     {leaveForm.type === 'Sick' 
-                      ? `Max ${me?.sick_leave_limit || 3}/year` 
-                      : `Max ${me?.leave_limit || 10}/year`}
+                      ? `${me?.sick_leave_limit || 3} days/year` 
+                      : `${me?.leave_limit || 10} days/year`}
                   </p>
                 </div>
                 
@@ -392,7 +359,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                   (leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) === 0 ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-900' : 
                   'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
                 }`}>
-                  <p className="text-xs text-muted-foreground mb-1">Available (Month-End)</p>
+                  <p className="text-xs text-muted-foreground mb-1">Available</p>
                   <p className={`text-sm font-medium ${
                     (leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) < 0 ? 'text-destructive' : 
                     (leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) === 0 ? 'text-orange-600 dark:text-orange-400' : 
@@ -401,29 +368,19 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     {leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves} day{(leaveForm.type === 'Sick' ? remainingSickLeaves : remainingLeaves) !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Max {leaveForm.type === 'Sick' ? (me?.sick_leave_limit || 3) : (me?.leave_limit || 10)}/year
+                    {leaveForm.type === 'Sick' ? (me?.sick_leave_limit || 3) : (me?.leave_limit || 10)} days/year
                   </p>
                 </div>
               </div>
+              )}
               
-              <div className="p-3 rounded-lg bg-muted/50 border">
-                <p className="text-xs text-muted-foreground">
-                  💡 <strong>Leave Policy:</strong> {leaveForm.type === 'Sick' ? (
-                    <>
-                      Sick leaves: You earn 0.008 sick days per day (3 ÷ 365). Calculation: (Days from entitlement date × 3) ÷ 365. Maximum {me?.sick_leave_limit || 3} sick days per year.
-                    </>
-                  ) : (
-                    <>
-                      Regular leaves: You earn 0.03 leaves per day (10 ÷ 365). Calculation: (Days from entitlement date × 10) ÷ 365. Maximum {me?.leave_limit || 10} leaves per year.
-                    </>
-                  )}
-                  {me?.leaveEntitlementDate && (
-                    <span className="block mt-1">
-                      Your entitlement starts from: {new Date(me.leaveEntitlementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  )}
-                </p>
-              </div>
+              {/* {leaveForm.type === 'Maternity' && (
+                {/* <div className="p-4 rounded-lg bg-pink-50 dark:bg-pink-950 border border-pink-200 dark:border-pink-900">
+                  <p className="text-sm text-pink-900 dark:text-pink-100">
+                    💝 <strong>Maternity Leave:</strong> You are allocated {me?.maternity_leave_limit || 2} maternity leave days per year. Maternity leave balance is not displayed but is tracked separately.
+                  </p>
+                </div> 
+              )} */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -598,45 +555,53 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 return (
                   <div 
                     key={leave._id} 
-                    className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
+                    className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-card relative"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold">
-                          {me?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'ME'}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="font-medium">
-                              {leave.type}
-                            </Badge>
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {days} day{days !== 1 ? 's' : ''}
-                            </span>
+                    {/* Status Badge Banner */}
+                    <div className={`absolute top-0 right-0 m-4 z-10`}>
+                      <Badge 
+                        variant={
+                          leave.status === 'Approved' ? 'default' :
+                          leave.status === 'Rejected' ? 'destructive' :
+                          'secondary'
+                        }
+                        className="text-base px-5 py-2 font-bold shadow-lg"
+                      >
+                        {leave.status}
+                      </Badge>
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold">
+                            {me?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'ME'}
                           </div>
-                          <Badge variant={
-                            leave.status === 'Approved' ? 'default' :
-                            leave.status === 'Rejected' ? 'destructive' :
-                            'secondary'
-                          }>
-                            {leave.status}
-                          </Badge>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="font-medium">
+                                {leave.type}
+                              </Badge>
+                              <span className="text-sm font-semibold text-muted-foreground">
+                                {days} day{days !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            {leave.status === 'Pending' && (
+                              <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                onClick={() => deleteLeaveRequest(leave._id)}
+                                className="mt-2"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Cancel Request
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {leave.status === 'Pending' && (
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => deleteLeaveRequest(leave._id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Cancel
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dates</p>
                         <div className="text-sm">
@@ -714,6 +679,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                           </div>
                         </div>
                       )}
+                      </div>
                     </div>
                   </div>
                 );

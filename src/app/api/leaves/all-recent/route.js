@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Leave } from '@/models/Leave';
+import { Department } from '@/models/Department';
 import { authenticateRequest } from '@/lib/auth';
 import { autoRejectExpiredLeaves } from '@/lib/leave-utils';
 
@@ -24,12 +25,31 @@ export async function GET(req) {
   try {
     // Fetch recent leave requests (all statuses) sorted by creation date
     const leaves = await Leave.find()
-      .populate('user', 'name email role department')
+      .populate({
+        path: 'user',
+        select: 'name email role department',
+        populate: {
+          path: 'department',
+          select: 'hr'
+        }
+      })
       .sort({ createdAt: -1 })
       .limit(15)
       .lean();
 
-    return NextResponse.json({ leaves });
+    // If HR, filter to only show leaves from employees in their departments
+    let filteredLeaves = leaves;
+    if (user.role === 'HR') {
+      filteredLeaves = leaves.filter(leave =>
+        leave.user &&
+        leave.user.role === 'Employee' &&
+        leave.user.department &&
+        leave.user.department.hr &&
+        leave.user.department.hr.toString() === user.id
+      );
+    }
+
+    return NextResponse.json({ leaves: filteredLeaves });
   } catch (error) {
     console.error('Error fetching recent leave requests:', error);
     return NextResponse.json(

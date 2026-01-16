@@ -48,55 +48,16 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
 
-  // Calculate earned leaves by end of current month (projected)
+  // Fixed annual leave allocation (no formula)
   const earnedLeaves = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    // Use leaveEntitlementDate if set, otherwise default to Jan 1 of current year
-    let entitlementDate = me?.leaveEntitlementDate 
-      ? new Date(me.leaveEntitlementDate)
-      : new Date(currentYear, 0, 1);
-    
-    // If entitlement date is in previous year, use Jan 1 of current year
-    if (entitlementDate.getFullYear() < currentYear) {
-      entitlementDate = new Date(currentYear, 0, 1);
-    }
-    
-    // Calculate to last day of current month instead of today
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
-    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24)) + 1;
     const leaveLimit = me?.leave_limit || 10;
-    const calculated = Math.round((daysFromEntitlementToEndOfMonth * leaveLimit) / 365);
-    // Cap at annual limit to prevent exceeding
-    const earned = Math.min(calculated, leaveLimit);
-    return earned;
+    return leaveLimit; // Fixed allocation per year
   }, [me]);
 
-  // Calculate earned sick leaves by end of current month (projected)
+  // Fixed sick leave allocation (no formula)
   const earnedSickLeaves = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    let entitlementDate = me?.leaveEntitlementDate 
-      ? new Date(me.leaveEntitlementDate)
-      : new Date(currentYear, 0, 1);
-    
-    // If entitlement date is in previous year, use Jan 1 of current year
-    if (entitlementDate.getFullYear() < currentYear) {
-      entitlementDate = new Date(currentYear, 0, 1);
-    }
-    
-    // Calculate to last day of current month instead of today
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
-    const daysFromEntitlementToEndOfMonth = Math.floor((endOfMonth - entitlementDate) / (1000 * 60 * 60 * 24)) + 1;
     const sickLeaveLimit = me?.sick_leave_limit || 3;
-    const calculated = Math.round((daysFromEntitlementToEndOfMonth * sickLeaveLimit) / 365);
-    // Cap at sick leave limit to prevent exceeding
-    const earned = Math.min(calculated, sickLeaveLimit);
-    return earned;
+    return sickLeaveLimit; // Fixed allocation per year
   }, [me]);
 
   // Calculate approved leave days for current year only (excluding sick leaves)
@@ -111,7 +72,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     const systemRecordedDays = myLeaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
-        if (l.type === 'Sick') return false; // Exclude sick leaves
+        if (l.type === 'Sick' || l.type === 'Maternity') return false; // Exclude sick and maternity leaves
         const leaveStart = new Date(l.startDate);
         // Only count leaves that started in current year
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
@@ -212,6 +173,20 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
         
         if (approvedSickLeaveDaysCurrentYear + days > earnedSickLeaves) {
           errors.push(`⚠️ ALERT: Total sick leave days (${approvedSickLeaveDaysCurrentYear + days}) would exceed your earned sick leaves (${earnedSickLeaves}). You have only ${remainingSickLeaves} sick days available.`);
+        }
+      } else if (formData.type === 'Maternity') {
+        // Validation for maternity leaves
+        const maxMaternityPerYear = me?.maternity_leave_limit || 2;
+        const approvedMaternityDays = myLeaves
+          .filter(l => l.status === 'Approved' && l.type === 'Maternity')
+          .reduce((total, leave) => total + calculateBusinessDays(leave.startDate, leave.endDate), 0);
+        
+        if (days > maxMaternityPerYear) {
+          errors.push(`⚠️ Duration (${days} days) exceeds maximum ${maxMaternityPerYear} maternity days per year`);
+        }
+        
+        if (approvedMaternityDays + days > maxMaternityPerYear) {
+          errors.push(`⚠️ ALERT: Total maternity leave days (${approvedMaternityDays + days}) would exceed your limit (${maxMaternityPerYear}). You have only ${maxMaternityPerYear - approvedMaternityDays} maternity days available.`);
         }
       } else {
         // Validation for annual/casual leaves
@@ -337,8 +312,8 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                   <SelectContent>
                     <SelectItem value="Annual">Annual Leave</SelectItem>
                     <SelectItem value="Sick">Sick Leave</SelectItem>
-                    <SelectItem value="Casual">Casual Leave</SelectItem>
                     <SelectItem value="Unpaid">Unpaid Leave</SelectItem>
+                    <SelectItem value="Maternity">Maternity Leave</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -460,6 +435,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
               </div>
             </div>
 
+            {formData.type !== 'Maternity' && (
             <div className="grid gap-3 md:grid-cols-3">
               <div className={`p-3 rounded-lg border ${
                 formData.type === 'Sick'
@@ -471,7 +447,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                     ? 'text-purple-700 dark:text-purple-300'
                     : 'text-blue-700 dark:text-blue-300'
                 }`}>
-                  {formData.type === 'Sick' ? 'Sick Leave (Month-End)' : 'Earned (Month-End)'}
+                  {formData.type === 'Sick' ? 'Sick Leave Allocated' : 'Leave Allocated'}
                 </p>
                 <p className={`text-sm font-medium ${
                   formData.type === 'Sick'
@@ -486,8 +462,8 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                     : 'text-blue-600 dark:text-blue-400'
                 }`}>
                   {formData.type === 'Sick' 
-                    ? `${((me?.sick_leave_limit || 3) / 365).toFixed(3)} per day`
-                    : `${((me?.leave_limit || 10) / 365).toFixed(2)} per day`
+                    ? `${me?.sick_leave_limit || 3} days/year`
+                    : `${me?.leave_limit || 10} days/year`
                   }
                 </p>
               </div>
@@ -510,7 +486,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
               }`}>
                 <p className="text-xs text-muted-foreground mb-1">
-                  {formData.type === 'Sick' ? 'Available (Month-End)' : 'Available (Month-End)'}
+                  {formData.type === 'Sick' ? 'Available' : 'Available'}
                 </p>
                 <p className={`text-sm font-medium ${
                   (formData.type === 'Sick' ? remainingSickLeaves : remainingLeaves) < 0 ? 'text-destructive' : 
@@ -520,21 +496,19 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                   {formData.type === 'Sick' ? remainingSickLeaves : remainingLeaves} day{(formData.type === 'Sick' ? remainingSickLeaves : remainingLeaves) !== 1 ? 's' : ''}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Max {formData.type === 'Sick' ? (me?.sick_leave_limit || 3) : (me?.leave_limit || 10)}/year
+                  {formData.type === 'Sick' ? (me?.sick_leave_limit || 3) : (me?.leave_limit || 10)} days/year
                 </p>
               </div>
             </div>
+            )}
             
-            <div className="p-3 rounded-lg bg-muted/50 border">
-              <p className="text-xs text-muted-foreground">
-                💡 <strong>{formData.type === 'Sick' ? 'Sick Leave Policy' : 'Leave Policy'}:</strong> You earn{' '}
-                {formData.type === 'Sick'
-                  ? `${((me?.sick_leave_limit || 3) / 365).toFixed(3)} sick day${((me?.sick_leave_limit || 3) / 365) !== 1 ? 's' : ''} per day. Maximum ${me?.sick_leave_limit || 3} sick days per year.`
-                  : `${((me?.leave_limit || 10) / 365).toFixed(2)} leave${((me?.leave_limit || 10) / 365) !== 1 ? 's' : ''} per day. Maximum ${me?.leave_limit || 10} leaves per year.`
-                }
-                {' '}You can request leaves up to what will be available by month-end.
-              </p>
-            </div>
+            {/* {formData.type === 'Maternity' && (
+               <div className="p-4 rounded-lg bg-pink-50 dark:bg-pink-950 border border-pink-200 dark:border-pink-900">
+                <p className="text-sm text-pink-900 dark:text-pink-100">
+                  💝 <strong>Maternity Leave:</strong> You are allocated {me?.maternity_leave_limit || 2} maternity leave days per year. Maternity leave balance is not displayed but is tracked separately.
+                </p>
+              </div> 
+            )} */}
 
             {validationErrors.length > 0 && (
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
