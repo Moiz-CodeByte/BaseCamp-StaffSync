@@ -182,7 +182,7 @@ export default function HRDashboard() {
         
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
-            {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} isLoading={isLoadingStats} pending={pending} allRecentLeaves={allRecentLeaves} />}
+            {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} isLoading={isLoadingStats} pending={pending} allRecentLeaves={allRecentLeaves} departments={departments} users={users} />}
             {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} me={me} />}
             {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} isAdmin={false} />}
             {activeTab === 'leaves' && <LeavesTab 

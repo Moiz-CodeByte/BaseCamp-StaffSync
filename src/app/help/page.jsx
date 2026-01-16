@@ -49,7 +49,7 @@ export default function HelpPage() {
           title: 'Request Leave',
           description: 'Click "Request Leave" button on the Leaves tab in your dashboard.',
           tips: [
-            'Select leave type: Annual, Sick, Casual, or Unpaid',
+            'Select leave type: Annual, Sick, Maternity, or Unpaid',
             'Choose start and end dates',
             'Weekends are automatically excluded',
             'Write a clear reason for your request',
@@ -59,24 +59,38 @@ export default function HelpPage() {
         {
           step: '2',
           title: 'Check Available Balance',
-          description: 'View your leave balance on the dashboard. The system shows two types of leaves.',
+          description: 'View your leave balance on the dashboard. The system shows fixed annual allocations.',
           tips: [
-            '🌴 Annual Leaves: 10 days per year (default)',
-            '🤒 Sick Leaves: 3 days per year (default)',
-            '📊 Use the filter buttons to switch between Annual and Sick leave views',
-            '📅 Balance shows projected availability by end of current month',
+            '🌴 Annual Leaves: 10 days per year (fixed allocation)',
+            '🤒 Sick Leaves: 3 days per year (fixed allocation)',
+            // '👶 Maternity Leaves: 2 days per year (fixed allocation)',
+            '📊 Use the filter buttons to switch between leave type views',
+            '📅 Leave balance resets annually',
             '⚠️ You cannot request more days than available',
             '⚠️ Only one pending request allowed at a time'
           ]
         },
         {
           step: '3',
+          title: 'Understanding the Approval Process',
+          description: 'Your leave request goes through multiple reviewers before final approval.',
+          tips: [
+            '📧 Reporting Managers receive your request and can review/respond',
+            '👥 Additional CC recipients (if added) can also view and respond to your request',
+            '✅ Final approval authority rests with HR department',
+            '📬 You will receive email notifications at each stage',
+            '⏱️ All reviewers can provide feedback before HR makes the final decision',
+            '🎯 HR reviews all responses before approving or rejecting your request'
+          ]
+        },
+        {
+          step: '4',
           title: 'Track Leave Status',
           description: 'View all your leave requests with their current status.',
           tips: [
-            '🟡 Pending: Waiting for approval',
-            '✅ Approved: Leave confirmed',
-            '❌ Rejected: Leave not approved',
+            '🟡 Pending: Waiting for approval from managers and HR',
+            '✅ Approved: Leave confirmed by HR',
+            '❌ Rejected: Leave not approved by HR',
             'Delete pending requests if plans change',
             'You\'ll receive email notifications for status updates'
           ]
@@ -162,7 +176,7 @@ export default function HelpPage() {
         {
           step: 'Q1',
           title: 'How many leaves can I take per year?',
-          description: 'You have 10 Annual leaves and 3 Sick leaves per year (default). Your HR can adjust these limits. Leaves are earned gradually throughout the year.',
+          description: 'You receive fixed annual allocations: 10 Annual leaves, 3 Sick leaves.',
           tips: []
         },
         {
@@ -186,7 +200,7 @@ export default function HelpPage() {
         {
           step: 'Q5',
           title: 'Who approves my leaves?',
-          description: 'Your reporting managers approve your leave requests. You can see who they are in your Profile tab.',
+          description: 'Your reporting managers and any CC recipients will review your request and respond. However, the final approval decision is made by your HR department. You will receive email notifications throughout the approval process.',
           tips: []
         },
         {
