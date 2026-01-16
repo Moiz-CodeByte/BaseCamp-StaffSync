@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,6 +24,28 @@ ChartJS.register(
 );
 
 export default function LeaveTypeChart({ data, title = "Leave Requests by Type" }) {
+  const [textColor, setTextColor] = useState('rgba(0, 0, 0, 0.8)');
+  const [gridColor, setGridColor] = useState('rgba(0, 0, 0, 0.1)');
+  
+  useEffect(() => {
+    const updateColors = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTextColor(isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)');
+      setGridColor(isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)');
+    };
+    
+    updateColors();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(updateColors);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -91,6 +114,7 @@ export default function LeaveTypeChart({ data, title = "Leave Requests by Type" 
           display: false
         },
         ticks: {
+          color: textColor,
           font: {
             size: 11
           }
@@ -99,13 +123,14 @@ export default function LeaveTypeChart({ data, title = "Leave Requests by Type" 
       y: {
         beginAtZero: true,
         ticks: {
+          color: textColor,
           stepSize: 1,
           font: {
             size: 11
           }
         },
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)'
+          color: gridColor
         }
       }
     }

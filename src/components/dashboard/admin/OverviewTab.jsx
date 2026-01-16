@@ -453,21 +453,25 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
         </div>
       </div>
 
-      {/* Analytics Charts */}
+       {/* Additional Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <LeaveStatusChart 
+      
+      <LeaveStatusChart 
           approved={filteredStats.approvedLeaves}
           pending={filteredStats.pendingLeaves}
           rejected={filteredStats.rejectedLeaves}
         />
-        <EmployeeDepartmentChart data={employeeDepartmentData} />
+        <LeaveTypeChart data={leaveTypeData} />
+        
       </div>
 
-      {/* Additional Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <LeaveTypeChart data={leaveTypeData} />
-        <MonthlyTrendChart data={monthlyTrendData} />
+      {/* Analytics Charts */}
+      <div className="grid gap-6">
+       <MonthlyTrendChart data={monthlyTrendData} />
+       <EmployeeDepartmentChart data={employeeDepartmentData} />        
       </div>
+
+     
     </div>
   );
 }
