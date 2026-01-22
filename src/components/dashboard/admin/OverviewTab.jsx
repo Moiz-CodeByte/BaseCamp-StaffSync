@@ -10,7 +10,7 @@ import LeaveTypeChart from '@/components/dashboard/charts/LeaveTypeChart';
 import MonthlyTrendChart from '@/components/dashboard/charts/MonthlyTrendChart';
 
 export default function OverviewTab({ stats, isLoading = false, leaves = [], pastLeaves = [], departments = [], users = [] }) {
-  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', or 'Maternity'
+  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', 'Maternity', or 'Paternity'
   const [monthFilter, setMonthFilter] = useState('All'); // 'All', 'This Month', 'Last Month', 'Last 3 Months'
 
   // Calculate filtered stats based on leave type and month
@@ -56,6 +56,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
       if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
       if (leaveFilter === 'Sick') return l.type === 'Sick';
       if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+      if (leaveFilter === 'Paternity') return l.type === 'Paternity';
       return true;
     });
 
@@ -104,6 +105,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
         if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
         if (leaveFilter === 'Sick') return l.type === 'Sick';
         if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+        if (leaveFilter === 'Paternity') return l.type === 'Paternity';
         return true;
       });
     }
@@ -204,6 +206,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
           if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
           if (leaveFilter === 'Sick') return l.type === 'Sick';
           if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+          if (leaveFilter === 'Paternity') return l.type === 'Paternity';
           return true;
         });
       }
@@ -368,6 +371,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
               <SelectItem value="Annual">Annual Leaves</SelectItem>
               <SelectItem value="Sick">Sick Leaves</SelectItem>
               <SelectItem value="Maternity">Maternity Leaves</SelectItem>
+              <SelectItem value="Paternity">Paternity Leaves</SelectItem>
             </SelectContent>
           </Select>
         <Select value={monthFilter} onValueChange={setMonthFilter}>

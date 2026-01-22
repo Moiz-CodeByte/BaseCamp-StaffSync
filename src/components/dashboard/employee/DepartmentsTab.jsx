@@ -1,74 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Building2, Users, Eye, X } from 'lucide-react';
+import { Building2, Users, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
-export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin = true }) {
-  const [showForm, setShowForm] = useState(false);
-  const [editingDept, setEditingDept] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    hr: ''
-  });
+export default function EmployeeDepartmentsTab({ departments = [] }) {
   const [viewingDept, setViewingDept] = useState(null);
   const [deptEmployees, setDeptEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      hr: ''
-    });
-    setEditingDept(null);
-    setShowForm(false);
-  };
-
-  const handleEdit = (dept) => {
-    setFormData({
-      name: dept.name,
-      hr: dept.hr._id
-    });
-    setEditingDept(dept);
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      if (editingDept) {
-        await api.put(`/api/departments/${editingDept._id}`, formData);
-        toast.success('Department updated successfully');
-      } else {
-        await api.post('/api/departments', formData);
-        toast.success('Department created successfully');
-      }
-      resetForm();
-      onUpdate();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save department');
-    }
-  };
-
-  const handleDelete = async (id, name) => {
-    if (!confirm(`Are you sure you want to delete "${name}" department?`)) return;
-
-    try {
-      await api.delete(`/api/departments/${id}`);
-      toast.success('Department deleted successfully');
-      onUpdate();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete department');
-    }
-  };
 
   const handleViewEmployees = async (dept) => {
     setViewingDept(dept);
@@ -103,81 +46,10 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
       <div className="flex items-center justify-between">
         <div>
           <p className="text-muted-foreground">
-            Manage departments and their HR assignments
+            View all departments in the organization
           </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : <><Plus className="w-4 h-4 mr-2" /> Add Department</>}
-        </Button>
       </div>
-
-      {showForm && (
-        <Card className="border-2 border-primary/20">
-          <CardHeader>
-            <CardTitle>{editingDept ? 'Edit Department' : 'Create New Department'}</CardTitle>
-            <CardDescription>
-              {editingDept ? 'Update department information' : 'Add a new department to your organization'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Department Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Engineering, Sales, Marketing"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hr">Assigned HR *</Label>
-                  {isAdmin ? (
-                    <Select
-                      value={formData.hr}
-                      onValueChange={(value) => setFormData({ ...formData, hr: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select HR" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hrUsers.map((hr) => (
-                          <SelectItem key={hr._id} value={hr._id}>
-                            {hr.name} ({hr.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      value={hrUsers.find(hr => hr._id === formData.hr)?.name || 'Not Assigned'}
-                      disabled
-                      className="bg-muted"
-                    />
-                  )}
-                  {!isAdmin && (
-                    <p className="text-xs text-muted-foreground">
-                      Only Admin can change the assigned HR for departments
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingDept ? 'Update Department' : 'Create Department'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {departments.map((dept) => (
@@ -195,22 +67,6 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                       {dept.employeeCount || 0} employees
                     </CardDescription>
                   </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleEdit(dept)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleDelete(dept._id, dept.name)}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -293,16 +149,13 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
         </div>
       )}
 
-      {departments.length === 0 && !showForm && (
+      {departments.length === 0 && (
         <Card className="p-12 text-center">
           <Building2 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No Departments Yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Get started by creating your first department
+          <h3 className="text-xl font-semibold mb-2">No Departments</h3>
+          <p className="text-muted-foreground">
+            No departments have been created yet.
           </p>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Create Department
-          </Button>
         </Card>
       )}
     </div>

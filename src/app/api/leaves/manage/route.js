@@ -4,7 +4,8 @@ import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
 import { User } from '@/models/User';
 import { autoRejectExpiredLeaves } from '@/lib/leave-utils';
-import { sendLeaveStatusEmail } from '@/lib/email';
+import { sendLeaveStatusEmail, sendAdminNotificationEmail } from '@/lib/email';
+import { calculateLeaveStats } from '@/lib/leave-stats';
 
 // Business days calculation function (excludes weekends)
 const calculateBusinessDays = (startDate, endDate) => {
@@ -182,7 +183,10 @@ export async function POST(req) {
   await leave.save();
   
   // Get populated leave with user data for notification
-  const populatedLeave = await Leave.findById(leaveId).populate('user');
+  const populatedLeave = await Leave.findById(leaveId).populate('user').populate({
+    path: 'user',
+    populate: { path: 'department' }
+  });
   const hrUser = await User.findById(user.id);
   
   // Send employee notification
@@ -197,6 +201,37 @@ export async function POST(req) {
     });
   } catch (emailError) {
     console.error('Failed to send employee notification:', emailError);
+  }
+  
+  // Send notification to all admin users about the status change
+  try {
+    const adminUsers = await User.find({ role: 'Admin' }).lean();
+    
+    if (adminUsers && adminUsers.length > 0) {
+      // Calculate leave statistics
+      const leaveStats = await calculateLeaveStats(populatedLeave.user._id, populatedLeave.user);
+      
+      for (const admin of adminUsers) {
+        try {
+          await sendAdminNotificationEmail({
+            adminEmail: admin.email,
+            adminName: admin.name,
+            leave: populatedLeave,
+            employee: populatedLeave.user,
+            leaveStats: leaveStats,
+            eventType: action === 'approve' ? 'approved' : 'rejected',
+            actionBy: hrUser.name
+          });
+          
+          console.log(`✅ Admin notification sent to ${admin.email}`);
+        } catch (error) {
+          console.error(`Failed to send admin notification to ${admin.email}:`, error);
+        }
+      }
+    }
+  } catch (adminEmailError) {
+    console.error('Failed to send admin notifications:', adminEmailError);
+    // Don't fail the request if admin email fails
   }
   
   return NextResponse.json({ 

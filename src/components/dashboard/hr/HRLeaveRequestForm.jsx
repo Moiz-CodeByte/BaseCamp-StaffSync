@@ -72,7 +72,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
     const systemRecordedDays = myLeaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
-        if (l.type === 'Sick' || l.type === 'Maternity') return false; // Exclude sick and maternity leaves
+        if (l.type === 'Sick' || l.type === 'Maternity' || l.type === 'Paternity') return false; // Exclude sick, maternity, and paternity leaves
         const leaveStart = new Date(l.startDate);
         // Only count leaves that started in current year
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
@@ -176,7 +176,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
         }
       } else if (formData.type === 'Maternity') {
         // Validation for maternity leaves
-        const maxMaternityPerYear = me?.maternity_leave_limit || 2;
+        const maxMaternityPerYear = me?.maternity_leave_limit ?? 0;
         const approvedMaternityDays = myLeaves
           .filter(l => l.status === 'Approved' && l.type === 'Maternity')
           .reduce((total, leave) => total + calculateBusinessDays(leave.startDate, leave.endDate), 0);
@@ -314,6 +314,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
                     <SelectItem value="Sick">Sick Leave</SelectItem>
                     <SelectItem value="Unpaid">Unpaid Leave</SelectItem>
                     <SelectItem value="Maternity">Maternity Leave</SelectItem>
+                    <SelectItem value="Paternity">Paternity Leave</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -505,7 +506,7 @@ export default function HRLeaveRequestForm({ me, onSuccess, myLeaves = [] }) {
             {/* {formData.type === 'Maternity' && (
                <div className="p-4 rounded-lg bg-pink-50 dark:bg-pink-950 border border-pink-200 dark:border-pink-900">
                 <p className="text-sm text-pink-900 dark:text-pink-100">
-                  💝 <strong>Maternity Leave:</strong> You are allocated {me?.maternity_leave_limit || 2} maternity leave days per year. Maternity leave balance is not displayed but is tracked separately.
+                  💝 <strong>Maternity Leave:</strong> You are allocated {me?.maternity_leave_limit ?? 0} maternity leave days per year. Maternity leave balance is not displayed but is tracked separately.
                 </p>
               </div> 
             )} */}

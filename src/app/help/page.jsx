@@ -63,7 +63,8 @@ export default function HelpPage() {
           tips: [
             '🌴 Annual Leaves: 10 days per year (fixed allocation)',
             '🤒 Sick Leaves: 3 days per year (fixed allocation)',
-            // '👶 Maternity Leaves: 2 days per year (fixed allocation)',
+          //  '🤰 Maternity Leaves: 0 days per year by default (customizable by HR)',
+            //'👨‍👦 Paternity Leaves: 2 days per year (fixed allocation)',
             '📊 Use the filter buttons to switch between leave type views',
             '📅 Leave balance resets annually',
             '⚠️ You cannot request more days than available',
@@ -73,14 +74,14 @@ export default function HelpPage() {
         {
           step: '3',
           title: 'Understanding the Approval Process',
-          description: 'Your leave request goes through multiple reviewers before final approval.',
+          description: 'Your leave request goes through reviewers who can provide feedback before HR makes the final decision.',
           tips: [
-            '📧 Reporting Managers receive your request and can review/respond',
-            '👥 Additional CC recipients (if added) can also view and respond to your request',
+            '📧 CC recipients (if added) receive your request and can approve or reject',
+            '💬 Reviewers can provide feedback on your request',
             '✅ Final approval authority rests with HR department',
             '📬 You will receive email notifications at each stage',
-            '⏱️ All reviewers can provide feedback before HR makes the final decision',
-            '🎯 HR reviews all responses before approving or rejecting your request'
+            '⏱️ All reviewers responses are considered before HR makes the final decision',
+            '🎯 HR reviews all feedback before approving or rejecting your request',
           ]
         },
         {
@@ -110,8 +111,9 @@ export default function HelpPage() {
           description: 'Access the Profile tab to see your details.',
           tips: [
             'View your name, email, and department',
-            'See your assigned managers',
-            'Check your leave limits'
+            'Check your leave limits for all leave types',
+            'Annual, Sick, Maternity, and Paternity leave allocations are displayed',
+            'Contact HR to update personal information or adjust leave limits'
           ]
         },
         {
@@ -200,7 +202,7 @@ export default function HelpPage() {
         {
           step: 'Q5',
           title: 'Who approves my leaves?',
-          description: 'Your reporting managers and any CC recipients will review your request and respond. However, the final approval decision is made by your HR department. You will receive email notifications throughout the approval process.',
+          description: 'CC recipients (if you add them) can review and respond to your request. However, the final approval decision is always made by your HR department.',
           tips: []
         },
         {

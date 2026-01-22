@@ -175,14 +175,34 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 
           ${leaveStats ? `
           <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-          <h3 style="margin: 0 0 10px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Statistics</h3>
-            <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
-              <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">
-                <br>• <strong>Regular Leaves:</strong> ${leaveStats.leaveLimit || 10} days/year (calculated to month-end, capped at limit)
-                <br>• <strong>Sick Leaves:</strong> ${leaveStats.sickLeaveLimit || 3} days/year (calculated to month-end, capped at limit)
+            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Balance</h3>
+
+            ${leave.type === 'Sick' ? `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
+              <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves (Requested)</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.sickThisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.sickLastMonth || 0}</div>
+                </div>
               </div>
             </div>
-            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Balance</h3>
 
             <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
               <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
@@ -209,32 +229,137 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
                 </div>
               </div>
             </div>
-
-            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
-              <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves</h4>
+            ` : leave.type === 'Maternity' ? `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border-radius: 6px; border-left: 4px solid #ec4899;">
+              <h4 style="margin: 0 0 12px 0; color: #ec4899; font-size: 14px; font-weight: 600;">🤰 Maternity Leave (Requested)</h4>
               <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
-                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.maternityLeaveLimit || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
-                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.maternityThisYear || 0}</div>
                 </div>
-                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingMaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingMaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
-                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingMaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingMaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingMaternityLeaves || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
-                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.sickThisMonth || 0}</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.maternityThisMonth || 0}</div>
                 </div>
                 <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
                   <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
-                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.sickLastMonth || 0}</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.maternityLastMonth || 0}</div>
                 </div>
               </div>
             </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                </div>
+              </div>
+            </div>
+            ` : leave.type === 'Paternity' ? `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 6px; border-left: 4px solid #3b82f6;">
+              <h4 style="margin: 0 0 12px 0; color: #3b82f6; font-size: 14px; font-weight: 600;">👨‍👦 Paternity Leave (Requested)</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.paternityLeaveLimit || 2}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.paternityThisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingPaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingPaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingPaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingPaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingPaternityLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.paternityThisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.paternityLastMonth || 0}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                </div>
+              </div>
+            </div>
+            ` : `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">This Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Last Month</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                </div>
+              </div>
+            </div>
+            `}
           </div>
           ` : ''}
 
@@ -332,9 +457,7 @@ function generateLeaveStatusHTML({
   const isApproved = status === 'Approved';
   const statusColor = isApproved ? '#10b981' : '#ef4444';
   const statusIcon = isApproved ? '✅' : '❌';
-  const headerGradient = isApproved 
-    ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)'
-    : 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)';
+  const headerGradient = 'linear-gradient(135deg, #f58327 0%, #ff9d4d 100%)';
 
   // Message based on approver type
   let statusMessage = '';
@@ -540,16 +663,14 @@ function generateHRNotificationHTML({
   // Status badge color
   let statusColor = '#f59e0b'; // Pending
   let statusIcon = '⏳';
-  let headerGradient = 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)';
+  let headerGradient = 'linear-gradient(135deg, #f58327 0%, #ff9d4d 100%)';
   
   if (eventType === 'approved') {
     statusColor = '#10b981';
     statusIcon = '✅';
-    headerGradient = 'linear-gradient(135deg, #10b981 0%, #34d399 100%)';
   } else if (eventType === 'rejected') {
     statusColor = '#ef4444';
     statusIcon = '❌';
-    headerGradient = 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)';
   }
 
   // Event message
@@ -562,51 +683,7 @@ function generateHRNotificationHTML({
     eventMessage = `<strong style="color: #f58327;">${employee.name}</strong>'s leave request has been <strong style="color: #ef4444;">rejected</strong> by ${managerName}.`;
   }
 
-  // Manager approvals section
-  const formatManagerApprovals = () => {
-    if (!leave.managerApprovals || leave.managerApprovals.length === 0) {
-      return '<p style="color: #6b7280; font-style: italic; margin: 0;">No reporting managers assigned</p>';
-    }
 
-    return leave.managerApprovals.map(approval => {
-      let approvalStatusColor = '#f59e0b';
-      let approvalIcon = '⏳';
-      
-      if (approval.status === 'Approved') {
-        approvalStatusColor = '#10b981';
-        approvalIcon = '✅';
-      } else if (approval.status === 'Rejected') {
-        approvalStatusColor = '#ef4444';
-        approvalIcon = '❌';
-      }
-
-      return `
-        <div style="margin: 8px 0; padding: 12px; background: #f9fafb; border-left: 3px solid ${approvalStatusColor}; border-radius: 4px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <div>
-              <strong style="color: #333;">${approval.managerName}</strong>
-              <span style="color: #6b7280; font-size: 13px; display: block; margin-top: 2px;">${approval.managerEmail}</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 16px;">${approvalIcon}</span>
-              <span style="font-weight: 600; color: ${approvalStatusColor}; font-size: 14px;">${approval.status}</span>
-            </div>
-          </div>
-          ${approval.approvedAt ? `
-            <div style="color: #6b7280; font-size: 12px; margin-top: 6px;">
-              Processed: ${new Date(approval.approvedAt).toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </div>
-          ` : ''}
-        </div>
-      `;
-    }).join('');
-  };
 
   // Additional recipients section
   const formatAdditionalRecipients = () => {
@@ -744,88 +821,225 @@ function generateHRNotificationHTML({
           </div>
 
           <div class="section-title">📊 Employee Leave Statistics</div>
-          <p style="font-size: 12px; color: #6b7280; margin: 10px 0 15px 0; line-height: 1.6;">
-            // 💡 <strong>Leave Calculation:</strong> Employees earn leaves daily from their entitlement date with month-end projections.
-            <br>• <strong>Regular Leaves:</strong> ${employee.leave_limit || 10} days/year (calculated to month-end, capped at limit)
-            <br>• <strong>Sick Leaves:</strong> ${employee.sick_leave_limit || 3} days/year (calculated to month-end, capped at limit)
-            // <br>• Both types use the <strong>same entitlement date</strong> but track separately
-            // <br>• Values shown are <strong>month-end projections</strong> to allow advance booking
-          </p>
+
+          ${leave.type === 'Sick' ? `
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
+            <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves (Requested)</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.sickThisMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.sickLastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+            </div>
+          </div>
 
           <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
-            <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Regular Leaves</h4>
+            <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
             <div class="stats-grid">
               <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
                 <div class="stat-label">This Month</div>
-                <div class="stat-value">${leaveStats.thisMonth || 0}</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Last Month</div>
-                <div class="stat-value">${leaveStats.lastMonth || 0}</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+            </div>
+          </div>
+          ` : leave.type === 'Maternity' ? `
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border-radius: 6px; border-left: 4px solid #ec4899;">
+            <h4 style="margin: 0 0 12px 0; color: #ec4899; font-size: 14px; font-weight: 600;">🤰 Maternity Leave (Requested)</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.maternityLeaveLimit || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">This Quarter</div>
-                <div class="stat-value">${leaveStats.thisQuarter || 0}</div>
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.maternityThisYear || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">This Year</div>
-                <div class="stat-value">${leaveStats.thisYear || 0}</div>
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingMaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingMaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingMaternityLeaves || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Earned (Month-End)</div>
-                <div class="stat-value">${leaveStats.earnedLeaves || 0}</div>
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.maternityThisMonth || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Available (Month-End)</div>
-                <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : '#0c4a6e'};">${leaveStats.remainingLeaves || 0}</div>
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.maternityLastMonth || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
             </div>
           </div>
 
-          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
-            <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves</h4>
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+            <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
             <div class="stats-grid">
               <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
                 <div class="stat-label">This Month</div>
-                <div class="stat-value">${leaveStats.sickThisMonth || 0}</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Last Month</div>
-                <div class="stat-value">${leaveStats.sickLastMonth || 0}</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+            </div>
+          </div>
+          ` : leave.type === 'Paternity' ? `
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 6px; border-left: 4px solid #3b82f6;">
+            <h4 style="margin: 0 0 12px 0; color: #3b82f6; font-size: 14px; font-weight: 600;">👨‍👦 Paternity Leave (Requested)</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.paternityLeaveLimit || 2}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">This Quarter</div>
-                <div class="stat-value">${leaveStats.sickThisQuarter || 0}</div>
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.paternityThisYear || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">This Year</div>
-                <div class="stat-value">${leaveStats.sickThisYear || 0}</div>
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingPaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingPaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingPaternityLeaves || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Earned (Month-End)</div>
-                <div class="stat-value">${leaveStats.earnedSickLeaves || 0}</div>
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.paternityThisMonth || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Available (Month-End)</div>
-                <div class="stat-value" style="color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : '#0c4a6e'};">${leaveStats.remainingSickLeaves || 0}</div>
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.paternityLastMonth || 0}</div>
                 <div class="stat-unit">days</div>
               </div>
             </div>
           </div>
 
-          <div class="section-title">👥 Reporting Manager Approvals</div>
-          ${formatManagerApprovals()}
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+            <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+            </div>
+          </div>
+          ` : `
+          <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+            <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Limit/Year</div>
+                <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Used</div>
+                <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                <div class="stat-unit">days</div>
+              </div>
+            </div>
+          </div>
+          `}
 
           ${leave.additionalRecipients && leave.additionalRecipients.length > 0 ? `
           <div class="section-title">📧 Additional Recipients (CC)</div>
@@ -835,8 +1049,8 @@ function generateHRNotificationHTML({
           ${formatAdditionalRecipients()}
           ` : ''}
 
-          <div style="text-align: center;">
-            <a href="${dashboardUrl}" class="button">View in Dashboard</a>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${dashboardUrl}" style="display: inline-block; padding: 14px 32px; background: #f58327; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; box-shadow: 0 2px 4px rgba(245,131,39,0.3);">View in Dashboard</a>
           </div>
 
           <p style="font-size: 14px; color: #6b7280; margin-top: 20px; text-align: center;">
@@ -851,4 +1065,372 @@ function generateHRNotificationHTML({
     </body>
     </html>
   `;
+}
+
+/**
+ * Send admin notification email for leave request events
+ * @param {Object} params - Email parameters
+ * @param {string} params.adminEmail - Admin's email address
+ * @param {string} params.adminName - Admin's name
+ * @param {Object} params.leave - Leave request object
+ * @param {Object} params.employee - Employee object
+ * @param {Object} params.leaveStats - Leave statistics object
+ * @param {string} params.eventType - Event type: 'new_request', 'approved', 'rejected'
+ * @param {string} params.actionBy - Name of person who took action (for status changes)
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function sendAdminNotificationEmail({ 
+  adminEmail, 
+  adminName, 
+  leave, 
+  employee, 
+  leaveStats,
+  eventType,
+  actionBy 
+}) {
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    let subject = '';
+    if (eventType === 'new_request') {
+      subject = `🆕 New Leave Request: ${employee.name}`;
+    } else if (eventType === 'approved') {
+      subject = `✅ Leave Approved: ${employee.name}`;
+    } else if (eventType === 'rejected') {
+      subject = `❌ Leave Rejected: ${employee.name}`;
+    }
+
+    const startDate = new Date(leave.startDate).toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+    const endDate = new Date(leave.endDate).toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+
+    const leaveDays = calculateBusinessDays(leave.startDate, leave.endDate);
+
+    let headerGradient = 'linear-gradient(135deg, #f58327 0%, #ff9d4d 100%)';
+    let statusColor = '#3b82f6';
+    let statusText = 'New Request';
+    let statusIcon = '🆕';
+    
+    if (eventType === 'approved') {
+      statusColor = '#10b981';
+      statusText = 'Approved';
+      statusIcon = '✅';
+    } else if (eventType === 'rejected') {
+      statusColor = '#ef4444';
+      statusText = 'Rejected';
+      statusIcon = '❌';
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Admin Notification</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { background: ${headerGradient}; padding: 30px 20px; text-align: center; color: #ffffff; }
+        .content { padding: 30px; }
+        .footer { background-color: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+        .info-box { background-color: #f9fafb; border-left: 4px solid ${statusColor}; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background-color: ${statusColor}; color: #ffffff; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+        .stat-card { background: white; padding: 12px; border-radius: 6px; text-align: center; border: 1px solid #e5e7eb; }
+        .stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: 700; color: #0c4a6e; }
+        .stat-unit { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0; font-size: 24px;">${statusIcon} Leave Request ${statusText}</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Admin Notification</p>
+        </div>
+        <div class="content">
+          <p style="font-size: 16px; margin-bottom: 20px;">Hello <strong>${adminName}</strong>,</p>
+          
+          ${eventType === 'new_request' ? 
+            `<p>A new leave request has been submitted and requires attention.</p>` : 
+            `<p>A leave request status has been updated by <strong>${actionBy}</strong>.</p>`
+          }
+          
+          <div class="info-box">
+            <h3 style="margin: 0 0 15px 0; color: #111827; font-size: 16px;">Request Details</h3>
+            <p style="margin: 8px 0;"><strong>Employee:</strong> ${employee.name}</p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${employee.email}</p>
+            <p style="margin: 8px 0;"><strong>Department:</strong> ${employee.department?.name || 'N/A'}</p>
+            <p style="margin: 8px 0;"><strong>Leave Type:</strong> <span class="badge">${leave.type}</span></p>
+            <p style="margin: 8px 0;"><strong>Duration:</strong> ${leaveDays} business day${leaveDays !== 1 ? 's' : ''}</p>
+            <p style="margin: 8px 0;"><strong>Start Date:</strong> ${startDate}</p>
+            <p style="margin: 8px 0;"><strong>End Date:</strong> ${endDate}</p>
+            ${leave.reason ? `<p style="margin: 8px 0;"><strong>Reason:</strong> ${leave.reason}</p>` : ''}
+            <p style="margin: 8px 0;"><strong>Status:</strong> <span class="badge">${statusText}</span></p>
+            ${eventType !== 'new_request' ? `<p style="margin: 8px 0;"><strong>Action By:</strong> ${actionBy}</p>` : ''}
+          </div>
+          
+          ${leaveStats ? `
+          <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Balance</h3>
+
+            ${leave.type === 'Sick' ? `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 6px; border-left: 4px solid #ef4444;">
+              <h4 style="margin: 0 0 12px 0; color: #ef4444; font-size: 14px; font-weight: 600;">🤒 Sick Leaves (Requested)</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.sickLeaveLimit || 3}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.sickThisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingSickLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingSickLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingSickLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.sickThisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.sickLastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+            ` : leave.type === 'Maternity' ? `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border-radius: 6px; border-left: 4px solid #ec4899;">
+              <h4 style="margin: 0 0 12px 0; color: #ec4899; font-size: 14px; font-weight: 600;">🤰 Maternity Leave (Requested)</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.maternityLeaveLimit || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.maternityThisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingMaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingMaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingMaternityLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.maternityThisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.maternityLastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+            ` : leave.type === 'Paternity' ? `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 6px; border-left: 4px solid #3b82f6;">
+              <h4 style="margin: 0 0 12px 0; color: #3b82f6; font-size: 14px; font-weight: 600;">👨‍👦 Paternity Leave (Requested)</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.paternityLeaveLimit || 2}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.paternityThisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingPaternityLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingPaternityLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingPaternityLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.paternityThisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.paternityLastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+            ` : `
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Limit/Year</div>
+                  <div class="stat-value" style="color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Used</div>
+                  <div class="stat-value" style="color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Available</div>
+                  <div class="stat-value" style="color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">This Month</div>
+                  <div class="stat-value" style="color: #f59e0b;">${leaveStats.thisMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Last Month</div>
+                  <div class="stat-value" style="color: #ec4899;">${leaveStats.lastMonth || 0}</div>
+                  <div class="stat-unit">days</div>
+                </div>
+              </div>
+            </div>
+            `}
+          </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/admin" style="display: inline-block; padding: 14px 32px; background: #f58327; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; box-shadow: 0 2px 4px rgba(245,131,39,0.3);">View in Dashboard</a>
+          </div>
+          
+          <p style="font-size: 14px; color: #6b7280; margin-top: 20px; text-align: center;">
+            This is an informational notification for admin records. You can view all requests from your admin dashboard.
+          </p>
+        </div>
+        <div class="footer">
+          <p style="margin: 5px 0;"><strong style="color: #f58327;">BaseCamp StaffSync</strong></p>
+          <p style="margin: 5px 0;">This is an automated email. Please do not reply to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'BaseCamp StaffSync <onboarding@resend.dev>',
+      to: adminEmail,
+      subject: subject,
+      html: html
+    });
+
+    console.log(`📧 Admin notification email sent to: ${adminEmail} (${eventType})`);
+    return true;
+  } catch (error) {
+    console.error('Error sending admin notification email:', error);
+    return false;
+  }
 }

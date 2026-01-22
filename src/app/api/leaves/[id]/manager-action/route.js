@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/db';
 import { Leave } from '@/models/Leave';
 import { User } from '@/models/User';
 import { Department } from '@/models/Department';
-import { sendLeaveStatusEmail, sendHRNotificationEmail } from '@/lib/email';
+import { sendLeaveStatusEmail, sendHRNotificationEmail, sendAdminNotificationEmail } from '@/lib/email';
 import { calculateLeaveStats } from '@/lib/leave-stats';
 
 // Handle GET requests (for email links)
@@ -205,6 +205,39 @@ export async function GET(req, { params }) {
     } catch (hrEmailError) {
       console.error('Failed to send HR notification:', hrEmailError);
       // Don't fail the request if HR email fails
+    }
+
+    // Send notification to all admins
+    try {
+      const employeeWithDept = await User.findById(leave.user._id).populate('department');
+      const leaveStats = await calculateLeaveStats(leave.user._id);
+      const updatedLeave = await Leave.findById(leave._id).populate('user');
+      
+      // Get all admin users
+      const adminUsers = await User.find({ role: 'Admin' });
+      
+      for (const admin of adminUsers) {
+        if (admin.email) {
+          try {
+            await sendAdminNotificationEmail({
+              adminEmail: admin.email,
+              adminName: admin.name,
+              leave: updatedLeave,
+              employee: employeeWithDept,
+              leaveStats: leaveStats,
+              eventType: action === 'approve' ? 'approved' : 'rejected',
+              actionBy: approverName
+            });
+            
+            console.log(`✅ Admin notification sent to ${admin.email} (${action})`);
+          } catch (adminEmailError) {
+            console.error(`Failed to send admin notification to ${admin.email}:`, adminEmailError);
+          }
+        }
+      }
+    } catch (adminNotificationError) {
+      console.error('Failed to send admin notifications:', adminNotificationError);
+      // Don't fail the request if admin emails fail
     }
 
     return new Response(`

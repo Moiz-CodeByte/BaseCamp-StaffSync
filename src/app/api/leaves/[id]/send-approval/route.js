@@ -21,49 +21,8 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: 'Leave request not found' }, { status: 404 });
     }
 
-    // Get user's department with reporting managers
+    // Get user for leave stats calculation
     const userWithDept = await User.findById(leave.user._id).lean();
-    
-    let managersToNotify = [];
-    
-    // Only check for department and managers if user has a department
-    if (userWithDept.department) {
-      const department = await Department.findById(userWithDept.department);
-      
-      // Get user's specific reporting managers or use all from department
-      if (userWithDept.reportingManagers && userWithDept.reportingManagers.length > 0) {
-        managersToNotify = userWithDept.reportingManagers;
-      } else if (department && department.reportingManagers && department.reportingManagers.length > 0) {
-        managersToNotify = department.reportingManagers;
-      }
-    }
-
-    // Initialize managerApprovals if managers exist and not already initialized
-    if (managersToNotify.length > 0 && (!leave.managerApprovals || leave.managerApprovals.length === 0)) {
-      console.log('📋 Initializing manager approvals for leave:', leave._id);
-      leave.managerApprovals = [];
-      
-      // Create approval entries for each manager
-      leave.managerApprovals = managersToNotify.map(manager => ({
-        managerEmail: manager.email,
-        managerName: manager.name,
-        status: 'Pending',
-        emailSent: false,
-        emailSentAt: null
-      }));
-      
-      await leave.save();
-      console.log('✅ Manager approvals initialized:', leave.managerApprovals);
-    }
-
-    console.log('📊 Current manager approvals:', leave.managerApprovals);
-
-    // Filter managers who have Pending status (send email regardless of previous emailSent status)
-    const managersNeedingEmail = (leave.managerApprovals || []).filter(
-      approval => approval.status === 'Pending'
-    );
-
-    console.log('🔍 Managers needing email (with Pending status):', managersNeedingEmail);
 
     // Check if there are additional recipients who need emails
     const hasAdditionalRecipients = leave.additionalRecipients && leave.additionalRecipients.length > 0;
@@ -71,12 +30,11 @@ export async function POST(req, { params }) {
       ? leave.additionalRecipients.filter(r => r.status === 'Pending')
       : [];
 
-    // If no managers and no additional recipients need emails, return early
-    if (managersNeedingEmail.length === 0 && additionalRecipientsNeedingEmail.length === 0) {
-      console.log('⚠️ No managers or additional recipients need email notification');
+    // If no additional recipients need emails, return early
+    if (additionalRecipientsNeedingEmail.length === 0) {
+      console.log('⚠️ No additional recipients need email notification');
       return NextResponse.json({ 
-        message: 'No pending recipients need email notification',
-        managerApprovals: leave.managerApprovals,
+        message: 'No pending additional recipients need email notification',
         additionalRecipients: leave.additionalRecipients
       });
     }
@@ -84,13 +42,13 @@ export async function POST(req, { params }) {
     // Calculate leave statistics for email (pass user object for leave_limit)
     const leaveStats = await calculateLeaveStats(leave.user._id, leave.user);
 
-    // Send approval emails only to managers with pending status who haven't received email
+    // Send approval emails to additional recipients with pending status
     let emailsSentCount = 0;
-    console.log(`📨 Starting to send emails to ${managersNeedingEmail.length} manager(s)...`);
+    console.log(`📨 Starting to send emails to ${additionalRecipientsNeedingEmail.length} additional recipient(s)...`);
     
-    for (let i = 0; i < managersNeedingEmail.length; i++) {
-      const approvalEntry = managersNeedingEmail[i];
-      console.log(`📧 [${i + 1}/${managersNeedingEmail.length}] Sending email to: ${approvalEntry.managerEmail}`);
+    for (let i = 0; i < additionalRecipientsNeedingEmail.length; i++) {
+      const recipient = additionalRecipientsNeedingEmail[i];
+      console.log(`📧 [${i + 1}/${additionalRecipientsNeedingEmail.length}] Sending email to additional recipient: ${recipient.email}`);
       
       try {
         // Add 3 second delay between emails (except for the first one)
@@ -100,92 +58,39 @@ export async function POST(req, { params }) {
         }
 
         const emailSent = await sendLeaveApprovalEmail({
-          managerEmail: approvalEntry.managerEmail,
-          managerName: approvalEntry.managerName,
+          managerEmail: recipient.email,
+          managerName: recipient.name,
           leave: leave,
           employee: userWithDept,
           leaveStats: leaveStats
         });
 
-        console.log(`${emailSent ? '✅' : '❌'} Email ${emailSent ? 'sent' : 'failed'} to ${approvalEntry.managerEmail}`);
+        console.log(`${emailSent ? '✅' : '❌'} Email ${emailSent ? 'sent' : 'failed'} to ${recipient.email}`);
 
-        // Update the approval entry to mark email as sent
-        const approvalIndex = leave.managerApprovals.findIndex(
-          a => a.managerEmail === approvalEntry.managerEmail
+        // Update the recipient entry to mark email as sent
+        const recipientIndex = leave.additionalRecipients.findIndex(
+          r => r.email === recipient.email
         );
-        if (approvalIndex !== -1) {
-          leave.managerApprovals[approvalIndex].emailSent = emailSent;
+        if (recipientIndex !== -1) {
+          leave.additionalRecipients[recipientIndex].emailSent = emailSent;
           if (emailSent) {
-            leave.managerApprovals[approvalIndex].emailSentAt = new Date();
+            leave.additionalRecipients[recipientIndex].emailSentAt = new Date();
             emailsSentCount++;
           }
         }
 
         await leave.save();
       } catch (error) {
-        console.error(`❌ Failed to send email to ${approvalEntry.managerEmail}:`, error);
+        console.error(`❌ Failed to send email to additional recipient ${recipient.email}:`, error);
       }
     }
     
-    console.log(`✅ Email sending complete: ${emailsSentCount}/${managersNeedingEmail.length} sent successfully`);
-
-    // Send emails to additional recipients who have Pending status
-    let recipientEmailsSentCount = 0;
-    if (leave.additionalRecipients && leave.additionalRecipients.length > 0) {
-      const recipientsNeedingEmail = leave.additionalRecipients.filter(
-        recipient => recipient.status === 'Pending'
-      );
-
-      console.log(`📨 Starting to send emails to ${recipientsNeedingEmail.length} additional recipient(s)...`);
-
-      for (let i = 0; i < recipientsNeedingEmail.length; i++) {
-        const recipient = recipientsNeedingEmail[i];
-        console.log(`📧 [${i + 1}/${recipientsNeedingEmail.length}] Sending email to additional recipient: ${recipient.email}`);
-        
-        try {
-          // Add 3 second delay between emails
-          console.log(`⏳ Waiting 3 seconds before next email...`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
-
-          const emailSent = await sendLeaveApprovalEmail({
-            managerEmail: recipient.email,
-            managerName: recipient.name,
-            leave: leave,
-            employee: userWithDept,
-            leaveStats: leaveStats
-          });
-
-          console.log(`${emailSent ? '✅' : '❌'} Email ${emailSent ? 'sent' : 'failed'} to ${recipient.email}`);
-
-          // Update the recipient entry to mark email as sent
-          const recipientIndex = leave.additionalRecipients.findIndex(
-            r => r.email === recipient.email
-          );
-          if (recipientIndex !== -1) {
-            leave.additionalRecipients[recipientIndex].emailSent = emailSent;
-            if (emailSent) {
-              leave.additionalRecipients[recipientIndex].emailSentAt = new Date();
-              recipientEmailsSentCount++;
-            }
-          }
-
-          await leave.save();
-        } catch (error) {
-          console.error(`❌ Failed to send email to additional recipient ${recipient.email}:`, error);
-        }
-      }
-
-      console.log(`✅ Additional recipient emails complete: ${recipientEmailsSentCount}/${recipientsNeedingEmail.length} sent successfully`);
-    }
-
-    const totalSent = emailsSentCount + recipientEmailsSentCount;
-    const totalRecipients = managersNeedingEmail.length + (leave.additionalRecipients?.filter(r => r.status === 'Pending').length || 0);
+    console.log(`✅ Email sending complete: ${emailsSentCount}/${additionalRecipientsNeedingEmail.length} sent successfully`);
 
     return NextResponse.json({ 
-      message: `Approval emails sent to ${emailsSentCount} manager(s) and ${recipientEmailsSentCount} additional recipient(s)`,
-      totalSent,
-      totalRecipients,
-      managerApprovals: leave.managerApprovals,
+      message: `Approval emails sent to ${emailsSentCount} additional recipient(s)`,
+      totalSent: emailsSentCount,
+      totalRecipients: additionalRecipientsNeedingEmail.length,
       additionalRecipients: leave.additionalRecipients
     });
 

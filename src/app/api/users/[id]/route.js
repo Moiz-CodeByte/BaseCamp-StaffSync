@@ -16,6 +16,8 @@ export async function PATCH(req, { params }) {
   const { id } = await params;
   const updates = await req.json();
   
+  console.log('PATCH /api/users/[id] - Incoming updates:', updates);
+  
   try {
     // Get the current user to check if role is actually changing
     const existingUser = await User.findById(id);
@@ -31,8 +33,9 @@ export async function PATCH(req, { params }) {
     // Allowed fields to update
     const allowedFields = [
       'name', 'email', 'department', 'role', 'designation',
-      'basic_salary', 'allowance', 'leave_limit', 'assignedHR', 'reportingManagers', 'leaveEntitlementDate',
-      'sick_leave_limit'
+      'basic_salary', 'allowance', 'leave_limit', 'assignedHR',
+      'sick_leave_limit', 'maternity_leave_limit', 'paternity_leave_limit',
+      'reportingManagers'
     ];
     
     const updateData = {};
@@ -41,55 +44,13 @@ export async function PATCH(req, { params }) {
         // Convert empty string to null for ObjectId fields
         if ((field === 'department' || field === 'assignedHR') && updates[field] === '') {
           updateData[field] = null;
-        } else if (field === 'reportingManagers') {
-          // Allow empty array or array of managers
-          updateData[field] = Array.isArray(updates[field]) ? updates[field] : [];
-        } else if (field === 'leaveEntitlementDate') {
-          // Convert to Date object if provided, otherwise set to null
-          if (updates[field]) {
-            const entitlementDate = new Date(updates[field]);
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const entitlementYear = entitlementDate.getFullYear();
-            
-            // Validate: entitlement date must not be in previous year
-            if (entitlementYear < currentYear) {
-              throw new Error('Entitlement date cannot be in a previous year');
-            }
-            
-            updateData[field] = entitlementDate;
-          } else {
-            updateData[field] = null;
-          }
         } else {
           updateData[field] = updates[field];
         }
       }
     });
     
-    // Auto-calculate both leave limits when leaveEntitlementDate is updated
-    if (updateData.leaveEntitlementDate) {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const entitlementDate = new Date(updateData.leaveEntitlementDate);
-      const entitlementYear = entitlementDate.getFullYear();
-      
-      // Use entitlement date if in current year, otherwise use Jan 1
-      const effectiveDate = entitlementYear === currentYear 
-        ? entitlementDate 
-        : new Date(currentYear, 0, 1);
-      
-      const endOfYear = new Date(currentYear, 11, 31);
-      const daysFromEntitlementToYearEnd = Math.floor((endOfYear - effectiveDate) / (1000 * 60 * 60 * 24)) + 1;
-      
-      // Calculate leave_limit: days(entitlementDate, yearEnd) × 10 ÷ 365
-      const calculatedLeaveLimit = Math.round((daysFromEntitlementToYearEnd * 10) / 365);
-      updateData.leave_limit = calculatedLeaveLimit;
-      
-      // Calculate sick_leave_limit: days(entitlementDate, yearEnd) × 3 ÷ 365
-      const calculatedSickLeaveLimit = Math.round((daysFromEntitlementToYearEnd * 3) / 365);
-      updateData.sick_leave_limit = calculatedSickLeaveLimit;
-    }
+    console.log('PATCH /api/users/[id] - Update data to save:', updateData);
     
     // Only Admin can change roles - check if role is actually being changed
     if (updateData.role && updateData.role !== existingUser.role && user.role !== 'Admin') {
@@ -136,17 +97,6 @@ export async function GET(req, { params }) {
       targetUser.department = await Department.findById(targetUser.department)
         .populate('hr', 'name email')
         .lean();
-      
-      // If user has no reportingManagers field at all (undefined), use department managers
-      // If it's an empty array [], that means explicitly set to zero managers
-      if (targetUser.reportingManagers === undefined || targetUser.reportingManagers === null) {
-        targetUser.reportingManagers = targetUser.department?.reportingManagers || [];
-      }
-    } else {
-      // Ensure reportingManagers field exists (for backward compatibility)
-      if (targetUser.reportingManagers === undefined || targetUser.reportingManagers === null) {
-        targetUser.reportingManagers = [];
-      }
     }
     
     return NextResponse.json({ user: targetUser });

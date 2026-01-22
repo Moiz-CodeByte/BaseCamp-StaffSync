@@ -58,7 +58,7 @@ export default function OverviewTab({ stats, leaves, isLoading = false, me }) {
     const systemRecordedDays = (leaves || [])
       .filter(l => {
         if (l.status !== 'Approved') return false;
-        if (l.type === 'Sick' || l.type === 'Maternity') return false; // Exclude sick and maternity leaves
+        if (l.type === 'Sick' || l.type === 'Maternity' || l.type === 'Paternity') return false; // Exclude sick, maternity, and paternity leaves
         const leaveStart = new Date(l.startDate);
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
       })

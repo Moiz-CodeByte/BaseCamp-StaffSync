@@ -27,13 +27,22 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
   }, [departments, me]);
 
   const startEdit = (user) => {
+    console.log('HR UsersTab - startEdit called with user:', user);
+    console.log('maternity_leave_limit:', user.maternity_leave_limit);
+    console.log('paternity_leave_limit:', user.paternity_leave_limit);
     setEditingId(user._id);
     setEditForm({
       designation: user.designation || '',
-      leave_limit: user.leave_limit || 10,
-      sick_leave_limit: user.sick_leave_limit || 3,
-      maternity_leave_limit: user.maternity_leave_limit || 2,
-      reportingManagers: user.reportingManagers || []
+      leave_limit: user.leave_limit ?? 10,
+      sick_leave_limit: user.sick_leave_limit ?? 3,
+      maternity_leave_limit: user.maternity_leave_limit ?? 0,
+      paternity_leave_limit: user.paternity_leave_limit ?? 2,
+      reportingManagers: user.reportingManagers || [],
+      role: user.role || 'Employee'
+    });
+    console.log('HR UsersTab - editForm set to:', {
+      maternity_leave_limit: user.maternity_leave_limit ?? 0,
+      paternity_leave_limit: user.paternity_leave_limit ?? 2
     });
   };
 
@@ -98,6 +107,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
         ...editForm,
         reportingManagers: editForm.reportingManagers || []
       };
+      console.log('HR UsersTab - Saving user with payload:', updatePayload);
       await api.patch(`/api/users/${id}`, updatePayload);
       toast.success('User updated successfully');
       setEditingId(null);
@@ -295,38 +305,61 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="leave_limit" className="text-xs text-muted-foreground mb-2 block">Leave Limit (days/year)</Label>
-                      <Input 
-                        id="leave_limit"
-                        type="number"
-                        value={editForm.leave_limit}
-                        onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
-                        className="w-full"
-                      />
-                    </div>
+                    {user.role === 'Employee' && (
+                      <div>
+                        <Label htmlFor="leave_limit" className="text-xs text-muted-foreground mb-2 block">Leave Limit (days/year)</Label>
+                        <Input 
+                          id="leave_limit"
+                          type="number"
+                          min="0"
+                          value={editForm.leave_limit}
+                          onChange={(e) => setEditForm({...editForm, leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
 
-                    <div>
-                      <Label htmlFor="sick_leave_limit" className="text-xs text-muted-foreground mb-2 block">Sick Leave Limit (days/year)</Label>
-                      <Input 
-                        id="sick_leave_limit"
-                        type="number"
-                        value={editForm.sick_leave_limit}
-                        onChange={(e) => setEditForm({...editForm, sick_leave_limit: parseInt(e.target.value) || 3})}
-                        className="w-full"
-                      />
-                    </div>
+                    {user.role === 'Employee' && (
+                      <div>
+                        <Label htmlFor="sick_leave_limit" className="text-xs text-muted-foreground mb-2 block">Sick Leave Limit (days/year)</Label>
+                        <Input 
+                          id="sick_leave_limit"
+                          type="number"
+                          min="0"
+                          value={editForm.sick_leave_limit}
+                          onChange={(e) => setEditForm({...editForm, sick_leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
 
-                    <div>
-                      <Label htmlFor="maternity_leave_limit" className="text-xs text-muted-foreground mb-2 block">Maternity Leave Limit (days/year)</Label>
-                      <Input 
-                        id="maternity_leave_limit"
-                        type="number"
-                        value={editForm.maternity_leave_limit}
-                        onChange={(e) => setEditForm({...editForm, maternity_leave_limit: parseInt(e.target.value) || 2})}
-                        className="w-full"
-                      />
-                    </div>
+                    {user.role === 'Employee' && (
+                      <div>
+                        <Label htmlFor="maternity_leave_limit" className="text-xs text-muted-foreground mb-2 block">Maternity Leave Limit (days/year)</Label>
+                        <Input 
+                          id="maternity_leave_limit"
+                          type="number"
+                          min="0"
+                          value={editForm.maternity_leave_limit}
+                          onChange={(e) => setEditForm({...editForm, maternity_leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+
+                    {user.role === 'Employee' && (
+                      <div>
+                        <Label htmlFor="paternity_leave_limit" className="text-xs text-muted-foreground mb-2 block">Paternity Leave Limit (days/year)</Label>
+                        <Input 
+                          id="paternity_leave_limit"
+                          type="number"
+                          min="0"
+                          value={editForm.paternity_leave_limit}
+                          onChange={(e) => setEditForm({...editForm, paternity_leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Reporting Managers */}
@@ -363,6 +396,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
               ) : (
                 // View Mode
                 <>
+
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -408,38 +442,6 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Designation</p>
                       <p className="text-sm font-medium">{user.designation || '-'}</p>
-                    </div>
-
-                    {/* <div>
-                      <p className="text-xs text-muted-foreground mb-1">Leave Limit</p>
-                      <p className="text-sm font-medium">
-                        <span className="text-2xl font-bold text-primary">{user.leave_limit || 10}</span>
-                        <span className="text-muted-foreground ml-1">days/year</span>
-                      </p>
-                    </div> */}
-
-                    {/* <div>
-                      <p className="text-xs text-muted-foreground mb-1">Leave Entitlement Date</p>
-                      <p className="text-sm font-medium">
-                        {user.leaveEntitlementDate 
-                          ? new Date(user.leaveEntitlementDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                          : 'January 1'}
-                      </p>
-                    </div> */}
-
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Reporting Managers</p>
-                      {user.reportingManagers && user.reportingManagers.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {user.reportingManagers.map((manager, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
-                              {manager.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">No managers assigned</p>
-                      )}
                     </div>
                   </div>
                 </>
@@ -520,7 +522,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
-                      <p className="text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit || 2} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                      <p className="text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit ?? 0} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                     </div>
                     {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
                       <div className="space-y-1">
@@ -605,6 +607,16 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                           >
                             Maternity Leaves
                           </button>
+                          <button
+                            onClick={() => setLeaveFilter('Paternity')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              leaveFilter === 'Paternity'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            Paternity Leaves
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -614,12 +626,14 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         const currentYear = now.getFullYear();
                         
                         // Fixed leave allocations (no formulas)
-                        const leaveLimit = viewingUser.leave_limit || 10;
-                        const sickLeaveLimit = viewingUser.sick_leave_limit || 3;
-                        const maternityLeaveLimit = viewingUser.maternity_leave_limit || 2;
+                        const leaveLimit = viewingUser.leave_limit ?? 10;
+                        const sickLeaveLimit = viewingUser.sick_leave_limit ?? 3;
+                        const maternityLeaveLimit = viewingUser.maternity_leave_limit ?? 0;
+                        const paternityLeaveLimit = viewingUser.paternity_leave_limit ?? 2;
                         const earnedLeaves = leaveLimit; // Fixed allocation per year
                         const earnedSickLeaves = sickLeaveLimit; // Fixed allocation per year
                         const earnedMaternityLeaves = maternityLeaveLimit; // Fixed allocation per year
+                        const earnedPaternityLeaves = paternityLeaveLimit; // Fixed allocation per year
                         
                         // Calculate business days function
                         const calculateBusinessDays = (startDate, endDate) => {
@@ -642,9 +656,10 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
                         
                         // Separate regular, sick, and maternity leaves
-                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave' && l.type !== 'Maternity');
+                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave' && l.type !== 'Maternity' && l.type !== 'Paternity');
                         const sickLeaves = (userStats.leaves || []).filter(l => l.type === 'Sick Leave');
                         const maternityLeaves = (userStats.leaves || []).filter(l => l.type === 'Maternity');
+                        const paternityLeaves = (userStats.leaves || []).filter(l => l.type === 'Paternity');
                         
                         const approvedLeaveDaysCurrentYear = regularLeaves
                           .filter(l => {
@@ -679,18 +694,31 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                             return total + days;
                           }, 0);
                         
+                        const approvedPaternityLeaveDaysCurrentYear = paternityLeaves
+                          .filter(l => {
+                            if (l.status !== 'Approved') return false;
+                            const leaveStart = new Date(l.startDate);
+                            return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+                          })
+                          .reduce((total, leave) => {
+                            const days = calculateBusinessDays(leave.startDate, leave.endDate);
+                            return total + days;
+                          }, 0);
+                        
                         const usedThisYear = approvedLeaveDaysCurrentYear;
                         const usedSickThisYear = approvedSickLeaveDaysCurrentYear;
                         const usedMaternityThisYear = approvedMaternityLeaveDaysCurrentYear;
+                        const usedPaternityThisYear = approvedPaternityLeaveDaysCurrentYear;
                         const remainingLeaves = earnedLeaves - usedThisYear;
                         const remainingSickLeaves = earnedSickLeaves - usedSickThisYear;
                         const remainingMaternityLeaves = earnedMaternityLeaves - usedMaternityThisYear;
+                        const remainingPaternityLeaves = earnedPaternityLeaves - usedPaternityThisYear;
                         
                         // Dynamic values based on filter
-                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : leaveFilter === 'Sick' ? earnedSickLeaves : earnedMaternityLeaves;
-                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : leaveFilter === 'Sick' ? usedSickThisYear : usedMaternityThisYear;
-                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : leaveFilter === 'Sick' ? remainingSickLeaves : remainingMaternityLeaves;
-                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit || 10) : leaveFilter === 'Sick' ? (viewingUser.sick_leave_limit || 3) : (viewingUser.maternity_leave_limit || 2);
+                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : leaveFilter === 'Sick' ? earnedSickLeaves : leaveFilter === 'Maternity' ? earnedMaternityLeaves : earnedPaternityLeaves;
+                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : leaveFilter === 'Sick' ? usedSickThisYear : leaveFilter === 'Maternity' ? usedMaternityThisYear : usedPaternityThisYear;
+                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : leaveFilter === 'Sick' ? remainingSickLeaves : leaveFilter === 'Maternity' ? remainingMaternityLeaves : remainingPaternityLeaves;
+                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit ?? 10) : leaveFilter === 'Sick' ? (viewingUser.sick_leave_limit ?? 3) : leaveFilter === 'Maternity' ? (viewingUser.maternity_leave_limit ?? 0) : (viewingUser.paternity_leave_limit ?? 2);
                         
                         return (
                           <div className="space-y-3">

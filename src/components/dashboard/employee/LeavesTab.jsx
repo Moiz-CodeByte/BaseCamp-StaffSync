@@ -73,7 +73,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     const systemRecordedDays = leaves
       .filter(l => {
         if (l.status !== 'Approved') return false;
-        if (l.type === 'Sick' || l.type === 'Maternity') return false; // Exclude sick and maternity leaves
+        if (l.type === 'Sick' || l.type === 'Maternity' || l.type === 'Paternity') return false; // Exclude sick, maternity, and paternity leaves
         const leaveStart = new Date(l.startDate);
         // Only count leaves that started in current year
         return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
@@ -178,18 +178,40 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
           errors.push(`⚠️ ALERT: Total sick leave days (${approvedSickLeaveDaysCurrentYear + duration}) would exceed your earned sick leaves (${earnedSickLeaves}). You have only ${remainingSickLeaves} sick days available.`);
         }
       } else if (leaveForm.type === 'Maternity') {
-        // Maternity leave validation
-        const maxMaternityPerYear = me?.maternity_leave_limit || 2;
-        const approvedMaternityDays = leaves
-          .filter(l => l.status === 'Approved' && l.type === 'Maternity')
-          .reduce((total, leave) => total + calculateBusinessDays(leave.startDate, leave.endDate), 0);
-        
-        if (duration > maxMaternityPerYear) {
-          errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxMaternityPerYear} maternity days per year`);
+        // Maternity leave validation - Contact HR
+        const maxMaternityPerYear = me?.maternity_leave_limit ?? 0;
+        if (maxMaternityPerYear === 0) {
+          errors.push(`⚠️ ALERT: Maternity leave is not available. Please contact HR to request maternity leave.`);
+        } else {
+          const approvedMaternityDays = leaves
+            .filter(l => l.status === 'Approved' && l.type === 'Maternity')
+            .reduce((total, leave) => total + calculateBusinessDays(leave.startDate, leave.endDate), 0);
+          
+          if (duration > maxMaternityPerYear) {
+            errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxMaternityPerYear} maternity days per year`);
+          }
+          
+          if (approvedMaternityDays + duration > maxMaternityPerYear) {
+            errors.push(`⚠️ ALERT: Total maternity leave days (${approvedMaternityDays + duration}) would exceed your limit (${maxMaternityPerYear}). You have only ${maxMaternityPerYear - approvedMaternityDays} maternity days available.`);
+          }
         }
-        
-        if (approvedMaternityDays + duration > maxMaternityPerYear) {
-          errors.push(`⚠️ ALERT: Total maternity leave days (${approvedMaternityDays + duration}) would exceed your limit (${maxMaternityPerYear}). You have only ${maxMaternityPerYear - approvedMaternityDays} maternity days available.`);
+      } else if (leaveForm.type === 'Paternity') {
+        // Paternity leave validation
+        const maxPaternityPerYear = me?.paternity_leave_limit ?? 2;
+        if (maxPaternityPerYear === 0) {
+          errors.push(`⚠️ ALERT: Paternity leave is not available. Please contact HR to request paternity leave.`);
+        } else {
+          const approvedPaternityDays = leaves
+            .filter(l => l.status === 'Approved' && l.type === 'Paternity')
+            .reduce((total, leave) => total + calculateBusinessDays(leave.startDate, leave.endDate), 0);
+          
+          if (duration > maxPaternityPerYear) {
+            errors.push(`⚠️ Duration (${duration} days) exceeds maximum ${maxPaternityPerYear} paternity days per year`);
+          }
+          
+          if (approvedPaternityDays + duration > maxPaternityPerYear) {
+            errors.push(`⚠️ ALERT: Total paternity leave days (${approvedPaternityDays + duration}) would exceed your limit (${maxPaternityPerYear}). You have only ${maxPaternityPerYear - approvedPaternityDays} paternity days available.`);
+          }
         }
       } else {
         // Regular leave validation (Annual, Casual, Unpaid)
@@ -208,7 +230,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     }
     
     return errors;
-  }, [leaveForm.startDate, leaveForm.endDate, leaveForm.type, duration, earnedLeaves, earnedSickLeaves, approvedLeaveDaysCurrentYear, approvedSickLeaveDaysCurrentYear, remainingLeaves, remainingSickLeaves, hasPendingLeaves, me?.leave_limit, me?.sick_leave_limit, me?.maternity_leave_limit, leaves]);
+  }, [leaveForm.startDate, leaveForm.endDate, leaveForm.type, duration, earnedLeaves, earnedSickLeaves, approvedLeaveDaysCurrentYear, approvedSickLeaveDaysCurrentYear, remainingLeaves, remainingSickLeaves, hasPendingLeaves, me?.leave_limit, me?.sick_leave_limit, me?.maternity_leave_limit, me?.paternity_leave_limit, leaves]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -303,6 +325,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                       <SelectItem value="Sick">Sick Leave</SelectItem>
                       <SelectItem value="Unpaid">Unpaid Leave</SelectItem>
                       <SelectItem value="Maternity">Maternity Leave</SelectItem>
+                      <SelectItem value="Paternity">Paternity Leave</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -326,7 +349,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 </div>
               </div>
 
-              {leaveForm.type !== 'Maternity' && (
+              {leaveForm.type !== 'Maternity' && leaveForm.type !== 'Paternity' && (
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900">
                   <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">
@@ -377,7 +400,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
               {/* {leaveForm.type === 'Maternity' && (
                 {/* <div className="p-4 rounded-lg bg-pink-50 dark:bg-pink-950 border border-pink-200 dark:border-pink-900">
                   <p className="text-sm text-pink-900 dark:text-pink-100">
-                    💝 <strong>Maternity Leave:</strong> You are allocated {me?.maternity_leave_limit || 2} maternity leave days per year. Maternity leave balance is not displayed but is tracked separately.
+                    💝 <strong>Maternity Leave:</strong> You are allocated {me?.maternity_leave_limit ?? 0} maternity leave days per year. Maternity leave balance is not displayed but is tracked separately.
                   </p>
                 </div> 
               )} */}
@@ -622,34 +645,6 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                           </p>
                         </div>
                       )}
-
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Manager Approvals</p>
-                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                          <div className="space-y-2">
-                            {leave.managerApprovals.map((approval, idx) => (
-                              <div 
-                                key={idx} 
-                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
-                              >
-                                <span className="text-sm font-medium">{approval.managerName}</span>
-                                <Badge 
-                                  variant={
-                                    approval.status === 'Approved' ? 'default' :
-                                    approval.status === 'Rejected' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {approval.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No managers assigned</p>
-                        )}
-                      </div>
 
                       {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
                         <div className="space-y-1">

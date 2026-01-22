@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
-import { Mail } from 'lucide-react';
+import { Mail, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
@@ -36,12 +36,20 @@ const calculateBusinessDays = (startDate, endDate) => {
 export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sendingEmail, setSendingEmail] = useState(null);
+  const [expandedStats, setExpandedStats] = useState({});
+
+  const toggleStats = (leaveId) => {
+    setExpandedStats(prev => ({
+      ...prev,
+      [leaveId]: !prev[leaveId]
+    }));
+  };
 
   const handleSendEmail = async (leaveId) => {
     setSendingEmail(leaveId);
     try {
       await api.post(`/api/leaves/${leaveId}/send-approval`);
-      toast.success('Approval emails sent to reporting managers');
+      toast.success('Approval emails sent to additional recipients');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send emails');
     } finally {
@@ -50,9 +58,8 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
   };
 
   const hasPendingApprovals = (leave) => {
-    const hasPendingManagers = leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
     const hasPendingRecipients = leave.additionalRecipients && leave.additionalRecipients.some(r => r.status === 'Pending');
-    return hasPendingManagers || hasPendingRecipients;
+    return hasPendingRecipients;
   };
   return (
     <div className="space-y-6">
@@ -145,7 +152,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                     </div>
 
                     {/* Content Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Type & Duration */}
                       <div className="space-y-3">
                         <div>
@@ -180,79 +187,8 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                         </div>
                       </div>
 
-                      {/* Leave Stats */}
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Leave Stats</p>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Limit:</span>
-                            <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.leaveLimit || 10}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Remaining:</span>
-                            <span className={`font-semibold ${
-                              (stats.remaining !== undefined ? stats.remaining : 10) <= 2 
-                                ? 'text-red-600 dark:text-red-400' 
-                                : 'text-green-600 dark:text-green-400'
-                            }`}>
-                              {stats.remaining !== undefined ? stats.remaining : 10}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">This Month:</span>
-                            <span className="font-medium">{stats.currentMonth !== undefined ? stats.currentMonth : 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Last Month:</span>
-                            <span className="font-medium">{stats.previousMonth !== undefined ? stats.previousMonth : 0}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Manager Approvals */}
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Manager Approvals</p>
-                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                          <div className="space-y-2">
-                            {leave.managerApprovals.map((approval, idx) => (
-                              <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium truncate" title={approval.managerName}>
-                                    {approval.managerName}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground" title={approval.managerEmail}>
-                                    {approval.managerEmail}
-                                  </p>
-                                  {approval.emailSent && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <Mail className="w-3 h-3" />
-                                      Sent
-                                    </p>
-                                  )}
-                                </div>
-                                <Badge 
-                                  variant={
-                                    approval.status === 'Approved' ? 'default' : 
-                                    approval.status === 'Rejected' ? 'destructive' : 
-                                    'secondary'
-                                  }
-                                  className="text-xs shrink-0"
-                                >
-                                  {approval.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground italic p-2 bg-muted/30 rounded">
-                            No managers assigned
-                          </div>
-                        )}
-                      </div>
-
                       {/* Additional Recipients */}
-                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
+                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 ? (
                         <div>
                           <p className="text-xs text-muted-foreground mb-2">Additional Recipients</p>
                           <div className="space-y-2">
@@ -286,14 +222,177 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                             ))}
                           </div>
                         </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Additional Recipients</p>
+                          <p className="text-xs text-muted-foreground">None</p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Reason */}
+                    {/* Leave Stats - New Row */}
+                    <div className="mt-4">
+                      {/* Leave Stats */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-semibold text-muted-foreground">📊 Employee Leave Balance</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => toggleStats(leave._id)}
+                          >
+                            {expandedStats[leave._id] ? (
+                              <><ChevronUp className="w-3 h-3 mr-1" /> Show Less</>
+                            ) : (
+                              <><ChevronDown className="w-3 h-3 mr-1" /> Show More</>
+                            )}
+                          </Button>
+                        </div>
+                        
+                        {expandedStats[leave._id] && (
+                          <>
+                        {/* Annual Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border border-orange-200 dark:border-orange-800">
+                          <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2">🌴 Annual Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.leaveLimit || 10}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.thisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingLeaves !== undefined ? stats.remainingLeaves : 10) <= 2 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingLeaves !== undefined ? stats.remainingLeaves : 10}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.thisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.lastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sick Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border border-red-200 dark:border-red-800">
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">🤒 Sick Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.sickLeaveLimit || 3}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.sickThisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingSickLeaves !== undefined ? stats.remainingSickLeaves : 3) <= 0 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingSickLeaves !== undefined ? stats.remainingSickLeaves : 3}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.sickThisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.sickLastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Maternity Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 border border-pink-200 dark:border-pink-800">
+                          <p className="text-xs font-semibold text-pink-700 dark:text-pink-300 mb-2">🤰 Maternity Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.maternityLeaveLimit || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.maternityThisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingMaternityLeaves !== undefined ? stats.remainingMaternityLeaves : 0) <= 0 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingMaternityLeaves !== undefined ? stats.remainingMaternityLeaves : 0}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.maternityThisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.maternityLastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Paternity Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">👨‍👦 Paternity Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.paternityLeaveLimit || 2}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.paternityThisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingPaternityLeaves !== undefined ? stats.remainingPaternityLeaves : 2) <= 0 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingPaternityLeaves !== undefined ? stats.remainingPaternityLeaves : 2}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.paternityThisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.paternityLastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Reason - New Row */}
                     {leave.reason && (
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-xs text-muted-foreground mb-1">Reason</p>
-                        <p className="text-sm">{leave.reason}</p>
+                      <div className="mt-4">
+                        <p className="text-xs text-muted-foreground mb-2">Reason for Leave</p>
+                        <p className="text-sm leading-relaxed bg-muted/30 p-3 rounded-lg">{leave.reason}</p>
                       </div>
                     )}
                   </div>

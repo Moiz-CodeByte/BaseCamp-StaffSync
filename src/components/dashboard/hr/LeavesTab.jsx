@@ -31,7 +31,7 @@ const calculateBusinessDays = (startDate, endDate) => {
   }
   return businessDays;
 };
-import { Mail, Calendar, Trash2 } from 'lucide-react';
+import { Mail, Calendar, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
@@ -40,6 +40,14 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   const [sendingEmail, setSendingEmail] = useState(null);
   const [pastLeaves, setPastLeaves] = useState([]);
   const [statusFilter, setStatusFilter] = useState('All');
+  const [expandedStats, setExpandedStats] = useState({});
+
+  const toggleStats = (leaveId) => {
+    setExpandedStats(prev => ({
+      ...prev,
+      [leaveId]: !prev[leaveId]
+    }));
+  };
 
   const loadMyLeaves = async () => {
     try {
@@ -84,7 +92,7 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
     setSendingEmail(leaveId);
     try {
       await api.post(`/api/leaves/${leaveId}/send-approval`);
-      toast.success('Approval emails sent to reporting managers');
+      toast.success('Approval emails sent to additional recipients');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send emails');
     } finally {
@@ -93,9 +101,8 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
   };
 
   const hasPendingApprovals = (leave) => {
-    const hasPendingManagers = leave.managerApprovals && leave.managerApprovals.some(a => a.status === 'Pending');
     const hasPendingRecipients = leave.additionalRecipients && leave.additionalRecipients.some(r => r.status === 'Pending');
-    return hasPendingManagers || hasPendingRecipients;
+    return hasPendingRecipients;
   };
 
   return (
@@ -103,198 +110,8 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
       <div>
         {/* <h2 className="text-2xl font-bold">Leave Management</h2> */}
         <p className="text-sm text-muted-foreground mt-1">
-          Manage employee leave requests and submit your own
+          Manage employee leave requests
         </p>
-      </div>
-
-      {/* My Leave Requests Section */}
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 dark:from-cyan-950 dark:to-sky-950 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-cyan-200 dark:bg-cyan-800 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-cyan-700 dark:text-cyan-200" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-cyan-900 dark:text-cyan-100 text-lg">My Leave Requests</h3>
-                <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1">Your personal leave requests ({myLeaves.length})</p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setShowForm(!showForm)}
-              variant="secondary"
-              size="sm"
-            >
-              {showForm ? 'Cancel' : 'Request Leave'}
-            </Button>
-          </div>
-        </div>
-        
-        <div className="p-4">
-          {showForm && (
-            <div className="mb-6">
-              <HRLeaveRequestForm 
-                me={me} 
-                myLeaves={myLeaves}
-                onSuccess={handleFormSuccess}
-              />
-            </div>
-          )}
-
-          {myLeaves.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-cyan-600" />
-              </div>
-              <p className="font-medium">No leave requests yet</p>
-              <p className="text-sm mt-2">Click &ldquo;Request Leave&rdquo; to submit your first request</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {pastLeaves.map((leave) => {
-                const startDate = new Date(leave.startDate);
-                const endDate = new Date(leave.endDate);
-                const days = calculateBusinessDays(leave.startDate, leave.endDate);
-                
-                return (
-                  <div 
-                    key={leave._id} 
-                    className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold">
-                          {me?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'ME'}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="font-medium">
-                              {leave.type}
-                            </Badge>
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {days} day{days !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          <Badge variant={
-                            leave.status === 'Approved' ? 'default' :
-                            leave.status === 'Rejected' ? 'destructive' :
-                            'secondary'
-                          }>
-                            {leave.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      {leave.status === 'Pending' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="hover:bg-red-600 hover:text-white hover:border-red-600"
-                          onClick={async () => {
-                            if (window.confirm('Are you sure you want to delete this leave request?')) {
-                              try {
-                                await api.delete(`/api/leaves/${leave._id}`);
-                                toast.success('Leave request deleted successfully');
-                                loadMyLeaves();
-                              } catch (error) {
-                                toast.error(error.response?.data?.message || 'Failed to delete leave request');
-                              }
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dates</p>
-                        <div className="text-sm">
-                          <div className="font-medium">
-                            From: {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </div>
-                          <div className="font-medium">
-                            To: {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {leave.reason && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reason</p>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {leave.reason}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Manager Approvals</p>
-                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                          <div className="space-y-2">
-                            {leave.managerApprovals.map((approval, idx) => (
-                              <div 
-                                key={idx} 
-                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
-                              >
-                                <div className="flex-1">
-                                  <span className="text-sm font-medium">{approval.managerName}</span>
-                                  <p className="text-xs text-muted-foreground">{approval.managerEmail}</p>
-                                </div>
-                                <Badge 
-                                  variant={
-                                    approval.status === 'Approved' ? 'default' :
-                                    approval.status === 'Rejected' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {approval.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No managers assigned</p>
-                        )}
-                      </div>
-
-                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Additional Recipients</p>
-                          <div className="space-y-2">
-                            {leave.additionalRecipients.map((recipient, idx) => (
-                              <div 
-                                key={idx} 
-                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
-                              >
-                                <div className="flex-1">
-                                  <span className="text-sm font-medium">{recipient.name}</span>
-                                  <p className="text-xs text-muted-foreground">{recipient.email}</p>
-                                </div>
-                                <Badge 
-                                  variant={
-                                    recipient.status === 'Approved' ? 'default' :
-                                    recipient.status === 'Rejected' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {recipient.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Employee Leave Requests Section */}
@@ -370,7 +187,7 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                     </div>
 
                     {/* Content Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Type & Duration */}
                       <div className="space-y-3">
                         <div>
@@ -405,82 +222,8 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                         </div>
                       </div>
 
-                      {/* Leave Stats */}
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Leave Stats</p>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Limit:</span>
-                            <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.leaveLimit || 10}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Remaining:</span>
-                            <span className={`font-semibold ${
-                              (stats.remaining !== undefined ? stats.remaining : 10) <= 2 
-                                ? 'text-red-600 dark:text-red-400' 
-                                : 'text-green-600 dark:text-green-400'
-                            }`}>
-                              {stats.remaining !== undefined ? stats.remaining : 10}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Yearly:</span>
-                            <span className="font-medium">{stats.yearlyTaken !== undefined ? stats.yearlyTaken : 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">This Month:</span>
-                            <span className="font-medium">{stats.currentMonth !== undefined ? stats.currentMonth : 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Last Month:</span>
-                            <span className="font-medium">{stats.previousMonth !== undefined ? stats.previousMonth : 0}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Manager Approvals */}
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Manager Approvals</p>
-                        {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                          <div className="space-y-2">
-                            {leave.managerApprovals.map((approval, idx) => (
-                              <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium truncate" title={approval.managerName}>
-                                    {approval.managerName}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground truncate" title={approval.managerEmail}>
-                                    {approval.managerEmail}
-                                  </p>
-                                  {approval.emailSent && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <Mail className="w-3 h-3" />
-                                      Sent
-                                    </p>
-                                  )}
-                                </div>
-                                <Badge 
-                                  variant={
-                                    approval.status === 'Approved' ? 'default' : 
-                                    approval.status === 'Rejected' ? 'destructive' : 
-                                    'secondary'
-                                  }
-                                  className="text-xs shrink-0"
-                                >
-                                  {approval.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground italic p-2 bg-muted/30 rounded">
-                            No managers assigned
-                          </div>
-                        )}
-                      </div>
-
                       {/* Additional Recipients */}
-                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (
+                      {leave.additionalRecipients && leave.additionalRecipients.length > 0 ? (
                         <div>
                           <p className="text-xs text-muted-foreground mb-2">Additional Recipients</p>
                           <div className="space-y-2">
@@ -492,7 +235,6 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                                   </p>
                                   {recipient.emailSent && (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1 truncate" title={recipient.email}>
-
                                       <Mail className="w-3 h-3" />
                                       {recipient.email}
                                     </p>
@@ -512,14 +254,177 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                             ))}
                           </div>
                         </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Additional Recipients</p>
+                          <p className="text-xs text-muted-foreground">None</p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Reason */}
+                    {/* Leave Stats - New Row */}
+                    <div className="mt-4">
+                      {/* Leave Stats */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-semibold text-muted-foreground">📊 Employee Leave Balance</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => toggleStats(leave._id)}
+                          >
+                            {expandedStats[leave._id] ? (
+                              <><ChevronUp className="w-3 h-3 mr-1" /> Show Less</>
+                            ) : (
+                              <><ChevronDown className="w-3 h-3 mr-1" /> Show More</>
+                            )}
+                          </Button>
+                        </div>
+                        
+                        {expandedStats[leave._id] && (
+                          <>
+                        {/* Annual Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border border-orange-200 dark:border-orange-800">
+                          <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2">🌴 Annual Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.leaveLimit || 10}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.thisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingLeaves !== undefined ? stats.remainingLeaves : 10) <= 2 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingLeaves !== undefined ? stats.remainingLeaves : 10}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.thisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.lastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sick Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border border-red-200 dark:border-red-800">
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">🤒 Sick Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.sickLeaveLimit || 3}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.sickThisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingSickLeaves !== undefined ? stats.remainingSickLeaves : 3) <= 0 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingSickLeaves !== undefined ? stats.remainingSickLeaves : 3}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.sickThisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.sickLastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Maternity Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 border border-pink-200 dark:border-pink-800">
+                          <p className="text-xs font-semibold text-pink-700 dark:text-pink-300 mb-2">🤰 Maternity Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.maternityLeaveLimit || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.maternityThisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingMaternityLeaves !== undefined ? stats.remainingMaternityLeaves : 0) <= 0 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingMaternityLeaves !== undefined ? stats.remainingMaternityLeaves : 0}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.maternityThisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.maternityLastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Paternity Leave Stats */}
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">👨‍👦 Paternity Leave</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Limit</p>
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.paternityLeaveLimit || 2}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Used</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.paternityThisYear || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Available</p>
+                              <p className={`text-sm font-bold ${
+                                (stats.remainingPaternityLeaves !== undefined ? stats.remainingPaternityLeaves : 2) <= 0 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {stats.remainingPaternityLeaves !== undefined ? stats.remainingPaternityLeaves : 2}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">This Month</p>
+                              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.paternityThisMonth || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">Last Month</p>
+                              <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{stats.paternityLastMonth || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Reason - New Row */}
                     {leave.reason && (
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-xs text-muted-foreground mb-1">Reason</p>
-                        <p className="text-sm">{leave.reason}</p>
+                      <div className="mt-4">
+                        <p className="text-xs text-muted-foreground mb-2">Reason for Leave</p>
+                        <p className="text-sm leading-relaxed bg-muted/30 p-3 rounded-lg">{leave.reason}</p>
                       </div>
                     )}
                   </div>
@@ -605,19 +510,10 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => onAction(leave._id, leave.status === 'Approved' ? 'reject' : 'approve')}
-                          >
-                            {leave.status === 'Approved' ? 'Mark Rejected' : 'Mark Approved'}
-                          </Button>
-                        </div>
                       </div>
 
                       {/* Content Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Type & Duration */}
                         <div className="space-y-3">
                           <div>
@@ -650,38 +546,6 @@ export default function LeavesTab({ leaves, allRecentLeaves, onAction, me }) {
                               </span>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Manager Approvals */}
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-2">Manager Approvals</p>
-                          {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
-                            <div className="space-y-2">
-                              {leave.managerApprovals.map((approval, idx) => (
-                                <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium truncate" title={approval.managerName}>
-                                      {approval.managerName}
-                                    </p>
-                                  </div>
-                                  <Badge 
-                                    variant={
-                                      approval.status === 'Approved' ? 'default' : 
-                                      approval.status === 'Rejected' ? 'destructive' : 
-                                      'secondary'
-                                    }
-                                    className="text-xs shrink-0"
-                                  >
-                                    {approval.status}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground italic p-2 bg-muted/30 rounded">
-                              No managers assigned
-                            </div>
-                          )}
                         </div>
 
                         {/* Additional Recipients */}

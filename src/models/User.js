@@ -12,10 +12,6 @@ const UserSchema = new Schema(
     role: { type: String, enum: rolesList, default: 'Employee' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     assignedHR: { type: Schema.Types.ObjectId, ref: 'User' },
-    reportingManagers: [{
-      name: { type: String, required: true },
-      email: { type: String, required: true }
-    }],
     designation: { type: String, trim: true }, // Job title/designation
     
     // _basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
@@ -32,7 +28,10 @@ const UserSchema = new Schema(
     sick_leave_limit: { type: Number, default: 3 }, // Annual sick leave limit (in days per year)
     
     // Maternity leave fields
-    maternity_leave_limit: { type: Number, default: 2 }, // Annual maternity leave limit (in days per year)
+    maternity_leave_limit: { type: Number, default: 0 }, // Annual maternity leave limit (in days per year) - Default 0, Contact HR to set limit
+    
+    // Paternity leave fields
+    paternity_leave_limit: { type: Number, default: 2 }, // Annual paternity leave limit (in days per year)
     
     // Password reset tokens
     passwordResetToken: { type: String },

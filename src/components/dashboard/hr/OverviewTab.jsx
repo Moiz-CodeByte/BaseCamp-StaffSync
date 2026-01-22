@@ -11,7 +11,7 @@ import LeaveTypeChart from '@/components/dashboard/charts/LeaveTypeChart';
 import MonthlyTrendChart from '@/components/dashboard/charts/MonthlyTrendChart';
 
 export default function OverviewTab({ stats, recentlyApproved, isLoading = false, pending = [], allRecentLeaves = [], departments = [], users = [] }) {
-  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', or 'Maternity'
+  const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', 'Maternity', or 'Paternity'
   const [monthFilter, setMonthFilter] = useState('All'); // 'All', 'This Month', 'Last Month', 'Last 3 Months'
 
   // Calculate filtered stats based on leave type and month
@@ -62,6 +62,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
       if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
       if (leaveFilter === 'Sick') return l.type === 'Sick';
       if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+      if (leaveFilter === 'Paternity') return l.type === 'Paternity';
       return true;
     };
 
@@ -108,6 +109,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
       if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
       if (leaveFilter === 'Sick') return l.type === 'Sick';
       if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+      if (leaveFilter === 'Paternity') return l.type === 'Paternity';
       return true;
     });
   }, [leaveFilter, monthFilter, recentlyApproved]);
@@ -157,6 +159,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
         if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
         if (leaveFilter === 'Sick') return l.type === 'Sick';
         if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+        if (leaveFilter === 'Paternity') return l.type === 'Paternity';
         return true;
       });
     }
@@ -247,6 +250,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
           if (leaveFilter === 'Annual') return l.type === 'Annual' || l.type === 'Casual';
           if (leaveFilter === 'Sick') return l.type === 'Sick';
           if (leaveFilter === 'Maternity') return l.type === 'Maternity';
+          if (leaveFilter === 'Paternity') return l.type === 'Paternity';
           return true;
         });
       }
@@ -425,6 +429,7 @@ export default function OverviewTab({ stats, recentlyApproved, isLoading = false
               <SelectItem value="Annual">Annual</SelectItem>
               <SelectItem value="Sick">Sick</SelectItem>
               <SelectItem value="Maternity">Maternity</SelectItem>
+              <SelectItem value="Paternity">Paternity</SelectItem>
             </SelectContent>
           </Select>
         </div>

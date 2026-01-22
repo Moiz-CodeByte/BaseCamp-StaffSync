@@ -6,7 +6,7 @@ import { signToken } from '@/lib/auth';
 
 export async function POST(req) {
   await connectDB();
-  const { name, email, password, role, department, designation, leaveEntitlementDate } = await req.json();
+  const { name, email, password, role, department, designation } = await req.json();
 
   const exists = await User.findOne({ email });
   if (exists) {

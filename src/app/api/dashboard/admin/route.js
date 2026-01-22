@@ -20,7 +20,7 @@ export async function GET(req) {
     // Fetch all data in parallel
     const [usersData, departmentsData, pendingLeaves, pastLeaves, meData] = await Promise.all([
       // Users with populated departments
-      User.find({}, 'name email role department designation reportingManagers leave_limit leaveEntitlementDate sick_leave_limit createdAt')
+      User.find({}, 'name email role department designation leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit createdAt')
         .populate({
           path: 'department',
           select: 'name hr reportingManagers',

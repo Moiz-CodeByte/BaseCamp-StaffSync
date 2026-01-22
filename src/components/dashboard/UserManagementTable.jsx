@@ -22,6 +22,9 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
   const [leaveFilter, setLeaveFilter] = useState('Annual'); // 'Annual' or 'Sick'
 
   const startEdit = (user) => {
+    console.log('UserManagementTable - startEdit called with user:', user);
+    console.log('maternity_leave_limit:', user.maternity_leave_limit);
+    console.log('paternity_leave_limit:', user.paternity_leave_limit);
     setEditingId(user._id);
     // Extract department ID if it's an object
     const deptId = typeof user.department === 'object' ? user.department?._id : user.department;
@@ -33,35 +36,15 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       designation: user.designation || '',
       // basic_salary: user.basic_salary || 0,
       //allowance: user.allowance || 0,
-      leave_limit: user.leave_limit || 10,
-      sick_leave_limit: user.sick_leave_limit || 3,
-      maternity_leave_limit: user.maternity_leave_limit || 2,
-      reportingManagers: user.reportingManagers || []
+      leave_limit: user.leave_limit ?? 10,
+      sick_leave_limit: user.sick_leave_limit ?? 3,
+      maternity_leave_limit: user.maternity_leave_limit ?? 0,
+      paternity_leave_limit: user.paternity_leave_limit ?? 2
     });
-  };
-
-  const getAvailableManagers = (user) => {
-    // Get managers from user's department
-    const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
-    const userDept = departments.find(d => d._id === userDeptId);
-    return userDept?.reportingManagers || [];
-  };
-
-  const toggleManager = (manager) => {
-    const currentManagers = editForm.reportingManagers || [];
-    const exists = currentManagers.find(m => m.email === manager.email);
-    
-    if (exists) {
-      setEditForm({
-        ...editForm,
-        reportingManagers: currentManagers.filter(m => m.email !== manager.email)
-      });
-    } else {
-      setEditForm({
-        ...editForm,
-        reportingManagers: [...currentManagers, { name: manager.name, email: manager.email }]
-      });
-    }
+    console.log('UserManagementTable - editForm set to:', {
+      maternity_leave_limit: user.maternity_leave_limit ?? 0,
+      paternity_leave_limit: user.paternity_leave_limit ?? 2
+    });
   };
 
   const cancelEdit = () => {
@@ -71,12 +54,8 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
   const saveEdit = async (id) => {
     try {
-      // Ensure reportingManagers is always included, even if empty
-      const updatePayload = {
-        ...editForm,
-        reportingManagers: editForm.reportingManagers || []
-      };
-      const response = await api.patch(`/api/users/${id}`, updatePayload);
+      console.log('UserManagementTable - Saving user with payload:', editForm);
+      const response = await api.patch(`/api/users/${id}`, editForm);
       toast.success('User updated successfully');
       setEditingId(null);
       setEditForm({});
@@ -324,37 +303,53 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       />
                     </div>
 
-                    {editForm.role !== 'Admin' && (
+                    {editForm.role === 'Employee' && (
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</Label>
                         <Input 
                           type="number"
+                          min="0"
                           value={editForm.leave_limit}
-                          onChange={(e) => setEditForm({...editForm, leave_limit: parseInt(e.target.value) || 10})}
+                          onChange={(e) => setEditForm({...editForm, leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
                           className="w-full"
                         />
                       </div>
                     )}
 
-                    {editForm.role !== 'Admin' && (
+                    {editForm.role === 'Employee' && (
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</Label>
                         <Input 
                           type="number"
+                          min="0"
                           value={editForm.sick_leave_limit}
-                          onChange={(e) => setEditForm({...editForm, sick_leave_limit: parseInt(e.target.value) || 3})}
+                          onChange={(e) => setEditForm({...editForm, sick_leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
                           className="w-full"
                         />
                       </div>
                     )}
 
-                    {editForm.role !== 'Admin' && (
+                    {editForm.role === 'Employee' && (
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</Label>
                         <Input 
                           type="number"
+                          min="0"
                           value={editForm.maternity_leave_limit}
-                          onChange={(e) => setEditForm({...editForm, maternity_leave_limit: parseInt(e.target.value) || 2})}
+                          onChange={(e) => setEditForm({...editForm, maternity_leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+
+                    {editForm.role === 'Employee' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</Label>
+                        <Input 
+                          type="number"
+                          min="0"
+                          value={editForm.paternity_leave_limit}
+                          onChange={(e) => setEditForm({...editForm, paternity_leave_limit: Math.max(0, parseInt(e.target.value) || 0)})}
                           className="w-full"
                         />
                       </div>
@@ -379,34 +374,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
 
                   {editForm.role !== 'Admin' && (
                     <div className="md:col-span-3">
-
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {getAvailableManagers(users.find(u => u._id === editingId) || {}).length > 0 ? (
-                            getAvailableManagers(users.find(u => u._id === editingId) || {}).map((manager, idx) => {
-                              const isSelected = (editForm.reportingManagers || []).some(m => m.email === manager.email);
-                              return (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => toggleManager(manager)}
-                                  className={`flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
-                                    isSelected 
-                                      ? 'bg-primary text-primary-foreground' 
-                                      : 'bg-muted hover:bg-muted/70'
-                                  }`}
-                                >
-                                  <span className="truncate">{manager.name}</span>
-                                  {isSelected ? <UserMinus className="w-4 h-4 ml-2 flex-shrink-0" /> : <UserPlus className="w-4 h-4 ml-2 flex-shrink-0" />}
-                                </button>
-                              );
-                            })
-                          ) : (
-                            <p className="text-sm text-muted-foreground col-span-2">No managers in department</p>
-                          )}
-                        </div>
-                      </div>
+                      {/* Reporting managers section removed */}
                     </div>
                   )}
                 </div>
@@ -499,23 +467,6 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         </div> */}
                       </>
                     )}
-
-                    {user.role !== 'Admin' && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
-                        {user.reportingManagers && user.reportingManagers.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {user.reportingManagers.map((manager, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs" title={manager.email}>
-                                {manager.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No managers assigned</p>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -585,22 +536,28 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
                       <p className="text-sm font-medium">{viewingUser.designation || '-'}</p>
                     </div>
-                    {viewingUser.role !== 'Admin' && (
+                    {viewingUser.role === 'Employee' && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
                         <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 12} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                       </div>
                     )}
-                    {viewingUser.role !== 'Admin' && (
+                    {viewingUser.role === 'Employee' && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
                         <p className="text-2xl font-bold text-red-600">{viewingUser.sick_leave_limit || 3} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                       </div>
                     )}
-                    {viewingUser.role !== 'Admin' && (
+                    {viewingUser.role === 'Employee' && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
-                        <p className="text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit || 2} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                        <p className="text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit ?? 0} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                      </div>
+                    )}
+                    {viewingUser.role === 'Employee' && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
+                        <p className="text-2xl font-bold text-blue-600">{viewingUser.paternity_leave_limit ?? 2} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                       </div>
                     )}
                    
@@ -619,20 +576,6 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                       </div>
                     )}
-                    {viewingUser.role !== 'Admin' && viewingUser.reportingManagers && viewingUser.reportingManagers.length > 0 && (
-                      <div className="space-y-1 md:col-span-3">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Managers</p>
-                        <div className="flex flex-wrap gap-1">
-                          {viewingUser.reportingManagers.map((manager, idx) => (
-                            <span key={idx} title={`${manager.name} - ${manager.email}`}>
-                              <Badge variant="outline" className="text-xs cursor-help">
-                                {manager.name}
-                              </Badge>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -647,7 +590,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     </div>
                   </CardContent>
                 </Card>
-              ) : userStats && viewingUser.role !== 'Admin' && (
+              ) : userStats && viewingUser.role === 'Employee' && (
                 <>
                   {/* Leave Balance Cards */}
                   <Card>
@@ -688,6 +631,16 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           >
                             Maternity
                           </button>
+                          <button
+                            onClick={() => setLeaveFilter('Paternity')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              leaveFilter === 'Paternity'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            Paternity
+                          </button>
                         </div>
                       </div>
                     </CardHeader>
@@ -723,9 +676,10 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59);
                         
                         // Separate regular, sick and maternity leaves
-                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave' && l.type !== 'Maternity');
+                        const regularLeaves = (userStats.leaves || []).filter(l => l.type !== 'Sick Leave' && l.type !== 'Maternity' && l.type !== 'Paternity');
                         const sickLeaves = (userStats.leaves || []).filter(l => l.type === 'Sick Leave');
                         const maternityLeaves = (userStats.leaves || []).filter(l => l.type === 'Maternity');
+                        const paternityLeaves = (userStats.leaves || []).filter(l => l.type === 'Paternity');
                         
                         const approvedLeaveDaysCurrentYear = regularLeaves
                           .filter(l => {
@@ -760,21 +714,37 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                             return total + days;
                           }, 0);
                         
-                        const maternityLeaveLimit = viewingUser.maternity_leave_limit || 2;
+                        const maternityLeaveLimit = viewingUser.maternity_leave_limit ?? 0;
                         const earnedMaternityLeaves = maternityLeaveLimit;
+                        
+                        const approvedPaternityLeaveDaysCurrentYear = paternityLeaves
+                          .filter(l => {
+                            if (l.status !== 'Approved') return false;
+                            const leaveStart = new Date(l.startDate);
+                            return leaveStart >= yearStartDate && leaveStart <= yearEndDate;
+                          })
+                          .reduce((total, leave) => {
+                            const days = calculateBusinessDays(leave.startDate, leave.endDate);
+                            return total + days;
+                          }, 0);
+                        
+                        const paternityLeaveLimit = viewingUser.paternity_leave_limit ?? 2;
+                        const earnedPaternityLeaves = paternityLeaveLimit;
                         
                         const usedThisYear = approvedLeaveDaysCurrentYear;
                         const usedSickThisYear = approvedSickLeaveDaysCurrentYear;
                         const usedMaternityThisYear = approvedMaternityLeaveDaysCurrentYear;
+                        const usedPaternityThisYear = approvedPaternityLeaveDaysCurrentYear;
                         const remainingLeaves = earnedLeaves - usedThisYear;
                         const remainingSickLeaves = earnedSickLeaves - usedSickThisYear;
                         const remainingMaternityLeaves = earnedMaternityLeaves - usedMaternityThisYear;
+                        const remainingPaternityLeaves = earnedPaternityLeaves - usedPaternityThisYear;
                         
                         // Dynamic values based on filter
-                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : leaveFilter === 'Sick' ? earnedSickLeaves : earnedMaternityLeaves;
-                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : leaveFilter === 'Sick' ? usedSickThisYear : usedMaternityThisYear;
-                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : leaveFilter === 'Sick' ? remainingSickLeaves : remainingMaternityLeaves;
-                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit || 10) : leaveFilter === 'Sick' ? (viewingUser.sick_leave_limit || 3) : (viewingUser.maternity_leave_limit || 2);
+                        const displayedEarned = leaveFilter === 'Annual' ? earnedLeaves : leaveFilter === 'Sick' ? earnedSickLeaves : leaveFilter === 'Maternity' ? earnedMaternityLeaves : earnedPaternityLeaves;
+                        const displayedUsed = leaveFilter === 'Annual' ? usedThisYear : leaveFilter === 'Sick' ? usedSickThisYear : leaveFilter === 'Maternity' ? usedMaternityThisYear : usedPaternityThisYear;
+                        const displayedRemaining = leaveFilter === 'Annual' ? remainingLeaves : leaveFilter === 'Sick' ? remainingSickLeaves : leaveFilter === 'Maternity' ? remainingMaternityLeaves : remainingPaternityLeaves;
+                        const displayedLimit = leaveFilter === 'Annual' ? (viewingUser.leave_limit ?? 10) : leaveFilter === 'Sick' ? (viewingUser.sick_leave_limit ?? 3) : leaveFilter === 'Maternity' ? (viewingUser.maternity_leave_limit ?? 0) : (viewingUser.paternity_leave_limit ?? 2);
                         
                         return (
                           <div className="space-y-3">

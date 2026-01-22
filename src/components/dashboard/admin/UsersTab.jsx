@@ -9,14 +9,14 @@ import UserManagementTable from '@/components/dashboard/UserManagementTable';
 export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leaveEntitlementDate: '' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '' });
 
   const addUser = async (e) => {
     e.preventDefault();
     try {
       const { api } = await import('@/lib/api');
       await api.post('/api/auth/register', newUser);
-      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leaveEntitlementDate: '' });
+      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '' });
       setShowAddUser(false);
       onUpdate();
     } catch (e) {
@@ -122,36 +122,6 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
                   value={newUser.designation} 
                   onChange={e => setNewUser({ ...newUser, designation: e.target.value })} 
                 />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Leave Entitlement Date (Optional)</label>
-                <Input 
-                  type="date"
-                  value={newUser.leaveEntitlementDate || ''} 
-                  onChange={e => setNewUser({ ...newUser, leaveEntitlementDate: e.target.value })} 
-                />
-                <p className="text-xs text-muted-foreground mt-1">Date when leave entitlement starts (defaults to Jan 1)</p>
-                {newUser.leaveEntitlementDate && (() => {
-                  const now = new Date();
-                  const currentYear = now.getFullYear();
-                  const entitlementDate = new Date(newUser.leaveEntitlementDate);
-                  const entitlementYear = entitlementDate.getFullYear();
-                  const effectiveDate = entitlementYear === currentYear ? entitlementDate : new Date(currentYear, 0, 1);
-                  const endOfYear = new Date(currentYear, 11, 31);
-                  const daysFromEntitlementToYearEnd = Math.floor((endOfYear - effectiveDate) / (1000 * 60 * 60 * 24)) + 1;
-                  const leaveLimit = 10; // Default leave limit for new users
-                  const earnedLeaves = Math.round((daysFromEntitlementToYearEnd * leaveLimit) / 365);
-                  return (
-                    <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                        📊 Calculated Earned Leaves: <span className="font-bold">{earnedLeaves}</span> days
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                        {daysFromEntitlementToYearEnd} days × {leaveLimit} ÷ 365
-                      </p>
-                    </div>
-                  );
-                })()}
               </div>
             </div>
             <Button type="submit" className="w-full md:w-auto">Create User</Button>
