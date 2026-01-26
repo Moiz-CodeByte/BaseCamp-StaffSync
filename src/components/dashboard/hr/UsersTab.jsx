@@ -203,7 +203,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
         </div>
         
         <div className="p-6">
-          <div className="flex gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
             <div className="flex-1">
               <Label htmlFor="search">Search Employees</Label>
               <div className="relative">
@@ -217,7 +217,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                 />
               </div>
             </div>
-            <div className="w-64">
+            <div className="w-full sm:w-64">
               <Label htmlFor="department">Department Filter</Label>
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                 <SelectTrigger id="department">
@@ -251,35 +251,33 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
           </div>
         ) : (
           filteredUsers.map(user => (
-            <div key={user._id} className="rounded-lg border bg-card p-5 hover:shadow-md transition-shadow">
+            <div key={user._id} className="rounded-lg border bg-card p-4 sm:p-5 hover:shadow-md transition-shadow">
               {editingId === user._id ? (
                 // Edit Mode
                 <>
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold text-lg">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-base">{user.name}</h4>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm sm:text-base truncate">{user.name}</h4>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={cancelEdit} className="flex-1 sm:flex-none">
                         <X className="w-4 h-4 mr-1" />
                         Cancel
                       </Button>
-                      <Button size="sm" onClick={() => saveEdit(user._id)} className="bg-green-600 hover:bg-green-700">
-                        <Save className="w-4 h-4 mr-1" />
-                        Save
+                      <Button size="sm" onClick={() => saveEdit(user._id)} className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none">
                       </Button>
                     </div>
                   </div>
 
                   {/* Edit Form Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <Label className="text-xs text-muted-foreground mb-2 block">Department</Label>
                       <div className="p-2 rounded bg-muted text-sm">
@@ -398,20 +396,20 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                 <>
 
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold text-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-base">{user.name}</h4>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-semibold text-sm sm:text-base truncate">{user.name}</h4>
                           {getRoleBadge(user.role)}
                         </div>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => viewUserDetails(user)} title="View Details">
                         <Eye className="w-4 h-4 mr-1" />
                         <span className="hidden sm:inline">View</span>
@@ -433,7 +431,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                   </div>
 
                   {/* Info Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Department</p>
                       <p className="text-sm font-medium">{getDepartmentName(user.department)}</p>
@@ -571,15 +569,15 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                   {/* Leave Balance Cards */}
                   <div className="rounded-lg border bg-card shadow-sm">
                     <div className="p-4 border-b">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                           <FileText className="w-5 h-5 text-emerald-600" />
                           Leave Balance (Current Year)
                         </h3>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => setLeaveFilter('Annual')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Annual'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -589,7 +587,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                           </button>
                           <button
                             onClick={() => setLeaveFilter('Sick')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Sick'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -599,7 +597,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                           </button>
                           <button
                             onClick={() => setLeaveFilter('Maternity')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Maternity'
                                 ? 'bg-pink-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -609,7 +607,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                           </button>
                           <button
                             onClick={() => setLeaveFilter('Paternity')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Paternity'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'

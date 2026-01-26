@@ -595,15 +595,15 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                   {/* Leave Balance Cards */}
                   <Card>
                     <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                           <FileText className="w-5 h-5 text-emerald-600" />
                           Leave Balance (Current Year)
                         </CardTitle>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => setLeaveFilter('Annual')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Annual'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -613,7 +613,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           </button>
                           <button
                             onClick={() => setLeaveFilter('Sick')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Sick'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -623,7 +623,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           </button>
                           <button
                             onClick={() => setLeaveFilter('Maternity')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Maternity'
                                 ? 'bg-pink-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -633,7 +633,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           </button>
                           <button
                             onClick={() => setLeaveFilter('Paternity')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               leaveFilter === 'Paternity'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'

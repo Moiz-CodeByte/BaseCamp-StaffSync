@@ -97,17 +97,17 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                 const stats = leave.leaveStats || {};
                 
                 return (
-                  <div key={leave._id} className="border rounded-lg p-5 hover:shadow-md transition-shadow bg-card">
+                  <div key={leave._id} className="border rounded-lg p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
                     {/* Header Row */}
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
                             {leave.user?.name?.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-base">{leave.user?.name}</h4>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-semibold text-sm sm:text-base truncate">{leave.user?.name}</h4>
                               <Badge variant={
                                 leave.user?.role === 'Admin' ? 'destructive' :
                                 leave.user?.role === 'HR' ? 'default' :
@@ -116,16 +116,16 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                                 {leave.user?.role}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground">{leave.user?.email}</p>
+                            <p className="text-xs text-muted-foreground truncate">{leave.user?.email}</p>
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {hasPendingApprovals(leave) && (
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="border-[#f58327] text-[#f58327] hover:bg-[#f58327] hover:text-white"
+                            className="border-[#f58327] text-[#f58327] hover:bg-[#f58327] hover:text-white flex-1 sm:flex-none"
                             onClick={() => handleSendEmail(leave._id)}
                             disabled={sendingEmail === leave._id}
                           >
@@ -136,14 +136,14 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="hover:bg-destructive hover:text-white hover:border-destructive"
+                          className="hover:bg-destructive hover:text-white hover:border-destructive flex-1 sm:flex-none"
                           onClick={() => onAction(leave._id, 'reject')}
                         >
                           Reject
                         </Button>
                         <Button 
                           size="sm" 
-                          className="bg-green-600 text-white hover:bg-green-700" 
+                          className="bg-green-600 text-white hover:bg-green-700 flex-1 sm:flex-none" 
                           onClick={() => onAction(leave._id, 'approve')}
                         >
                           Approve
@@ -406,15 +406,16 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
       {/* Past Leave Requests Section */}
       <div className="rounded-lg border bg-card shadow-sm">
         <div className="p-6 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-bold">Past Leave Requests ({pastLeaves?.length || 0})</h3>
               <p className="text-sm text-muted-foreground mt-1">All processed leave requests (Approved/Rejected)</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant={statusFilter === 'All' ? 'default' : 'outline'} 
                 size="sm"
+                className="flex-1 sm:flex-none"
                 onClick={() => setStatusFilter('All')}
               >
                 All
@@ -422,6 +423,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
               <Button 
                 variant={statusFilter === 'Approved' ? 'default' : 'outline'} 
                 size="sm"
+                className="flex-1 sm:flex-none"
                 onClick={() => setStatusFilter('Approved')}
               >
                 Approved
@@ -429,6 +431,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
               <Button 
                 variant={statusFilter === 'Rejected' ? 'default' : 'outline'} 
                 size="sm"
+                className="flex-1 sm:flex-none"
                 onClick={() => setStatusFilter('Rejected')}
               >
                 Rejected
@@ -459,17 +462,17 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                   const processedDate = leave.updatedAt ? new Date(leave.updatedAt) : null;
                   
                   return (
-                    <div key={leave._id} className="border rounded-lg p-5 hover:shadow-md transition-shadow bg-card">
+                    <div key={leave._id} className="border rounded-lg p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
                       {/* Header Row */}
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold">
                               {leave.user?.name?.charAt(0).toUpperCase()}
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-base">{leave.user?.name}</h4>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-semibold text-sm sm:text-base truncate">{leave.user?.name}</h4>
                                 <Badge variant={
                                   leave.user?.role === 'Admin' ? 'destructive' :
                                   leave.user?.role === 'HR' ? 'default' :
@@ -481,11 +484,11 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                                   {leave.status}
                                 </Badge>
                               </div>
-                              <p className="text-xs text-muted-foreground">{leave.user?.email}</p>
+                              <p className="text-xs text-muted-foreground truncate">{leave.user?.email}</p>
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button 
                             variant="outline" 
                             size="sm" 

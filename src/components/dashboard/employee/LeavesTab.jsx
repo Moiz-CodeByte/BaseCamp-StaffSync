@@ -271,7 +271,11 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
     
     setLeaveForm({
       ...leaveForm,
-      additionalRecipients: [...additionalRecipients, { ...newRecipient }]
+      additionalRecipients: [...additionalRecipients, { 
+        name: newRecipient.name, 
+        email: newRecipient.email,
+        status: 'Pending'
+      }]
     });
     setNewRecipient({ name: '', email: '' });
     toast.success('Recipient added');
@@ -288,7 +292,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
             Submit and manage your leave requests
@@ -297,6 +301,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
         <Button 
           onClick={() => setShowForm(!showForm)}
           size="default"
+          className="w-full sm:w-auto"
         >
           {showForm ? 'Cancel' : 'Request Leave'}
         </Button>
@@ -313,7 +318,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="type" className="text-base font-semibold">Leave Type *</Label>
                   <Select value={leaveForm.type} onValueChange={(val) => setLeaveForm({...leaveForm, type: val})}>
@@ -405,7 +410,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                 </div> 
               )} */}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="startDate" className="text-base font-semibold">Start Date *</Label>
                   <Input 
@@ -547,19 +552,19 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
       )}
 
       <div className="rounded-lg border bg-card overflow-hidden">
-        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 dark:from-cyan-950 dark:to-sky-950 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-cyan-200 dark:bg-cyan-800 flex items-center justify-center">
-              <FileText className="w-6 h-6 text-cyan-700 dark:text-cyan-200" />
+        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 dark:from-cyan-950 dark:to-sky-950 p-4 sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-cyan-200 dark:bg-cyan-800 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-700 dark:text-cyan-200" />
             </div>
-            <div>
-              <h3 className="font-semibold text-cyan-900 dark:text-cyan-100 text-lg">My Leave Requests</h3>
-              <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1">View and manage all your leave requests ({leaves.length})</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-cyan-900 dark:text-cyan-100 text-base sm:text-lg truncate">My Leave Requests</h3>
+              <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1 truncate">View and manage all your leave requests ({leaves.length})</p>
             </div>
           </div>
         </div>
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {leaves.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center mx-auto mb-4">
@@ -581,27 +586,27 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                     className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-card relative"
                   >
                     {/* Status Badge Banner */}
-                    <div className={`absolute top-0 right-0 m-4 z-10`}>
+                    <div className={`absolute top-0 right-0 m-2 sm:m-4 z-10`}>
                       <Badge 
                         variant={
                           leave.status === 'Approved' ? 'default' :
                           leave.status === 'Rejected' ? 'destructive' :
                           'secondary'
                         }
-                        className="text-base px-5 py-2 font-bold shadow-lg"
+                        className="text-xs sm:text-sm md:text-base px-2 py-1 sm:px-3 sm:py-1.5 md:px-5 md:py-2 font-bold shadow-lg"
                       >
                         {leave.status}
                       </Badge>
                     </div>
 
-                    <div className="p-4">
-                      <div className="flex items-start justify-between mb-4">
+                    <div className="p-4 sm:p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
                             {me?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'ME'}
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
                               <Badge variant="outline" className="font-medium">
                                 {leave.type}
                               </Badge>
@@ -624,7 +629,7 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dates</p>
                         <div className="text-sm">
@@ -653,11 +658,11 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                             {leave.additionalRecipients.map((recipient, idx) => (
                               <div 
                                 key={idx} 
-                                className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-md bg-muted/50"
                               >
-                                <div className="flex-1">
-                                  <span className="text-sm font-medium">{recipient.name}</span>
-                                  <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-medium block truncate">{recipient.name}</span>
+                                  <p className="text-xs text-muted-foreground truncate">{recipient.email}</p>
                                 </div>
                                 <Badge 
                                   variant={

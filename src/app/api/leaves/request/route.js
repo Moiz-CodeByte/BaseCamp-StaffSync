@@ -16,6 +16,14 @@ export async function POST(req) {
   const { type, startDate, endDate, reason, additionalRecipients } = body;
   
   try {
+    // Ensure additional recipients have proper status
+    const processedRecipients = (additionalRecipients || []).map(recipient => ({
+      name: recipient.name,
+      email: recipient.email,
+      status: 'Pending',
+      emailSent: false
+    }));
+
     // Create the leave request
     const leave = await Leave.create({
       user: user.id,
@@ -23,7 +31,7 @@ export async function POST(req) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       reason,
-      additionalRecipients: additionalRecipients || [],
+      additionalRecipients: processedRecipients,
     });
 
     // Get user's department for HR notification

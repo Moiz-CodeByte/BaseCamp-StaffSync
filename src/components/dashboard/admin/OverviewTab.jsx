@@ -359,11 +359,11 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground">Leave management statistics and insights</p>
-         <div className="flex gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-muted-foreground text-sm sm:text-base">Leave management statistics and insights</p>
+         <div className="flex flex-col gap-2 sm:flex-col">
          <Select value={leaveFilter} onValueChange={setLeaveFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Select leave type" />
             </SelectTrigger>
             <SelectContent>
@@ -375,7 +375,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
             </SelectContent>
           </Select>
         <Select value={monthFilter} onValueChange={setMonthFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Select period" />
           </SelectTrigger>
           <SelectContent>
