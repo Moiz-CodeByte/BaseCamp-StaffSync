@@ -132,7 +132,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete user "${userName}"?\n\nThis action cannot be undone and will remove all associated data including:\n- Attendance records\n- Leave requests\n- Payroll history`
+      `Are you sure you want to delete user "${userName}"?\n\nThis action cannot be undone and will remove all associated data including:\n- Leave requests\n`
     );
 
     if (!confirmed) return;

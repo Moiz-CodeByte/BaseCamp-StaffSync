@@ -141,6 +141,7 @@ export default function EmployeeDashboard() {
   const requestLeave = async (e) => {
     e.preventDefault();
     try {
+      console.log('📤 Sending leave request with form data:', JSON.stringify(leaveForm, null, 2));
       await api.post('/api/leaves/request', leaveForm);
       setLeaveForm({ type: 'Annual', startDate: '', endDate: '', reason: '', additionalRecipients: [] });
       await fetchData();

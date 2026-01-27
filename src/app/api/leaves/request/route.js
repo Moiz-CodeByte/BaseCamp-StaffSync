@@ -15,6 +15,8 @@ export async function POST(req) {
   const body = await req.json();
   const { type, startDate, endDate, reason, additionalRecipients } = body;
   
+  console.log('📥 Received additionalRecipients:', JSON.stringify(additionalRecipients, null, 2));
+  
   try {
     // Ensure additional recipients have proper status
     const processedRecipients = (additionalRecipients || []).map(recipient => ({
@@ -23,6 +25,8 @@ export async function POST(req) {
       status: 'Pending',
       emailSent: false
     }));
+
+    console.log('✅ Processed recipients:', JSON.stringify(processedRecipients, null, 2));
 
     // Create the leave request
     const leave = await Leave.create({
@@ -33,6 +37,8 @@ export async function POST(req) {
       reason,
       additionalRecipients: processedRecipients,
     });
+
+    console.log('💾 Leave created with recipients:', JSON.stringify(leave.additionalRecipients, null, 2));
 
     // Get user's department for HR notification
     const userWithDept = await User.findById(user.id).lean();
