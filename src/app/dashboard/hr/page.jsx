@@ -154,6 +154,8 @@ export default function HRDashboard() {
       if (user.role !== 'HR') {
         if (user.role === 'Admin') {
           router.push('/dashboard/admin');
+        } else if (user.role === 'Reporting Manager') {
+          router.push('/dashboard/manager');
         } else {
           router.push('/dashboard/employee');
         }

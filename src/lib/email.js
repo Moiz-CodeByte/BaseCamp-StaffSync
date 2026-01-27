@@ -39,6 +39,35 @@ const calculateBusinessDays = (startDate, endDate) => {
 };
 
 /**
+ * Send leave approval request email to reporting managers (with dashboard link only)
+ * @param {Object} params - Email parameters
+ * @param {string} params.managerEmail - Manager's email address
+ * @param {string} params.managerName - Manager's name
+ * @param {Object} params.leave - Leave request object
+ * @param {Object} params.employee - Employee object
+ * @param {Object} params.leaveStats - Leave statistics (thisMonth, lastMonth, thisYear, thisQuarter, etc.)
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function sendManagerLeaveNotificationEmail({ managerEmail, managerName, leave, employee, leaveStats }) {
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'BaseCamp StaffSync <onboarding@resend.dev>',
+      to: managerEmail,
+      subject: `Leave Request from ${employee.name}`,
+      html: generateManagerLeaveNotificationHTML({ managerName, leave, employee, leaveStats })
+    });
+
+    console.log('📧 Manager notification email sent to:', managerEmail);
+    return true;
+  } catch (error) {
+    console.error('Error sending manager leave notification email:', error);
+    return false;
+  }
+}
+
+/**
  * Send leave approval request email to reporting managers
  * @param {Object} params - Email parameters
  * @param {string} params.managerEmail - Manager's email address
@@ -395,6 +424,133 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
 }
 
 /**
+ * Generate HTML template for manager leave notification email (dashboard link only)
+ */
+function generateManagerLeaveNotificationHTML({ managerName, leave, employee, leaveStats }) {
+  const startDate = new Date(leave.startDate).toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  const endDate = new Date(leave.endDate).toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/manager`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #f58327 0%, #ff9d4d 100%); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { background: #ffffff; padding: 30px; }
+        .detail-box { margin: 20px 0; padding: 20px; background: #fff7f0; border-left: 4px solid #f58327; border-radius: 4px; }
+        .detail-row { margin: 12px 0; display: flex; flex-wrap: wrap; }
+        .label { font-weight: bold; color: #f58327; min-width: 120px; }
+        .value { color: #333; flex: 1; }
+        .button-container { margin: 30px 0; text-align: center; }
+        .button { display: inline-block; padding: 14px 32px; margin: 8px 4px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; transition: all 0.3s; background: #f58327; color: white; box-shadow: 0 2px 4px rgba(245,131,39,0.3); }
+        .button:hover { background: #e06d1a; box-shadow: 0 4px 8px rgba(245,131,39,0.4); }
+        .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; }
+        .logo { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 5px; }
+        
+        @media only screen and (max-width: 600px) {
+          .container { margin: 10px !important; border-radius: 4px !important; }
+          .header { padding: 20px 15px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 15px !important; }
+          .detail-box { padding: 15px !important; margin: 15px 0 !important; }
+          .detail-row { flex-direction: column; margin: 10px 0 !important; }
+          .label { min-width: auto !important; margin-bottom: 4px; }
+          .button-container { margin: 20px 0 !important; }
+          .button { display: block !important; width: 100% !important; margin: 8px 0 !important; padding: 12px 16px !important; font-size: 14px !important; box-sizing: border-box; }
+          .footer { padding: 15px 10px !important; font-size: 11px !important; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">BaseCamp StaffSync</div>
+          <h1>New Leave Request</h1>
+        </div>
+        <div class="content">
+          <p style="font-size: 16px; color: #333;">Dear <strong>${managerName}</strong>,</p>
+          <p style="font-size: 15px; color: #555; line-height: 1.8;"><strong style="color: #f58327;">${employee.name}</strong> has submitted a leave request for your review.</p>
+          
+          <div class="detail-box">
+            <div class="detail-row">
+              <span class="label">Employee:</span>
+              <span class="value">${employee.name} (${employee.email})</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Leave Type:</span>
+              <span class="value">${leave.type}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">From:</span>
+              <span class="value">${startDate}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">To:</span>
+              <span class="value">${endDate}</span>
+            </div>
+            ${leave.reason ? `
+            <div class="detail-row">
+              <span class="label">Reason:</span>
+              <span class="value">${leave.reason}</span>
+            </div>
+            ` : ''}
+          </div>
+
+          ${leaveStats ? `
+          <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <h3 style="margin: 0 0 15px 0; color: #f58327; font-size: 16px; font-weight: 600;">📊 Employee Leave Balance</h3>
+            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 6px; border-left: 4px solid #f58327;">
+              <h4 style="margin: 0 0 12px 0; color: #f58327; font-size: 14px; font-weight: 600;">🌴 Annual Leaves</h4>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Limit/Year</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${leaveStats.leaveLimit || 10}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Used</div>
+                  <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${leaveStats.thisYear || 0}</div>
+                </div>
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 3px solid ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">
+                  <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Available</div>
+                  <div style="font-size: 20px; font-weight: 700; color: ${(leaveStats.remainingLeaves || 0) < 0 ? '#ef4444' : (leaveStats.remainingLeaves || 0) === 0 ? '#f59e0b' : '#10b981'};">${leaveStats.remainingLeaves || 0}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          <div class="button-container">
+            <a href="${dashboardUrl}" class="button">View in Dashboard</a>
+          </div>
+
+          <p style="font-size: 14px; color: #6b7280; margin-top: 20px; text-align: center;">Please log into your dashboard to review and process this leave request.</p>
+        </div>
+        <div class="footer">
+          <p style="margin: 5px 0;"><strong style="color: #f58327;">BaseCamp StaffSync</strong></p>
+          <p style="margin: 5px 0;">This is an automated email. Please do not reply to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
  * Send leave status notification to employee
  * @param {Object} params - Email parameters
  * @param {string} params.employeeEmail - Employee's email address
@@ -469,13 +625,17 @@ function generateLeaveStatusHTML({
 
   // Status colors and icons
   const isApproved = status === 'Approved';
-  const statusColor = isApproved ? '#10b981' : '#ef4444';
-  const statusIcon = isApproved ? '✅' : '❌';
+  const isSubmitted = status === 'Submitted';
+  const isRejected = status === 'Rejected';
+  const statusColor = isApproved ? '#10b981' : isRejected ? '#ef4444' : '#f58327';
+  const statusIcon = isApproved ? '✅' : isRejected ? '❌' : '📝';
   const headerGradient = 'linear-gradient(135deg, #f58327 0%, #ff9d4d 100%)';
 
   // Message based on approver type
   let statusMessage = '';
-  if (isFinalApproval) {
+  if (isSubmitted) {
+    statusMessage = `Your <strong>${leave.type}</strong> leave request has been <strong style="color: ${statusColor};">successfully submitted</strong> and is now pending approval from your reporting manager and HR.`;
+  } else if (isFinalApproval) {
     statusMessage = `Your <strong>${leave.type}</strong> leave request has been <strong style="color: ${statusColor};">${status.toLowerCase()}</strong> by <strong>HR (${managerName})</strong>. This is the <strong style="color: #f58327;">FINAL APPROVAL</strong>.`;
   } else if (approverType === 'CC') {
     statusMessage = `Your <strong>${leave.type}</strong> leave request has been <strong style="color: ${statusColor};">${status.toLowerCase()}</strong> by <strong>Additional Recipient (${managerName})</strong>.`;
@@ -529,18 +689,32 @@ function generateLeaveStatusHTML({
       <div class="container">
         <div class="header">
           <div class="logo">BaseCamp StaffSync</div>
-          <h1><span>${statusIcon}</span> Leave ${status}</h1>
+          <h1><span>${statusIcon}</span> ${isSubmitted ? 'Leave Request Submitted' : `Leave ${status}`}</h1>
         </div>
         <div class="content">
           <p style="font-size: 16px; color: #333;">Dear <strong>${employeeName}</strong>,</p>
           <p style="font-size: 15px; color: #555; line-height: 1.8;">${statusMessage}</p>
           
           <div style="text-align: center; margin: 20px 0;">
-            <span class="status-badge">${statusIcon} ${status}</span>
+            <span class="status-badge">${statusIcon} ${isSubmitted ? 'Submitted Successfully' : status}</span>
             ${isFinalApproval ? '<br><span class="final-badge">🎯 FINAL APPROVAL BY HR</span>' : ''}
           </div>
 
-          ${isFinalApproval ? `
+          ${isSubmitted ? `
+          <div class="info-box">
+            <p style="margin: 0; font-size: 14px; color: #f58327; font-weight: 600;">
+              ⏳ Your leave request is now in the approval workflow. You will receive notifications as it progresses through the approval chain.
+            </p>
+          </div>
+          <div style="margin: 20px 0; padding: 15px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
+            <h4 style="margin: 0 0 10px 0; color: #3b82f6; font-size: 14px;">📋 What happens next?</h4>
+            <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: #1e40af;">
+              <li style="margin: 5px 0;">Your reporting manager will review your request</li>
+              <li style="margin: 5px 0;">HR will provide the final approval</li>
+              <li style="margin: 5px 0;">You'll receive email updates at each stage</li>
+            </ol>
+          </div>
+          ` : isFinalApproval ? `
           <div class="info-box">
             <p style="margin: 0; font-size: 14px; color: ${statusColor}; font-weight: 600;">
               ${isApproved 
@@ -576,12 +750,12 @@ function generateLeaveStatusHTML({
               <span class="value">${endDate}</span>
             </div>
             <div class="detail-row">
-              <span class="label">${isFinalApproval ? 'Approved by HR:' : approverType === 'CC' ? 'Reviewed by:' : 'Approved by Manager:'}</span>
-              <span class="value">${managerName}</span>
+              <span class="label">${isSubmitted ? 'Submitted on:' : isFinalApproval ? 'Approved by HR:' : approverType === 'CC' ? 'Reviewed by:' : 'Approved by Manager:'}</span>
+              <span class="value">${isSubmitted ? new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : managerName}</span>
             </div>
             <div class="detail-row">
               <span class="label">Current Status:</span>
-              <span class="value"><strong style="color: ${statusColor};">${leave.status || status}</strong></span>
+              <span class="value"><strong style="color: ${statusColor};">${isSubmitted ? 'Pending Approval' : leave.status || status}</strong></span>
             </div>
             ${leave.reason ? `
             <div class="detail-row">

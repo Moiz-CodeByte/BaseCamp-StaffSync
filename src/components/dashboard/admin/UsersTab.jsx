@@ -99,6 +99,7 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
                 >
                   <option value="Employee">Employee</option>
                   <option value="HR">HR</option>
+                  <option value="Reporting Manager">Reporting Manager</option>
                   <option value="Admin">Admin</option>
                 </select>
               </div>

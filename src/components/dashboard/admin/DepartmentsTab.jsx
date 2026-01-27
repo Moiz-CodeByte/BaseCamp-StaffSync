@@ -11,21 +11,43 @@ import { Plus, Edit, Trash2, Building2, Users, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
-export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin = true }) {
+export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin = true, isManager = false }) {
   const [showForm, setShowForm] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    hr: ''
+    hr: '',
+    reportingManager: ''
   });
   const [viewingDept, setViewingDept] = useState(null);
   const [deptEmployees, setDeptEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [managers, setManagers] = useState([]);
+
+  // Managers can only view, not edit
+  const canEdit = isAdmin || (!isManager);
+  const canDelete = isAdmin;
+
+  // Fetch reporting managers
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const { data } = await api.get('/api/users/list');
+        const managerUsers = data.users.filter(u => u.role === 'Reporting Manager');
+        setManagers(managerUsers);
+      } catch (error) {
+        console.error('Failed to fetch managers:', error);
+      }
+    };
+    fetchManagers();
+  }, []);
 
   const resetForm = () => {
     setFormData({
       name: '',
-      hr: ''
+      hr: '',
+      reportingManager: ''
     });
     setEditingDept(null);
     setShowForm(false);
@@ -34,7 +56,8 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
   const handleEdit = (dept) => {
     setFormData({
       name: dept.name,
-      hr: dept.hr._id
+      hr: dept.hr._id,
+      reportingManager: dept.reportingManager?._id || ''
     });
     setEditingDept(dept);
     setShowForm(true);
@@ -78,10 +101,10 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
       const response = await api.get('/api/users/list');
       const allUsers = response.data.users;
       
-      // Filter employees by department
+      // Filter employees by department and exclude Admin users
       const employees = allUsers.filter(user => {
         const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
-        return userDeptId === dept._id;
+        return userDeptId === dept._id && user.role !== 'Admin';
       });
       
       setDeptEmployees(employees);
@@ -103,15 +126,17 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
       <div className="flex items-center justify-between">
         <div>
           <p className="text-muted-foreground">
-            Manage departments and their HR assignments
+            {isManager ? 'View your department information' : 'Manage departments and their HR assignments'}
           </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : <><Plus className="w-4 h-4 mr-2" /> Add Department</>}
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : <><Plus className="w-4 h-4 mr-2" /> Add Department</>}
+          </Button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && canEdit && (
         <Card className="border-2 border-primary/20">
           <CardHeader>
             <CardTitle>{editingDept ? 'Edit Department' : 'Create New Department'}</CardTitle>
@@ -166,6 +191,29 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="reportingManager">Reporting Manager (Optional)</Label>
+                <Select
+                  value={formData.reportingManager || 'none'}
+                  onValueChange={(value) => setFormData({ ...formData, reportingManager: value === 'none' ? '' : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Reporting Manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {managers.map((manager) => (
+                      <SelectItem key={manager._id} value={manager._id}>
+                        {manager.name} ({manager.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Assign a reporting manager to this department
+                </p>
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
@@ -197,20 +245,24 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleEdit(dept)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleDelete(dept._id, dept.name)}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
+                  {canEdit && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleEdit(dept)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDelete(dept._id, dept.name)}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -219,6 +271,13 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                 <p className="text-xs text-muted-foreground mb-2">Assigned HR</p>
                 <Badge variant="secondary">
                   {dept.hr?.name || 'Not assigned'}
+                </Badge>
+              </div>
+              
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground mb-2">Reporting Manager</p>
+                <Badge variant="outline">
+                  {dept.reportingManager?.name || 'Not assigned'}
                 </Badge>
               </div>
               

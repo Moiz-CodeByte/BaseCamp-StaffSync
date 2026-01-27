@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+// Delete the model if it exists to force re-compilation with new schema
+if (mongoose.models.Department) {
+  delete mongoose.models.Department;
+}
+
 const DepartmentSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -11,6 +16,10 @@ const DepartmentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'HR is required']
+  },
+  reportingManager: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true,

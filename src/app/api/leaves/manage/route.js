@@ -36,7 +36,7 @@ const calculateBusinessDays = (startDate, endDate) => {
 export async function GET(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (!['HR', 'Admin'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+  if (!['HR', 'Admin', 'Reporting Manager'].includes(user.role)) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   await connectDB();
 
   // Auto-reject expired pending leaves
@@ -46,9 +46,20 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const statusFilter = searchParams.get('status') || 'Pending';
 
+  // Get manager's department if Reporting Manager
+  let managerDepartmentId = null;
+  if (user.role === 'Reporting Manager') {
+    const managerData = await User.findById(user.id).select('department').lean();
+    if (!managerData || !managerData.department) {
+      return NextResponse.json({ message: 'Manager not assigned to any department' }, { status: 403 });
+    }
+    managerDepartmentId = managerData.department;
+  }
+
   // Build query based on user role
   // HR can only see Employee leave requests, not their own or other HR/Admin requests
   // Admin can see both Employee and HR leave requests
+  // Reporting Manager can only see Employee requests from their department
   let query = {};
   
   // Handle status filter
@@ -58,22 +69,41 @@ export async function GET(req) {
     query.status = statusFilter;
   }
   
-  if (user.role === 'HR') {
-    // HR only sees Employee requests
+  if (user.role === 'HR' || user.role === 'Reporting Manager') {
+    // HR and Reporting Manager only see Employee requests
     query.user = { $exists: true };
   }
 
   const leaves = await Leave.find(query)
-    .populate('user', 'name email role leave_limit')
+    .populate({
+      path: 'user',
+      select: 'name email role leave_limit department',
+      populate: {
+        path: 'department',
+        select: 'name'
+      }
+    })
     .sort({ createdAt: -1 })
     .lean();
   
   // Filter out leaves based on user role after population
   const filteredLeaves = leaves.filter(leave => {
-    if (user.role === 'HR') {
-      return leave.user && leave.user.role === 'Employee';
+    if (!leave.user) return false;
+    
+    // Reporting Manager: only Employee requests from their department
+    if (user.role === 'Reporting Manager') {
+      return leave.user.role === 'Employee' && 
+             leave.user.department && 
+             leave.user.department._id.toString() === managerDepartmentId.toString();
     }
-    return leave.user && (leave.user.role === 'Employee' || leave.user.role === 'HR');
+    
+    // HR: only Employee requests
+    if (user.role === 'HR') {
+      return leave.user.role === 'Employee';
+    }
+    
+    // Admin: Employee and HR requests
+    return leave.user.role === 'Employee' || leave.user.role === 'HR';
   });
   
   // Get unique user IDs for batch query

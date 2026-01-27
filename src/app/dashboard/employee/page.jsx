@@ -119,6 +119,8 @@ export default function EmployeeDashboard() {
           router.push('/dashboard/admin');
         } else if (user.role === 'HR') {
           router.push('/dashboard/hr');
+        } else if (user.role === 'Reporting Manager') {
+          router.push('/dashboard/manager');
         }
       }
     } else if (!loading && !user) {

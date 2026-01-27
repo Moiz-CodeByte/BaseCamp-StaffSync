@@ -50,8 +50,22 @@ export async function GET(req) {
           }
         },
         {
+          $lookup: {
+            from: 'users',
+            localField: 'reportingManager',
+            foreignField: '_id',
+            as: 'reportingManagerUser'
+          }
+        },
+        {
           $unwind: {
             path: '$hrUser',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $unwind: {
+            path: '$reportingManagerUser',
             preserveNullAndEmptyArrays: true
           }
         },
@@ -63,13 +77,20 @@ export async function GET(req) {
               name: '$hrUser.name',
               email: '$hrUser.email',
               role: '$hrUser.role'
+            },
+            reportingManager: {
+              _id: '$reportingManagerUser._id',
+              name: '$reportingManagerUser.name',
+              email: '$reportingManagerUser.email',
+              role: '$reportingManagerUser.role'
             }
           }
         },
         {
           $project: {
             employees: 0,
-            hrUser: 0
+            hrUser: 0,
+            reportingManagerUser: 0
           }
         },
         { $sort: { createdAt: -1 } }
@@ -91,12 +112,7 @@ export async function GET(req) {
       User.findById(user.id).select('-password').lean()
     ]);
 
-    // Set reporting managers for users
-    for (const userItem of usersData) {
-      if (userItem.reportingManagers === undefined || userItem.reportingManagers === null) {
-        userItem.reportingManagers = userItem.department?.reportingManagers || [];
-      }
-    }
+
     
     // Filter HR users
     const hrUsers = usersData.filter(u => u.role === 'HR');

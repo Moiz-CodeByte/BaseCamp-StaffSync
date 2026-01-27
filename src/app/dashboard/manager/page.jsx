@@ -5,16 +5,15 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import AdminSidebar from '@/components/dashboard/admin/AdminSidebar';
-import AdminHeader from '@/components/dashboard/admin/AdminHeader';
+import ManagerSidebar from '@/components/dashboard/manager/ManagerSidebar';
+import ManagerHeader from '@/components/dashboard/manager/ManagerHeader';
 import OverviewTab from '@/components/dashboard/admin/OverviewTab';
 import UsersTab from '@/components/dashboard/admin/UsersTab';
 import DepartmentsTab from '@/components/dashboard/admin/DepartmentsTab';
 import LeavesTab from '@/components/dashboard/admin/LeavesTab';
-import FeedbackTab from '@/components/dashboard/admin/FeedbackTab';
 import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
-export default function AdminDashboard() {
+export default function ManagerDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
@@ -43,8 +42,6 @@ export default function AdminDashboard() {
       setStats(prev => ({
         ...prev,
         totalUsers: userList.length,
-        admins: userList.filter(u => u.role === 'Admin').length,
-        hrStaff: userList.filter(u => u.role === 'HR').length,
         employees: userList.filter(u => u.role === 'Employee').length,
       }));
     } catch {
@@ -86,37 +83,36 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         // Use combined endpoint for better performance
-        const { data } = await api.get('/api/dashboard/admin');
+        const { data } = await api.get('/api/dashboard/manager');
 
         if (!ignore) {
           const userList = Array.isArray(data?.users) ? data.users : [];
           const deptList = Array.isArray(data?.departments) ? data.departments : [];
           const hrList = Array.isArray(data?.hrUsers) ? data.hrUsers : [];
-          const leavesList = Array.isArray(data?.leaves) ? data.leaves : [];
-          const pastLeavesList = Array.isArray(data?.pastLeaves) ? data.pastLeaves : [];
+          const pendingList = Array.isArray(data?.pending) ? data.pending : [];
+          const recentList = Array.isArray(data?.recentlyApproved) ? data.recentlyApproved : [];
+          const allRecentList = Array.isArray(data?.allRecentLeaves) ? data.allRecentLeaves : [];
           const userData = data?.me;
 
           setUsers(userList);
           setDepartments(deptList);
           setHrUsers(hrList);
-          setLeaves(leavesList);
-          setPastLeaves(pastLeavesList);
+          setLeaves(pendingList);
+          setPastLeaves([...recentList, ...allRecentList]);
           setMe(userData);
           setProfileForm({ name: userData?.name || '', email: userData?.email || '', currentPassword: '', password: '' });
 
-          const allLeaves = [...leavesList, ...pastLeavesList];
+          const allLeaves = [...pendingList, ...recentList, ...allRecentList];
           const currentMonth = new Date().getMonth();
           const currentYear = new Date().getFullYear();
           
           setStats({
             totalUsers: userList.length,
-            admins: userList.filter(u => u.role === 'Admin').length,
-            hrStaff: userList.filter(u => u.role === 'HR').length,
             employees: userList.filter(u => u.role === 'Employee').length,
             totalDepartments: deptList.length,
-            pendingLeaves: leavesList.length,
-            approvedLeaves: pastLeavesList.filter(l => l.status === 'Approved').length,
-            rejectedLeaves: pastLeavesList.filter(l => l.status === 'Rejected').length,
+            pendingLeaves: pendingList.length,
+            approvedLeaves: recentList.filter(l => l.status === 'Approved').length,
+            rejectedLeaves: allRecentList.filter(l => l.status === 'Rejected').length,
             totalRequests: allLeaves.length,
             approvedThisMonth: allLeaves.filter(l => {
               const date = new Date(l.createdAt);
@@ -127,7 +123,7 @@ export default function AdminDashboard() {
         }
       } catch (error) {
         if (!ignore) {
-          console.error('Admin dashboard data fetch error:', error);
+          console.error('Manager dashboard data fetch error:', error);
           retryCount++;
           if (retryCount < maxRetries) {
             setTimeout(() => {
@@ -147,35 +143,6 @@ export default function AdminDashboard() {
     return () => { ignore = true; };
   }, []);
 
-  // Check user role and redirect if unauthorized
-  useEffect(() => {
-    if (!loading && user) {
-      if (user.role !== 'Admin') {
-        if (user.role === 'HR') {
-          router.push('/dashboard/hr');
-        } else if (user.role === 'Reporting Manager') {
-          router.push('/dashboard/manager');
-        } else {
-          router.push('/dashboard/employee');
-        }
-      }
-    } else if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  // Show loading state
-  if (loading || !user || user.role !== 'Admin') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleLeaveAction = async (leaveId, action) => {
     try {
       await api.put(`/api/leaves/${leaveId}`, { status: action === 'approve' ? 'Approved' : 'Rejected' });
@@ -186,43 +153,103 @@ export default function AdminDashboard() {
     }
   };
 
-  const updateProfile = async (e) => {
-    e.preventDefault();
-    try {
-      await api.put('/api/users/me', profileForm);
-      toast.success('Profile updated successfully');
-      const { data } = await api.get('/api/users/me');
-      setMe(data.user);
-      setProfileForm({ ...profileForm, currentPassword: '', password: '' });
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (user.role !== 'Reporting Manager') {
+        if (user.role === 'Admin') router.push('/dashboard/admin');
+        else if (user.role === 'HR') router.push('/dashboard/hr');
+        else if (user.role === 'Employee') router.push('/dashboard/employee');
+        else router.push('/login');
+      }
     }
-  };
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin"></div>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold">Loading Manager Dashboard</h2>
+            <p className="text-sm text-muted-foreground">Please wait...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-background">
-      <AdminSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} me={me} />
+    <div className="flex h-screen overflow-hidden bg-background">
+      <ManagerSidebar 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        me={me}
+      />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} />
+        <ManagerHeader 
+          user={user}
+          activeTab={activeTab}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
         
-        <div className="flex-1 overflow-auto">
-          <div className="p-6 max-w-7xl mx-auto">
-            {activeTab === 'overview' && <OverviewTab stats={stats} isLoading={isLoadingStats} leaves={leaves} pastLeaves={pastLeaves} departments={departments} users={users} />}
-            {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
-            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
-            {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
-            {activeTab === 'feedback' && <FeedbackTab />}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {activeTab === 'overview' && (
+              <OverviewTab 
+                stats={stats}
+                users={users}
+                departments={departments}
+                leaves={leaves}
+                isLoadingStats={isLoadingStats}
+                isManager={true}
+              />
+            )}
+            {activeTab === 'leaves' && (
+              <LeavesTab 
+                leaves={leaves}
+                pastLeaves={pastLeaves}
+                onAction={handleLeaveAction}
+                isManager={true}
+              />
+            )}
+            {activeTab === 'departments' && (
+              <DepartmentsTab 
+                departments={departments}
+                hrUsers={hrUsers}
+                onUpdate={loadDepartments}
+                isAdmin={false}
+                isManager={true}
+              />
+            )}
             {activeTab === 'profile' && (
               <ProfileTab 
-                me={me} 
-                profileForm={profileForm} 
-                setProfileForm={setProfileForm} 
-                updateProfile={updateProfile}
+                me={me}
+                profileForm={profileForm}
+                setProfileForm={setProfileForm}
+                onUpdate={() => {
+                  api.get('/api/users/me').then(({ data }) => {
+                    setMe(data.user);
+                    setProfileForm({ 
+                      name: data.user?.name || '', 
+                      email: data.user?.email || '', 
+                      currentPassword: '', 
+                      password: '' 
+                    });
+                  });
+                }}
               />
             )}
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

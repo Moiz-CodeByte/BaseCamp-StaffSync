@@ -9,7 +9,7 @@ import { autoRejectExpiredLeaves } from '@/lib/leave-utils';
 export async function GET(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'HR') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+  if (user.role !== 'Reporting Manager') return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   
   await connectDB();
   
@@ -17,26 +17,31 @@ export async function GET(req) {
   await autoRejectExpiredLeaves();
 
   try {
-    // First, find departments managed by this HR
-    const hrDepartments = await Department.find({ hr: user.id }).select('_id').lean();
-    const departmentIds = hrDepartments.map(dept => dept._id);
-    
-    // Fetch all data in parallel
-    const [usersData, departmentsData, pendingLeaves, recentApproved, allRecent, meData] = await Promise.all([
-      // Users with populated departments
-      User.find({}, 'name email role department designation leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit createdAt')
+    // Get the manager's department
+    const managerData = await User.findById(user.id).select('department').lean();
+    if (!managerData || !managerData.department) {
+      return NextResponse.json({ message: 'Manager not assigned to any department' }, { status: 403 });
+    }
+
+    const managerDepartmentId = managerData.department;
+
+    // Fetch all data in parallel - but only for the manager's department
+    const [usersData, departmentData, pendingLeaves, recentApproved, allRecent, meData] = await Promise.all([
+      // Users only from this department
+      User.find({ department: managerDepartmentId }, 'name email role department designation leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit createdAt')
         .populate({
           path: 'department',
-          select: 'name hr reportingManager',
+          select: 'name hr',
           populate: {
-            path: 'reportingManager',
-            select: 'name email role'
+            path: 'hr',
+            select: 'name email'
           }
         })
         .lean(),
       
-      // Departments with employee counts via aggregation
+      // Only this department with employee count
       Department.aggregate([
+        { $match: { _id: managerDepartmentId } },
         {
           $lookup: {
             from: 'users',
@@ -96,98 +101,93 @@ export async function GET(req) {
             hrUser: 0,
             reportingManagerUser: 0
           }
-        },
-        { $sort: { createdAt: -1 } }
+        }
       ]),
       
-      // Pending leaves - only from employees in HR's departments
+      // Pending leaves - only from employees in this department
       Leave.find({ status: 'Pending' })
         .populate({
           path: 'user',
+          match: { department: managerDepartmentId },
           select: 'name email role leave_limit department',
           populate: {
             path: 'department',
-            select: 'hr'
+            select: 'hr name'
           }
         })
         .sort({ createdAt: -1 })
         .lean(),
       
-      // Recently approved leaves - only from employees in HR's departments
+      // Recently approved leaves - only from employees in this department
       Leave.find({ status: 'Approved' })
         .populate({
           path: 'user',
+          match: { department: managerDepartmentId },
           select: 'name email role department',
           populate: {
             path: 'department',
-            select: 'hr'
+            select: 'hr name'
           }
         })
         .sort({ updatedAt: -1 })
         .limit(10)
         .lean(),
       
-      // All recent leaves - only from employees in HR's departments
-      Leave.find()
+      // All recent leaves (approved, rejected, pending) - only from this department
+      Leave.find({ status: { $in: ['Approved', 'Rejected', 'Pending'] } })
         .populate({
           path: 'user',
+          match: { department: managerDepartmentId },
           select: 'name email role department',
           populate: {
             path: 'department',
-            select: 'hr'
+            select: 'hr name'
           }
         })
         .sort({ createdAt: -1 })
-        .limit(15)
+        .limit(50)
         .lean(),
       
-      // Current user
-      User.findById(user.id).select('-password').lean()
+      // Current user data
+      User.findById(user.id)
+        .populate({
+          path: 'department',
+          populate: {
+            path: 'hr',
+            select: 'name email'
+          }
+        })
+        .select('-password')
+        .lean()
     ]);
 
+    // Filter out leaves where user population failed (user not in department)
+    const filteredPending = pendingLeaves.filter(leave => leave.user);
+    const filteredRecentApproved = recentApproved.filter(leave => leave.user);
+    const filteredAllRecent = allRecent.filter(leave => leave.user);
 
-    
-    // Filter HR users
-    const hrUsers = usersData.filter(u => u.role === 'HR');
-    
-    // Filter pending leaves (HR only sees Employee requests from their departments)
-    const filteredPendingLeaves = pendingLeaves.filter(leave => 
-      leave.user && 
-      leave.user.role === 'Employee' &&
-      leave.user.department &&
-      leave.user.department.hr &&
-      leave.user.department.hr.toString() === user.id
-    );
-    
-    // Filter recently approved leaves (HR only sees their department employees)
-    const filteredRecentlyApproved = recentApproved.filter(leave =>
-      leave.user &&
-      leave.user.role === 'Employee' &&
-      leave.user.department &&
-      leave.user.department.hr &&
-      leave.user.department.hr.toString() === user.id
-    );
-    
-    // Filter all recent leaves (HR only sees their department employees)
-    const filteredAllRecent = allRecent.filter(leave =>
-      leave.user &&
-      leave.user.role === 'Employee' &&
-      leave.user.department &&
-      leave.user.department.hr &&
-      leave.user.department.hr.toString() === user.id
-    );
+    // Get HR users - empty for manager as they don't manage other departments
+    const hrUsers = [];
+
+    // Set assignedHR from department's HR for frontend compatibility
+    if (meData.department?.hr) {
+      meData.assignedHR = meData.department.hr;
+    }
 
     return NextResponse.json({
-      users: usersData,
-      departments: departmentsData,
-      hrUsers,
-      pending: filteredPendingLeaves,
-      recentlyApproved: filteredRecentlyApproved,
-      allRecentLeaves: filteredAllRecent,
+      users: usersData || [],
+      departments: departmentData || [],
+      hrUsers: hrUsers,
+      pending: filteredPending || [],
+      recentlyApproved: filteredRecentApproved || [],
+      allRecentLeaves: filteredAllRecent || [],
       me: meData
     });
   } catch (error) {
-    console.error('HR dashboard data fetch error:', error);
-    return NextResponse.json({ message: 'Failed to fetch dashboard data' }, { status: 500 });
+    console.error('Manager dashboard error:', error);
+    return NextResponse.json({ 
+      message: 'Failed to fetch dashboard data',
+      error: error.message 
+    }, { status: 500 });
   }
 }

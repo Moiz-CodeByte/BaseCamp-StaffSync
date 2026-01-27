@@ -16,6 +16,7 @@ export default function DashboardIndex() {
         if (!mounted) return;
         if (role === 'Admin') router.replace('/dashboard/admin');
         else if (role === 'HR') router.replace('/dashboard/hr');
+        else if (role === 'Reporting Manager') router.replace('/dashboard/manager');
         else if (role === 'Employee') router.replace('/dashboard/employee');
         else router.replace('/login');
       } catch {

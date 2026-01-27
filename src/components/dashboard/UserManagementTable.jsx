@@ -366,6 +366,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         <SelectContent>
                           <SelectItem value="Employee">Employee</SelectItem>
                           <SelectItem value="HR">HR</SelectItem>
+                          <SelectItem value="Reporting Manager">Reporting Manager</SelectItem>
                           <SelectItem value="Admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>

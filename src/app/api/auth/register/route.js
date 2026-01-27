@@ -24,6 +24,14 @@ export async function POST(req) {
     };
     
     const user = await User.create(userData);
+    
+    // If creating a Reporting Manager with a department, assign them to that department
+    if (role === 'Reporting Manager' && department) {
+      await Department.findByIdAndUpdate(department, {
+        reportingManager: user._id
+      });
+    }
+    
     const token = signToken(user);
     return NextResponse.json(
       { token, user: { id: user._id, name, email, role: user.role, department: user.department } },

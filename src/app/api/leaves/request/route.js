@@ -4,7 +4,7 @@ import { authenticateRequest } from '@/lib/auth';
 import { Leave } from '@/models/Leave';
 import { User } from '@/models/User';
 import { Department } from '@/models/Department';
-import { sendLeaveApprovalEmail, sendHRNotificationEmail, sendAdminNotificationEmail } from '@/lib/email';
+import { sendLeaveApprovalEmail, sendHRNotificationEmail, sendAdminNotificationEmail, sendManagerLeaveNotificationEmail, sendLeaveStatusEmail } from '@/lib/email';
 import { calculateLeaveStats } from '@/lib/leave-stats';
 
 export async function POST(req) {
@@ -109,6 +109,36 @@ export async function POST(req) {
       // Don't fail the request if HR email fails
     }
 
+    // Send notification to reporting manager of the department
+    try {
+      const employeeWithDept = await User.findById(user.id).populate('department');
+      
+      if (employeeWithDept.department && employeeWithDept.department.reportingManager) {
+        const managerUser = await User.findById(employeeWithDept.department.reportingManager);
+        
+        if (managerUser && managerUser.email) {
+          // Calculate leave statistics
+          const leaveStats = await calculateLeaveStats(user.id);
+          
+          // Populate leave with user info for email
+          const populatedLeave = await Leave.findById(leave._id).populate('user');
+          
+          await sendManagerLeaveNotificationEmail({
+            managerEmail: managerUser.email,
+            managerName: managerUser.name,
+            leave: populatedLeave,
+            employee: employeeWithDept,
+            leaveStats: leaveStats
+          });
+          
+          console.log(`✅ Reporting Manager notification sent to ${managerUser.email}`);
+        }
+      }
+    } catch (managerEmailError) {
+      console.error('Failed to send Reporting Manager notification:', managerEmailError);
+      // Don't fail the request if manager email fails
+    }
+
     // Send notification to all admin users
     try {
       const adminUsers = await User.find({ role: 'Admin' }).lean();
@@ -141,6 +171,28 @@ export async function POST(req) {
     } catch (adminEmailError) {
       console.error('Failed to send admin notifications:', adminEmailError);
       // Don't fail the request if admin email fails
+    }
+
+    // Send confirmation email to employee
+    try {
+      const employeeWithDept = await User.findById(user.id).populate('department');
+      const populatedLeave = await Leave.findById(leave._id).populate('user');
+      
+      if (employeeWithDept && employeeWithDept.email) {
+        await sendLeaveStatusEmail({
+          employeeEmail: employeeWithDept.email,
+          employeeName: employeeWithDept.name,
+          leave: populatedLeave,
+          status: 'Submitted',
+          managerName: 'System',
+          approverType: 'System'
+        });
+        
+        console.log(`✅ Confirmation email sent to employee: ${employeeWithDept.email}`);
+      }
+    } catch (employeeEmailError) {
+      console.error('Failed to send employee confirmation email:', employeeEmailError);
+      // Don't fail the request if employee email fails
     }
 
     return NextResponse.json({ 

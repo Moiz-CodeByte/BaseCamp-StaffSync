@@ -8,7 +8,7 @@ import { Department } from '@/models/Department';
 export async function PATCH(req, { params }) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'Admin' && user.role !== 'HR') {
+  if (!['Admin', 'HR', 'Reporting Manager'].includes(user.role)) {
     return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   }
   await connectDB();
@@ -25,9 +25,17 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
     
-    // HR cannot update Admin or HR users - only Employees (check early)
-    if (user.role === 'HR' && existingUser.role !== 'Employee') {
-      return NextResponse.json({ message: 'HR can only manage Employee accounts' }, { status: 403 });
+    // HR and Reporting Manager cannot update Admin or HR users - only Employees (check early)
+    if ((user.role === 'HR' || user.role === 'Reporting Manager') && existingUser.role !== 'Employee') {
+      return NextResponse.json({ message: 'You can only manage Employee accounts' }, { status: 403 });
+    }
+    
+    // Reporting Manager can only update users in their department
+    if (user.role === 'Reporting Manager') {
+      const currentUserData = await User.findById(user.id);
+      if (!currentUserData.department || existingUser.department?.toString() !== currentUserData.department.toString()) {
+        return NextResponse.json({ message: 'You can only manage employees in your department' }, { status: 403 });
+      }
     }
     
     // Allowed fields to update
@@ -62,6 +70,41 @@ export async function PATCH(req, { params }) {
       updateData,
       { new: true, runValidators: true, select: '-password' }
     );
+    
+    // Handle reporting manager assignment
+    const newRole = updateData.role || existingUser.role;
+    const newDepartment = updateData.department !== undefined ? updateData.department : existingUser.department;
+    const roleChanged = updateData.role && updateData.role !== existingUser.role;
+    const departmentChanged = updateData.department !== undefined && updateData.department?.toString() !== existingUser.department?.toString();
+    
+    // If role changed TO Reporting Manager and has a department, assign to department
+    if (roleChanged && newRole === 'Reporting Manager' && newDepartment) {
+      await Department.findByIdAndUpdate(newDepartment, {
+        reportingManager: id
+      });
+    }
+    // If role changed FROM Reporting Manager, remove from all departments
+    else if (roleChanged && existingUser.role === 'Reporting Manager') {
+      await Department.updateMany(
+        { reportingManager: id },
+        { $unset: { reportingManager: 1 } }
+      );
+    }
+    // If Reporting Manager's department changed
+    else if (newRole === 'Reporting Manager' && departmentChanged) {
+      // Remove from old department
+      if (existingUser.department) {
+        await Department.findByIdAndUpdate(existingUser.department, {
+          $unset: { reportingManager: 1 }
+        });
+      }
+      // Add to new department
+      if (newDepartment) {
+        await Department.findByIdAndUpdate(newDepartment, {
+          reportingManager: id
+        });
+      }
+    }
     
     return NextResponse.json({ user: updatedUser, message: 'User updated successfully' });
   } catch (e) {
@@ -114,8 +157,8 @@ export async function GET(req, { params }) {
 export async function DELETE(req, { params }) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'Admin') {
-    return NextResponse.json({ message: 'Forbidden: Admin access required' }, { status: 403 });
+  if (user.role !== 'Admin' && user.role !== 'HR') {
+    return NextResponse.json({ message: 'Forbidden: Admin/HR access required' }, { status: 403 });
   }
 
   await connectDB();

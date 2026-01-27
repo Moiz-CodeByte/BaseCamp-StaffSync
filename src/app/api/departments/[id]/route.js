@@ -13,7 +13,9 @@ export async function GET(req, { params }) {
 
   try {
     const { id } = await params;
-    const department = await Department.findById(id).populate('hr', 'name email role');
+    const department = await Department.findById(id)
+      .populate('hr', 'name email role')
+      .populate('reportingManager', 'name email role');
     
     if (!department) {
       return NextResponse.json({ message: 'Department not found' }, { status: 404 });
@@ -148,7 +150,9 @@ export async function PUT(req, { params }) {
 
     await department.save();
 
-    const updatedDept = await Department.findById(id).populate('hr', 'name email role');
+    const updatedDept = await Department.findById(id)
+      .populate('hr', 'name email role')
+      .populate('reportingManager', 'name email role');
 
     return NextResponse.json({
       message: 'Department updated successfully',

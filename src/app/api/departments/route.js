@@ -8,15 +8,32 @@ import { User } from '@/models/User';
 export async function GET(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (!['Admin', 'HR'].includes(user.role)) {
+  if (!['Admin', 'HR', 'Reporting Manager'].includes(user.role)) {
     return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   }
 
   await connectDB();
 
   try {
+    // Reporting Manager can only see their own department
+    let matchStage = {};
+    if (user.role === 'Reporting Manager') {
+      const managerData = await User.findById(user.id).select('department').lean();
+      if (!managerData || !managerData.department) {
+        return NextResponse.json({ message: 'Manager not assigned to any department' }, { status: 403 });
+      }
+      matchStage = { $match: { _id: managerData.department } };
+    }
+
     // Use aggregation to get departments with employee counts in one query
-    const departmentsWithCount = await Department.aggregate([
+    const pipeline = [];
+    
+    // Add match stage if needed (for Reporting Manager)
+    if (user.role === 'Reporting Manager') {
+      pipeline.push(matchStage);
+    }
+    
+    pipeline.push(
       {
         $lookup: {
           from: 'users',
@@ -34,8 +51,22 @@ export async function GET(req) {
         }
       },
       {
+        $lookup: {
+          from: 'users',
+          localField: 'reportingManager',
+          foreignField: '_id',
+          as: 'managerUser'
+        }
+      },
+      {
         $unwind: {
           path: '$hrUser',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $unwind: {
+          path: '$managerUser',
           preserveNullAndEmptyArrays: true
         }
       },
@@ -47,17 +78,26 @@ export async function GET(req) {
             name: '$hrUser.name',
             email: '$hrUser.email',
             role: '$hrUser.role'
+          },
+          reportingManager: {
+            _id: '$managerUser._id',
+            name: '$managerUser.name',
+            email: '$managerUser.email',
+            role: '$managerUser.role'
           }
         }
       },
       {
         $project: {
           employees: 0,
-          hrUser: 0
+          hrUser: 0,
+          managerUser: 0
         }
       },
       { $sort: { createdAt: -1 } }
-    ]);
+    );
+    
+    const departmentsWithCount = await Department.aggregate(pipeline);
 
     return NextResponse.json({ departments: departmentsWithCount });
   } catch (error) {
@@ -76,20 +116,12 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const { name, reportingManagers, hr } = await req.json();
+    const { name, reportingManager, hr } = await req.json();
 
     // Validate required fields
     if (!name || !hr) {
       return NextResponse.json(
         { message: 'Name and HR are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate reporting managers array
-    if (reportingManagers && !Array.isArray(reportingManagers)) {
-      return NextResponse.json(
-        { message: 'Reporting managers must be an array' },
         { status: 400 }
       );
     }
@@ -103,6 +135,17 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Selected user is not an HR' }, { status: 400 });
     }
 
+    // Verify reporting manager if provided
+    if (reportingManager) {
+      const manager = await User.findById(reportingManager);
+      if (!manager) {
+        return NextResponse.json({ message: 'Reporting Manager not found' }, { status: 404 });
+      }
+      if (manager.role !== 'Reporting Manager') {
+        return NextResponse.json({ message: 'Selected user is not a Reporting Manager' }, { status: 400 });
+      }
+    }
+
     // Check if department name already exists
     const existingDept = await Department.findOne({ name });
     if (existingDept) {
@@ -112,13 +155,20 @@ export async function POST(req) {
       );
     }
 
-    const department = await Department.create({
+    const deptData = {
       name,
-      reportingManagers: reportingManagers || [],
       hr
-    });
+    };
+    
+    if (reportingManager) {
+      deptData.reportingManager = reportingManager;
+    }
 
-    const populatedDept = await Department.findById(department._id).populate('hr', 'name email role');
+    const department = await Department.create(deptData);
+
+    const populatedDept = await Department.findById(department._id)
+      .populate('hr', 'name email role')
+      .populate('reportingManager', 'name email role');
 
     return NextResponse.json(
       { message: 'Department created successfully', department: populatedDept },
