@@ -118,6 +118,7 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
     <html>
     <head>
       <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -125,17 +126,30 @@ function generateLeaveApprovalHTML({ managerName, managerEmail, leave, employee,
         .header h1 { margin: 0; font-size: 24px; }
         .content { background: #ffffff; padding: 30px; }
         .detail-box { margin: 20px 0; padding: 20px; background: #fff7f0; border-left: 4px solid #f58327; border-radius: 4px; }
-        .detail-row { margin: 12px 0; display: flex; }
+        .detail-row { margin: 12px 0; display: flex; flex-wrap: wrap; }
         .label { font-weight: bold; color: #f58327; min-width: 120px; }
         .value { color: #333; flex: 1; }
         .button-container { margin: 30px 0; text-align: center; }
-        .button { display: inline-block; padding: 14px 32px; margin: 0 8px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; transition: all 0.3s; }
+        .button { display: inline-block; padding: 14px 32px; margin: 8px 4px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; transition: all 0.3s; }
         .approve { background: #10b981; color: white; box-shadow: 0 2px 4px rgba(16,185,129,0.3); }
         .approve:hover { background: #059669; box-shadow: 0 4px 8px rgba(16,185,129,0.4); }
         .reject { background: #ef4444; color: white; box-shadow: 0 2px 4px rgba(239,68,68,0.3); }
         .reject:hover { background: #dc2626; box-shadow: 0 4px 8px rgba(239,68,68,0.4); }
         .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; }
         .logo { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 5px; }
+        
+        @media only screen and (max-width: 600px) {
+          .container { margin: 10px !important; border-radius: 4px !important; }
+          .header { padding: 20px 15px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 15px !important; }
+          .detail-box { padding: 15px !important; margin: 15px 0 !important; }
+          .detail-row { flex-direction: column; margin: 10px 0 !important; }
+          .label { min-width: auto !important; margin-bottom: 4px; }
+          .button-container { margin: 20px 0 !important; }
+          .button { display: block !important; width: 100% !important; margin: 8px 0 !important; padding: 12px 16px !important; font-size: 14px !important; box-sizing: border-box; }
+          .footer { padding: 15px 10px !important; font-size: 11px !important; }
+        }
       </style>
     </head>
     <body>
@@ -494,6 +508,21 @@ function generateLeaveStatusHTML({
         .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; }
         .logo { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 5px; }
         .info-box { padding: 15px; background: ${isApproved ? '#f0fdf4' : '#fef2f2'}; border-left: 4px solid ${statusColor}; border-radius: 4px; margin: 20px 0; }
+        
+        @media only screen and (max-width: 600px) {
+          .container { margin: 10px !important; border-radius: 4px !important; }
+          .header { padding: 20px 15px !important; }
+          .header h1 { font-size: 18px !important; flex-direction: column; gap: 5px !important; }
+          .content { padding: 20px 15px !important; }
+          .detail-box { padding: 15px !important; margin: 15px 0 !important; }
+          .detail-row { flex-direction: column; margin: 10px 0 !important; }
+          .label { min-width: auto !important; margin-bottom: 4px; }
+          .status-badge { font-size: 14px !important; padding: 6px 12px !important; }
+          .final-badge { font-size: 12px !important; padding: 6px 12px !important; }
+          .button { display: block !important; width: 100% !important; padding: 12px 16px !important; font-size: 14px !important; box-sizing: border-box; text-align: center; }
+          .info-box { padding: 12px !important; margin: 15px 0 !important; font-size: 13px !important; }
+          .footer { padding: 15px 10px !important; font-size: 11px !important; }
+        }
       </style>
     </head>
     <body>
@@ -760,6 +789,23 @@ function generateHRNotificationHTML({
         .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; }
         .logo { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 5px; }
         .status-badge { display: inline-block; padding: 6px 12px; border-radius: 16px; font-weight: 600; background: ${statusColor}; color: white; font-size: 14px; }
+        
+        @media only screen and (max-width: 600px) {
+          .container { margin: 10px !important; border-radius: 4px !important; }
+          .header { padding: 20px 15px !important; }
+          .header h1 { font-size: 18px !important; flex-direction: column; gap: 5px !important; }
+          .content { padding: 20px 15px !important; }
+          .detail-box { padding: 15px !important; margin: 15px 0 !important; }
+          .detail-row { flex-direction: column; margin: 10px 0 !important; }
+          .label { min-width: auto !important; margin-bottom: 4px; }
+          .stats-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+          .stat-card { padding: 12px !important; }
+          .stat-value { font-size: 20px !important; }
+          .section-title { font-size: 14px !important; margin: 20px 0 10px 0 !important; }
+          .button { display: block !important; width: 100% !important; padding: 12px 16px !important; font-size: 14px !important; box-sizing: border-box; text-align: center; }
+          .status-badge { font-size: 12px !important; padding: 5px 10px !important; }
+          .footer { padding: 15px 10px !important; font-size: 11px !important; }
+        }
       </style>
     </head>
     <body>
@@ -1148,6 +1194,18 @@ export async function sendAdminNotificationEmail({
         .stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
         .stat-value { font-size: 20px; font-weight: 700; color: #0c4a6e; }
         .stat-unit { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+        
+        @media only screen and (max-width: 600px) {
+          .container { margin: 0 !important; }
+          .header { padding: 20px 15px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 15px !important; }
+          .info-box { padding: 12px !important; margin: 12px 0 !important; }
+          .stats-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .stat-card { padding: 10px !important; }
+          .stat-value { font-size: 18px !important; }
+          .footer { padding: 15px 10px !important; font-size: 11px !important; }
+        }
       </style>
     </head>
     <body>
