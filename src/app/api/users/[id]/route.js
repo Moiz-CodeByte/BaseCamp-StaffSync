@@ -33,7 +33,7 @@ export async function PATCH(req, { params }) {
     // Allowed fields to update
     const allowedFields = [
       'name', 'email', 'department', 'role', 'designation',
-      'basic_salary', 'allowance', 'leave_limit', 'assignedHR',
+      'basic_salary', 'allowance', 'leave_limit',
       'sick_leave_limit', 'maternity_leave_limit', 'paternity_leave_limit',
       'reportingManagers'
     ];
@@ -42,7 +42,7 @@ export async function PATCH(req, { params }) {
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {
         // Convert empty string to null for ObjectId fields
-        if ((field === 'department' || field === 'assignedHR') && updates[field] === '') {
+        if (field === 'department' && updates[field] === '') {
           updateData[field] = null;
         } else {
           updateData[field] = updates[field];
@@ -85,18 +85,23 @@ export async function GET(req, { params }) {
     
     const targetUser = await User.findById(id)
       .select('-password')
-      .populate('assignedHR', 'name email')
       .lean();
     
     if (!targetUser) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
     
-    // Manually populate department
+    // Manually populate department with HR
     if (targetUser.department) {
-      targetUser.department = await Department.findById(targetUser.department)
+      const department = await Department.findById(targetUser.department)
         .populate('hr', 'name email')
         .lean();
+      targetUser.department = department;
+      
+      // Set assignedHR from department's HR for frontend compatibility
+      if (department?.hr) {
+        targetUser.assignedHR = department.hr;
+      }
     }
     
     return NextResponse.json({ user: targetUser });

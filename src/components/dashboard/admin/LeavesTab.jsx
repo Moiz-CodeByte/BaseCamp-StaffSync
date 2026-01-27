@@ -535,7 +535,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                           </div>
                         </div>
 
-                        {/* Manager Approvals */}
+                        {/* Manager Approvals
                         <div>
                           <p className="text-xs text-muted-foreground mb-2">Manager Approvals</p>
                           {leave.managerApprovals && leave.managerApprovals.length > 0 ? (
@@ -565,7 +565,7 @@ export default function AdminLeavesTab({ leaves, pastLeaves, onAction }) {
                               No managers assigned
                             </div>
                           )}
-                        </div>
+                        </div> */}
 
                         {/* Additional Recipients */}
                         {leave.additionalRecipients && leave.additionalRecipients.length > 0 && (

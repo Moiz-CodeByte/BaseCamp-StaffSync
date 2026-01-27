@@ -11,7 +11,6 @@ const UserSchema = new Schema(
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: rolesList, default: 'Employee' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
-    assignedHR: { type: Schema.Types.ObjectId, ref: 'User' },
     designation: { type: String, trim: true }, // Job title/designation
     
     // _basic_salary: { type: Number, default: 0 }, // Default monthly basic salary

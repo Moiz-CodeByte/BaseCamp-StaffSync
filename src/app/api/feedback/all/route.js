@@ -7,8 +7,8 @@ import { Feedback } from '@/models/Feedback';
 export async function GET(req) {
   const user = authenticateRequest(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'Admin') {
-    return NextResponse.json({ message: 'Forbidden: Admin access required' }, { status: 403 });
+  if (user.role !== 'Admin' && user.role !== 'HR') {
+    return NextResponse.json({ message: 'Forbidden: Admin/HR access required' }, { status: 403 });
   }
   
   await connectDB();

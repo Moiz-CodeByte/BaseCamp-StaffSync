@@ -12,10 +12,13 @@ export default function AdminSidebar({ sidebarOpen, activeTab, onTabChange, me }
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
+  // Determine panel title based on user role
+  const panelTitle = me?.role === 'HR' ? 'HR Panel' : 'Admin Panel';
+
   return (
     <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 overflow-hidden`}>
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white">Admin Panel</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white">{panelTitle}</h2>
         {me && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{me.name}</p>}
       </div>
       <nav className="flex-1 p-4 space-y-2">

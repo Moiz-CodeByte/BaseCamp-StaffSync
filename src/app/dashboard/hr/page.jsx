@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import HRSidebar from '@/components/dashboard/hr/HRSidebar';
-import HRHeader from '@/components/dashboard/hr/HRHeader';
-import OverviewTab from '@/components/dashboard/hr/OverviewTab';
-import LeavesTab from '@/components/dashboard/hr/LeavesTab';
-import UsersTab from '@/components/dashboard/hr/UsersTab';
+import AdminSidebar from '@/components/dashboard/admin/AdminSidebar';
+import AdminHeader from '@/components/dashboard/admin/AdminHeader';
+import OverviewTab from '@/components/dashboard/admin/OverviewTab';
+import UsersTab from '@/components/dashboard/admin/UsersTab';
 import DepartmentsTab from '@/components/dashboard/admin/DepartmentsTab';
-import HRProfileTab from '@/components/dashboard/hr/HRProfileTab';
+import LeavesTab from '@/components/dashboard/admin/LeavesTab';
+import FeedbackTab from '@/components/dashboard/admin/FeedbackTab';
+import ProfileTab from '@/components/dashboard/admin/ProfileTab';
 
 export default function HRDashboard() {
   const { user, loading } = useAuth();
@@ -19,20 +20,63 @@ export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
-  const [pending, setPending] = useState([]);
-  const [recentlyApproved, setRecentlyApproved] = useState([]);
-  const [allRecentLeaves, setAllRecentLeaves] = useState([]);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [hrUsers, setHrUsers] = useState([]);
-  const [stats, setStats] = useState({ 
-    pendingLeaves: 0,
-    totalEmployees: 0,
-    leavesThisMonth: 0,
-    approvedToday: 0
-  });
+  const [leaves, setLeaves] = useState([]);
+  const [pastLeaves, setPastLeaves] = useState([]);
   const [me, setMe] = useState(null);
   const [profileForm, setProfileForm] = useState({ name: '', email: '', currentPassword: '', password: '' });
+  const [stats, setStats] = useState({
+    pendingLeaves: 0,
+    approvedLeaves: 0,
+    rejectedLeaves: 0,
+    totalRequests: 0,
+    approvedThisMonth: 0,
+  });
+
+  const loadUsers = async () => {
+    try {
+      const { data } = await api.get('/api/users/list');
+      const userList = data.users || [];
+      setUsers(userList);
+      setStats(prev => ({
+        ...prev,
+        totalUsers: userList.length,
+        admins: userList.filter(u => u.role === 'Admin').length,
+        hrStaff: userList.filter(u => u.role === 'HR').length,
+        employees: userList.filter(u => u.role === 'Employee').length,
+      }));
+    } catch {
+      setUsers([]);
+    }
+  };
+
+  const loadDepartments = async () => {
+    try {
+      const { data } = await api.get('/api/departments');
+      setDepartments(data.departments || []);
+    } catch {
+      setDepartments([]);
+    }
+  };
+
+  const loadLeaves = async () => {
+    try {
+      const [{ data: pendingData }, { data: pastData }] = await Promise.all([
+        api.get('/api/leaves/manage'),
+        api.get('/api/leaves/manage?status=past'),
+      ]);
+      const leavesList = pendingData.leaves || [];
+      const pastLeavesList = pastData.leaves || [];
+      setLeaves(leavesList);
+      setPastLeaves(pastLeavesList);
+      setStats(prev => ({ ...prev, pendingLeaves: leavesList.length }));
+    } catch {
+      setLeaves([]);
+      setPastLeaves([]);
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -43,39 +87,41 @@ export default function HRDashboard() {
       try {
         // Use combined endpoint for better performance
         const { data } = await api.get('/api/dashboard/hr');
-        
+
         if (!ignore) {
+          const userList = Array.isArray(data?.users) ? data.users : [];
+          const deptList = Array.isArray(data?.departments) ? data.departments : [];
+          const hrList = Array.isArray(data?.hrUsers) ? data.hrUsers : [];
           const pendingList = Array.isArray(data?.pending) ? data.pending : [];
           const recentList = Array.isArray(data?.recentlyApproved) ? data.recentlyApproved : [];
           const allRecentList = Array.isArray(data?.allRecentLeaves) ? data.allRecentLeaves : [];
-          const usersList = Array.isArray(data?.users) ? data.users : [];
-          const deptList = Array.isArray(data?.departments) ? data.departments : [];
-          const hrList = Array.isArray(data?.hrUsers) ? data.hrUsers : [];
           const userData = data?.me;
-          
-          setPending(pendingList);
-          setRecentlyApproved(recentList);
-          setAllRecentLeaves(allRecentList);
-          setUsers(usersList);
+
+          setUsers(userList);
           setDepartments(deptList);
           setHrUsers(hrList);
+          setLeaves(pendingList);
+          setPastLeaves([...recentList, ...allRecentList]);
           setMe(userData);
           setProfileForm({ name: userData?.name || '', email: userData?.email || '', currentPassword: '', password: '' });
-          
+
+          const allLeaves = [... pendingList, ...recentList, ...allRecentList];
           const currentMonth = new Date().getMonth();
           const currentYear = new Date().getFullYear();
-          const today = new Date().setHours(0, 0, 0, 0);
           
           setStats({
+            totalUsers: userList.length,
+            admins: userList.filter(u => u.role === 'Admin').length,
+            hrStaff: userList.filter(u => u.role === 'HR').length,
+            employees: userList.filter(u => u.role === 'Employee').length,
+            totalDepartments: deptList.length,
             pendingLeaves: pendingList.length,
-            totalEmployees: 0,
-            leavesThisMonth: allRecentList.filter(l => {
+            approvedLeaves: recentList.filter(l => l.status === 'Approved').length,
+            rejectedLeaves: allRecentList.filter(l => l.status === 'Rejected').length,
+            totalRequests: allLeaves.length,
+            approvedThisMonth: allLeaves.filter(l => {
               const date = new Date(l.createdAt);
-              return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-            }).length,
-            approvedToday: recentList.filter(l => {
-              const date = new Date(l.updatedAt);
-              return date.setHours(0, 0, 0, 0) === today;
+              return l.status === 'Approved' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
             }).length,
           });
           setIsLoadingStats(false);
@@ -89,11 +135,9 @@ export default function HRDashboard() {
               if (!ignore) fetchData();
             }, 1000 * retryCount);
           } else {
-            setPending([]); 
-            setRecentlyApproved([]); 
-            setAllRecentLeaves([]); 
-            setUsers([]); 
-            setDepartments([]);
+            setUsers([]);
+            setLeaves([]);
+            setPastLeaves([]);
             toast.error('Failed to load dashboard data. Please refresh the page.');
           }
         }
@@ -132,31 +176,12 @@ export default function HRDashboard() {
   }
 
   const handleLeaveAction = async (leaveId, action) => {
-    await api.post('/api/leaves/manage', { leaveId, action });
-    // Reload leaves
     try {
-      const { data } = await api.get('/api/leaves/manage');
-      const pendingList = data.leaves || [];
-      setPending(pendingList);
-      setStats(prev => ({ ...prev, pendingLeaves: pendingList.length }));
-    } catch {}
-  };
-
-  const loadUsers = async () => {
-    try {
-      const { data } = await api.get('/api/users/list');
-      setUsers(data.users || []);
+      await api.put(`/api/leaves/${leaveId}`, { status: action === 'approve' ? 'Approved' : 'Rejected' });
+      toast.success(`Leave ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      loadLeaves();
     } catch (error) {
-      toast.error('Failed to load users');
-    }
-  };
-
-  const loadDepartments = async () => {
-    try {
-      const { data } = await api.get('/api/departments');
-      setDepartments(data.departments || []);
-    } catch (error) {
-      toast.error('Failed to load departments');
+      toast.error(error.response?.data?.message || 'Failed to update leave');
     }
   };
 
@@ -175,24 +200,20 @@ export default function HRDashboard() {
 
   return (
     <div className="flex h-screen bg-background">
-      <HRSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} />
+      <AdminSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} onTabChange={setActiveTab} me={me} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <HRHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} />
+        <AdminHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} />
         
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto [@media(max-width:396px)]:p-0">
-            {activeTab === 'overview' && <OverviewTab stats={stats} recentlyApproved={recentlyApproved} isLoading={isLoadingStats} pending={pending} allRecentLeaves={allRecentLeaves} departments={departments} users={users} />}
-            {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} me={me} />}
-            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} isAdmin={false} />}
-            {activeTab === 'leaves' && <LeavesTab 
-              leaves={pending}
-              allRecentLeaves={allRecentLeaves}
-              onAction={handleLeaveAction} 
-              me={me}
-            />}
+            {activeTab === 'overview' && <OverviewTab stats={stats} isLoading={isLoadingStats} leaves={leaves} pastLeaves={pastLeaves} departments={departments} users={users} />}
+            {activeTab === 'users' && <UsersTab users={users} departments={departments} onUpdate={loadUsers} />}
+            {activeTab === 'departments' && <DepartmentsTab departments={departments} hrUsers={hrUsers} onUpdate={loadDepartments} />}
+            {activeTab === 'leaves' && <LeavesTab leaves={leaves} pastLeaves={pastLeaves} onAction={handleLeaveAction} />}
+            {activeTab === 'feedback' && <FeedbackTab />}
             {activeTab === 'profile' && (
-              <HRProfileTab 
+              <ProfileTab 
                 me={me} 
                 profileForm={profileForm} 
                 setProfileForm={setProfileForm} 

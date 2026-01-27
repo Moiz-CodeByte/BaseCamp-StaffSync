@@ -11,22 +11,18 @@ export async function GET(req) {
   
   try {
     const user = await User.findById(decoded.id)
-      .populate({
-        path: 'assignedHR',
-        select: 'name email'
-      })
       .select('-password')
       .lean();
     
     if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
     
-    // Manually populate department
+    // Manually populate department with HR
     if (user.department) {
       const department = await Department.findById(user.department).populate('hr', 'name email');
       user.department = department;
       
-      // If user has no assignedHR, use department's HR
-      if (!user.assignedHR && department?.hr) {
+      // Set assignedHR from department's HR for frontend compatibility
+      if (department?.hr) {
         user.assignedHR = department.hr;
       }
     }
@@ -69,7 +65,19 @@ export async function PATCH(req) {
 
     await user.save();
 
-    const updatedUser = await User.findById(decoded.id).populate('assignedHR', 'name email').select('-password');
+    const updatedUser = await User.findById(decoded.id).select('-password').lean();
+    
+    // Populate department with HR
+    if (updatedUser.department) {
+      const department = await Department.findById(updatedUser.department).populate('hr', 'name email');
+      updatedUser.department = department;
+      
+      // Set assignedHR from department's HR for frontend compatibility
+      if (department?.hr) {
+        updatedUser.assignedHR = department.hr;
+      }
+    }
+    
     return NextResponse.json({ message: 'Profile updated successfully', user: updatedUser });
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
