@@ -37,6 +37,7 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
       sick_leave_limit: user.sick_leave_limit ?? 3,
       maternity_leave_limit: user.maternity_leave_limit ?? 0,
       paternity_leave_limit: user.paternity_leave_limit ?? 2,
+      leave_entitlement_date: user.leave_entitlement_date ? new Date(user.leave_entitlement_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       reportingManagers: user.reportingManagers || [],
       role: user.role || 'Employee'
     });
@@ -358,6 +359,19 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                         />
                       </div>
                     )}
+
+                    {editForm.role === 'Employee' && (
+                      <div>
+                        <Label htmlFor="leave_entitlement_date" className="text-xs text-muted-foreground mb-2 block">Leave Entitlement Date</Label>
+                        <Input 
+                          id="leave_entitlement_date"
+                          type="date"
+                          value={editForm.leave_entitlement_date}
+                          onChange={(e) => setEditForm({...editForm, leave_entitlement_date: e.target.value})}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Reporting Managers */}
@@ -440,6 +454,11 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Designation</p>
                       <p className="text-sm font-medium">{user.designation || '-'}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Leave Entitlement Date</p>
+                      <p className="text-sm font-medium">{user.leave_entitlement_date ? new Date(user.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}</p>
                     </div>
                   </div>
                 </>
@@ -532,8 +551,14 @@ export default function HRUsersTab({ users, departments = [], onUpdate, me }) {
                     )}
                     {viewingUser.createdAt && (
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Joined Date</p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User Creation Date</p>
                         <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    )}
+                    {viewingUser.leave_entitlement_date && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                        <p className="text-sm font-medium">{new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                       </div>
                     )}
                     {viewingUser.reportingManagers && viewingUser.reportingManagers.length > 0 && (

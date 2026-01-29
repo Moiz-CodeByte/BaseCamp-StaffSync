@@ -43,7 +43,7 @@ export async function PATCH(req, { params }) {
       'name', 'email', 'department', 'role', 'designation',
       'basic_salary', 'allowance', 'leave_limit',
       'sick_leave_limit', 'maternity_leave_limit', 'paternity_leave_limit',
-      'reportingManagers'
+      'reportingManagers', 'leave_entitlement_date'
     ];
     
     const updateData = {};
@@ -59,6 +59,17 @@ export async function PATCH(req, { params }) {
     });
     
     console.log('PATCH /api/users/[id] - Update data to save:', updateData);
+    
+    // If leave_entitlement_date is from a previous year, update it to Jan 1st of current year
+    if (updateData.leave_entitlement_date || existingUser.leave_entitlement_date) {
+      const entitlementDate = new Date(updateData.leave_entitlement_date || existingUser.leave_entitlement_date);
+      const currentYear = new Date().getFullYear();
+      
+      if (entitlementDate.getFullYear() < currentYear) {
+        updateData.leave_entitlement_date = new Date(currentYear, 0, 1);
+        console.log('Updated leave_entitlement_date from previous year to:', updateData.leave_entitlement_date);
+      }
+    }
     
     // Only Admin can change roles - check if role is actually being changed
     if (updateData.role && updateData.role !== existingUser.role && user.role !== 'Admin') {

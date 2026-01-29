@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Edit, Save, X, Search, Trash2, UserPlus, UserMinus, Mail, Eye, Calendar, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { getUserLeaveLimits } from '@/lib/leave-calculations';
 
 export default function UserManagementTable({ users, departments = [], onUpdate, isAdmin = false }) {
   const [editingId, setEditingId] = useState(null);
@@ -28,6 +29,10 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
     setEditingId(user._id);
     // Extract department ID if it's an object
     const deptId = typeof user.department === 'object' ? user.department?._id : user.department;
+    
+    // Default to Jan 1st of current year if leave_entitlement_date not set
+    const defaultEntitlementDate = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
+    
     setEditForm({
       name: user.name || '',
       email: user.email || '',
@@ -39,7 +44,8 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       leave_limit: user.leave_limit ?? 10,
       sick_leave_limit: user.sick_leave_limit ?? 3,
       maternity_leave_limit: user.maternity_leave_limit ?? 0,
-      paternity_leave_limit: user.paternity_leave_limit ?? 2
+      paternity_leave_limit: user.paternity_leave_limit ?? 2,
+      leave_entitlement_date: user.leave_entitlement_date ? new Date(user.leave_entitlement_date).toISOString().split('T')[0] : defaultEntitlementDate
     });
     console.log('UserManagementTable - editForm set to:', {
       maternity_leave_limit: user.maternity_leave_limit ?? 0,
@@ -354,6 +360,19 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         />
                       </div>
                     )}
+
+                    {editForm.role === 'Employee' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</Label>
+                        <Input 
+                          type="date"
+                          value={editForm.leave_entitlement_date}
+                          onChange={(e) => setEditForm({...editForm, leave_entitlement_date: e.target.value})}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">Date when leave entitlement started (affects pro-rata calculation)</p>
+                      </div>
+                    )}
                   </div>
 
                   {isAdmin && (
@@ -537,28 +556,34 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
                       <p className="text-sm font-medium">{viewingUser.designation || '-'}</p>
                     </div>
+                    {viewingUser.role === 'Employee' && (() => {
+                      const calculatedLimits = getUserLeaveLimits(viewingUser);
+                      return (
+                        <>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Annual Leave Limit</p>
+                            <p className="text-2xl font-bold text-emerald-600">{calculatedLimits.annual_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
+                            <p className="text-2xl font-bold text-red-600">{calculatedLimits.sick_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
+                            <p className="text-2xl font-bold text-pink-600">{calculatedLimits.maternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
+                            <p className="text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                        </>
+                      );
+                    })()}
                     {viewingUser.role === 'Employee' && (
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
-                        <p className="text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 12} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
-                      </div>
-                    )}
-                    {viewingUser.role === 'Employee' && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
-                        <p className="text-2xl font-bold text-red-600">{viewingUser.sick_leave_limit || 3} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
-                      </div>
-                    )}
-                    {viewingUser.role === 'Employee' && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
-                        <p className="text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit ?? 0} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
-                      </div>
-                    )}
-                    {viewingUser.role === 'Employee' && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
-                        <p className="text-2xl font-bold text-blue-600">{viewingUser.paternity_leave_limit ?? 2} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                        <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
+                        <p className="text-xs text-muted-foreground">Date when leave calculation started</p>
                       </div>
                     )}
                    

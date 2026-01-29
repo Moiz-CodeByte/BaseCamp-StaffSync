@@ -9,14 +9,14 @@ import UserManagementTable from '@/components/dashboard/UserManagementTable';
 export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leave_entitlement_date: new Date().toISOString().split('T')[0] });
 
   const addUser = async (e) => {
     e.preventDefault();
     try {
       const { api } = await import('@/lib/api');
       await api.post('/api/auth/register', newUser);
-      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '' });
+      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leave_entitlement_date: new Date().toISOString().split('T')[0] });
       setShowAddUser(false);
       onUpdate();
     } catch (e) {
@@ -123,6 +123,16 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
                   value={newUser.designation} 
                   onChange={e => setNewUser({ ...newUser, designation: e.target.value })} 
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Leave Entitlement Date</label>
+                <Input 
+                  type="date"
+                  value={newUser.leave_entitlement_date} 
+                  onChange={e => setNewUser({ ...newUser, leave_entitlement_date: e.target.value })} 
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">Date when employee becomes eligible for leaves (Default: Jan 1st)</p>
               </div>
             </div>
             <Button type="submit" className="w-full md:w-auto">Create User</Button>

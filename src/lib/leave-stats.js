@@ -1,5 +1,6 @@
 import { Leave } from '@/models/Leave';
 import { connectDB } from '@/lib/db';
+import { getUserLeaveLimits } from '@/lib/leave-utils';
 
 // Business days calculation function (excludes weekends)
 const calculateBusinessDays = (startDate, endDate) => {
@@ -114,23 +115,32 @@ export async function calculateLeaveStats(userId, user = null) {
   const lastMonthSickDays = lastMonthSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const thisQuarterSickDays = thisQuarterSickLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
 
-  // Fixed annual leave allocation (no formula)
-  const leaveLimit = user?.leave_limit || 10;
-  const earnedLeaves = leaveLimit; // Fixed allocation per year
+  // Calculate pro-rata leave limits based on entitlement date
+  const calculatedLimits = getUserLeaveLimits(user);
+  
+  // Annual leave calculations
+  const leaveLimit = calculatedLimits.annual_leave;
+  const earnedLeaves = leaveLimit;
   const totalUsedThisYear = thisYearDays;
   const remainingLeaves = earnedLeaves - totalUsedThisYear;
 
-  // Fixed sick leave allocation (no formula)
-  const sickLeaveLimit = user?.sick_leave_limit || 3;
-  const earnedSickLeaves = sickLeaveLimit; // Fixed allocation per year
+  // Sick leave calculations
+  const sickLeaveLimit = calculatedLimits.sick_leave;
+  const earnedSickLeaves = sickLeaveLimit;
   const totalUsedSickThisYear = thisYearSickDays;
   const remainingSickLeaves = earnedSickLeaves - totalUsedSickThisYear;
 
-  // Fixed maternity leave allocation (no formula, not shown in balance)
-  const maternityLeaveLimit = user?.maternity_leave_limit || 2;
+  // Maternity leave calculations
+  const maternityLeaveLimit = calculatedLimits.maternity_leave;
   const maternityLeaves = approvedLeaves.filter(leave => leave.type === 'Maternity');
   const thisYearMaternityDays = maternityLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
   const remainingMaternityLeaves = maternityLeaveLimit - thisYearMaternityDays;
+
+  // Paternity leave calculations
+  const paternityLeaveLimit = calculatedLimits.paternity_leave;
+  const paternityLeaves = approvedLeaves.filter(leave => leave.type === 'Paternity');
+  const thisYearPaternityDays = paternityLeaves.reduce((sum, leave) => sum + calculateDays(leave), 0);
+  const remainingPaternityLeaves = paternityLeaveLimit - thisYearPaternityDays;
 
   return {
     // Regular leave stats
@@ -151,7 +161,17 @@ export async function calculateLeaveStats(userId, user = null) {
     approvedSickLeavesCount: sickLeaves.length,
     sickLeaveLimit: sickLeaveLimit,
     earnedSickLeaves: earnedSickLeaves,
-    remainingSickLeaves: remainingSickLeaves
+    remainingSickLeaves: remainingSickLeaves,
+    
+    // Maternity leave stats
+    maternityLeaveLimit: maternityLeaveLimit,
+    thisYearMaternityDays: thisYearMaternityDays,
+    remainingMaternityLeaves: remainingMaternityLeaves,
+    
+    // Paternity leave stats
+    paternityLeaveLimit: paternityLeaveLimit,
+    thisYearPaternityDays: thisYearPaternityDays,
+    remainingPaternityLeaves: remainingPaternityLeaves
   };
 }
 

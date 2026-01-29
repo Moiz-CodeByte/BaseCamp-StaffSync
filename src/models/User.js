@@ -18,15 +18,18 @@ const UserSchema = new Schema(
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     designation: { type: String, trim: true }, // Job title/designation
     
-    // _basic_salary: { type: Number, default: 0 }, // Default monthly basic salary
-    // get basic_salary() {
-    //   return this._basic_salary;
-    // },
-    // set basic_salary(value) {
-    //   this._basic_salary = value;
-    // },
-    //_allowance: { type: Number, default: 0 }, // Default monthly allowance
-    leave_limit: { type: Number, default: 10 }, // Annual leave limit (in days per month)
+    // Leave entitlement date (date when employee becomes eligible for leaves)
+    leave_entitlement_date: { 
+      type: Date, 
+      default: function() {
+        // Default to January 1st of current year
+        const now = new Date();
+        return new Date(now.getFullYear(), 0, 1);
+      }
+    },
+    
+  
+    leave_limit: { type: Number, default: 10 }, // Annual leave limit (in days per year)
     
     // Sick leave fields (separate from regular leaves)
     sick_leave_limit: { type: Number, default: 3 }, // Annual sick leave limit (in days per year)
@@ -57,6 +60,48 @@ UserSchema.pre('save', async function (next) {
 
 UserSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
+};
+
+// Calculate pro-rata leave limit based on entitlement date
+UserSchema.methods.calculateProRataLeave = function(annualLimit, currentDate = new Date()) {
+  const entitlementDate = this.leave_entitlement_date || new Date(currentDate.getFullYear(), 0, 1);
+  const yearStart = new Date(currentDate.getFullYear(), 0, 1);
+  yearStart.setHours(0, 0, 0, 0);
+  
+  const entitlement = new Date(entitlementDate);
+  entitlement.setHours(0, 0, 0, 0);
+  
+  // If entitlement date is January 1st of current year, return full quota
+  if (entitlement.getTime() === yearStart.getTime()) {
+    return annualLimit;
+  }
+  
+  // Calculate pro-rata based on remaining days in the year
+  const yearEnd = new Date(currentDate.getFullYear(), 11, 31);
+  yearEnd.setHours(23, 59, 59, 999);
+  
+  // Calculate total days in year
+  const isLeapYear = (year) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  const totalDaysInYear = 365 + (isLeapYear(currentDate.getFullYear()) ? 1 : 0);
+  
+  // Calculate remaining days from entitlement date to end of year (inclusive)
+  const oneDayMs = 1000 * 60 * 60 * 24;
+  const remainingDays = Math.floor((yearEnd.getTime() - entitlement.getTime()) / oneDayMs) + 1;
+  
+  // Calculate pro-rata leave: (remaining days * leave limit) / total days in year
+  const proRataLeave = Math.floor((remainingDays * annualLimit) / totalDaysInYear);
+  
+  return proRataLeave;
+};
+
+// Get calculated leave limits based on entitlement date
+UserSchema.methods.getCalculatedLeaveLimits = function() {
+  return {
+    annual_leave: this.calculateProRataLeave(this.leave_limit),
+    sick_leave: this.calculateProRataLeave(this.sick_leave_limit),
+    maternity_leave: this.calculateProRataLeave(this.maternity_leave_limit),
+    paternity_leave: this.calculateProRataLeave(this.paternity_leave_limit)
+  };
 };
 
 export const User = models.User || model('User', UserSchema);

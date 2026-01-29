@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Building2, Users, Eye, X, FileText, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { getUserLeaveLimits } from '@/lib/leave-calculations';
 
 export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin = true, isManager = false }) {
   const [showForm, setShowForm] = useState(false);
@@ -488,23 +489,33 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
                       <p className="text-sm font-medium break-words">{viewingUser.designation || '-'}</p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Limit</p>
-                      <p className="text-xl md:text-2xl font-bold text-emerald-600">{viewingUser.leave_limit || 10} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
-                      <p className="text-xl md:text-2xl font-bold text-red-600">{viewingUser.sick_leave_limit || 3} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
-                      <p className="text-xl md:text-2xl font-bold text-pink-600">{viewingUser.maternity_leave_limit ?? 0} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
-                      <p className="text-xl md:text-2xl font-bold text-blue-600">{viewingUser.paternity_leave_limit ?? 2} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
-                    </div>
-                    {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
+                    {(() => {
+                      const calculatedLimits = getUserLeaveLimits(viewingUser);
+                      return (
+                        <>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Annual Leave Limit</p>
+                            <p className="text-xl md:text-2xl font-bold text-emerald-600">{calculatedLimits.annual_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
+                            <p className="text-xl md:text-2xl font-bold text-red-600">{calculatedLimits.sick_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
+                            <p className="text-xl md:text-2xl font-bold text-pink-600">{calculatedLimits.maternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
+                            <p className="text-xl md:text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
+                          </div>
+                        </>
+                      );
+                    })()}                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                      <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
+                      <p className="text-xs text-muted-foreground">Date when leave calculation started</p>
+                    </div>                    {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assigned HR</p>
                         <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
@@ -514,8 +525,14 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                     )}
                     {viewingUser.createdAt && (
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Joined Date</p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User Creation Date</p>
                         <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    )}
+                    {viewingUser.leave_entitlement_date && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                        <p className="text-sm font-medium">{new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                       </div>
                     )}
                     {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.reportingManager && (
