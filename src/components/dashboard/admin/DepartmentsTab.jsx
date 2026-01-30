@@ -474,6 +474,10 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                       <p className="text-sm font-medium break-words">{viewingUser.name}</p>
                     </div>
                     <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gender</p>
+                      <Badge variant="outline">{viewingUser.gender || 'Not specified'}</Badge>
+                    </div>
+                    <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</p>
                       <p className="text-sm font-medium break-all">{viewingUser.email}</p>
                     </div>
@@ -501,14 +505,18 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
                             <p className="text-xl md:text-2xl font-bold text-red-600">{calculatedLimits.sick_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
                           </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
-                            <p className="text-xl md:text-2xl font-bold text-pink-600">{calculatedLimits.maternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
-                            <p className="text-xl md:text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
-                          </div>
+                          {viewingUser.gender === 'Female' && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
+                              <p className="text-xl md:text-2xl font-bold text-pink-600">{calculatedLimits.maternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
+                            </div>
+                          )}
+                          {viewingUser.gender === 'Male' && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
+                              <p className="text-xl md:text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
+                            </div>
+                          )}
                           <div className="space-y-1">
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
                             <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
@@ -577,26 +585,30 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                           >
                             Sick
                           </button>
-                          <button
-                            onClick={() => setLeaveFilter('Maternity')}
-                            className={`px-2 md:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              leaveFilter === 'Maternity'
-                                ? 'bg-pink-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            Maternity
-                          </button>
-                          <button
-                            onClick={() => setLeaveFilter('Paternity')}
-                            className={`px-2 md:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              leaveFilter === 'Paternity'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            Paternity
-                          </button>
+                          {viewingUser.gender === 'Female' && (
+                            <button
+                              onClick={() => setLeaveFilter('Maternity')}
+                              className={`px-2 md:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                leaveFilter === 'Maternity'
+                                  ? 'bg-pink-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              Maternity
+                            </button>
+                          )}
+                          {viewingUser.gender === 'Male' && (
+                            <button
+                              onClick={() => setLeaveFilter('Paternity')}
+                              className={`px-2 md:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                leaveFilter === 'Paternity'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              Paternity
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

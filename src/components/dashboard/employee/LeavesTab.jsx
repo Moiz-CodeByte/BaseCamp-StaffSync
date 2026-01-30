@@ -329,8 +329,8 @@ export default function LeavesTab({ leaveForm, setLeaveForm, requestLeave, leave
                       <SelectItem value="Annual">Annual Leave</SelectItem>
                       <SelectItem value="Sick">Sick Leave</SelectItem>
                       <SelectItem value="Unpaid">Unpaid Leave</SelectItem>
-                      <SelectItem value="Maternity">Maternity Leave</SelectItem>
-                      <SelectItem value="Paternity">Paternity Leave</SelectItem>
+                      {me?.gender === 'Female' && <SelectItem value="Maternity">Maternity Leave</SelectItem>}
+                      {me?.gender === 'Male' && <SelectItem value="Paternity">Paternity Leave</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>

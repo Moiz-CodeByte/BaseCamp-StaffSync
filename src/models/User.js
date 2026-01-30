@@ -17,6 +17,7 @@ const UserSchema = new Schema(
     role: { type: String, enum: rolesList, default: 'Employee' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     designation: { type: String, trim: true }, // Job title/designation
+    gender: { type: String, enum: ['Male', 'Female'], default: 'Male' }, // Gender for leave eligibility
     
     // Leave entitlement date (date when employee becomes eligible for leaves)
     leave_entitlement_date: { 

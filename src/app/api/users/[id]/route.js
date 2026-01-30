@@ -40,7 +40,7 @@ export async function PATCH(req, { params }) {
     
     // Allowed fields to update
     const allowedFields = [
-      'name', 'email', 'department', 'role', 'designation',
+      'name', 'email', 'department', 'role', 'designation', 'gender',
       'basic_salary', 'allowance', 'leave_limit',
       'sick_leave_limit', 'maternity_leave_limit', 'paternity_leave_limit',
       'reportingManagers', 'leave_entitlement_date'

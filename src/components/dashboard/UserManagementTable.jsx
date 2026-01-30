@@ -39,6 +39,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       department: deptId || '',
       role: user.role || 'Employee',
       designation: user.designation || '',
+      gender: user.gender || 'Male',
       // basic_salary: user.basic_salary || 0,
       //allowance: user.allowance || 0,
       leave_limit: user.leave_limit ?? 10,
@@ -286,6 +287,20 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                     </div>
 
                     <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gender</Label>
+                      <Select value={editForm.gender} onValueChange={(val) => setEditForm({...editForm, gender: val})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</Label>
                       <Select value={editForm.department} onValueChange={(val) => setEditForm({...editForm, department: val === 'none' ? '' : val})}>
                         <SelectTrigger>
@@ -335,7 +350,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       </div>
                     )}
 
-                    {editForm.role === 'Employee' && (
+                    {editForm.role === 'Employee' && editForm.gender === 'Female' && (
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</Label>
                         <Input 
@@ -348,7 +363,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       </div>
                     )}
 
-                    {editForm.role === 'Employee' && (
+                    {editForm.role === 'Employee' && editForm.gender === 'Male' && (
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</Label>
                         <Input 
@@ -458,7 +473,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <p className="text-sm font-medium">{user.designation || '-'}</p>
                     </div>
 
-                    {user.role === 'Employee' && (
+                    {/* {user.role === 'Employee' && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assigned HR</p>
                         {user.department && typeof user.department === 'object' && user.department.hr ? (
@@ -469,7 +484,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           <p className="text-sm text-muted-foreground">No HR assigned</p>
                         )}
                       </div>
-                    )}
+                    )} */}
 
                     {user.role !== 'Admin' && (
                       <>
@@ -541,6 +556,10 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <p className="text-sm font-medium">{viewingUser.name}</p>
                     </div>
                     <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gender</p>
+                      <Badge variant="outline">{viewingUser.gender || 'Not specified'}</Badge>
+                    </div>
+                    <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</p>
                       <p className="text-sm font-medium">{viewingUser.email}</p>
                     </div>
@@ -574,14 +593,18 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sick Leave Limit</p>
                             <p className="text-2xl font-bold text-red-600">{calculatedLimits.sick_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                           </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
-                            <p className="text-2xl font-bold text-pink-600">{calculatedLimits.maternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
-                            <p className="text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
-                          </div>
+                          {viewingUser.gender === 'Female' && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Maternity Leave Limit</p>
+                              <p className="text-2xl font-bold text-pink-600">{calculatedLimits.maternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                            </div>
+                          )}
+                          {viewingUser.gender === 'Male' && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
+                              <p className="text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
+                            </div>
+                          )}
                           <div className="space-y-1">
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
                             <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
@@ -644,26 +667,30 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                           >
                             Sick Leaves
                           </button>
-                          <button
-                            onClick={() => setLeaveFilter('Maternity')}
-                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              leaveFilter === 'Maternity'
-                                ? 'bg-pink-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            Maternity
-                          </button>
-                          <button
-                            onClick={() => setLeaveFilter('Paternity')}
-                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              leaveFilter === 'Paternity'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            Paternity
-                          </button>
+                          {viewingUser.gender === 'Female' && (
+                            <button
+                              onClick={() => setLeaveFilter('Maternity')}
+                              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                leaveFilter === 'Maternity'
+                                  ? 'bg-pink-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              Maternity
+                            </button>
+                          )}
+                          {viewingUser.gender === 'Male' && (
+                            <button
+                              onClick={() => setLeaveFilter('Paternity')}
+                              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                leaveFilter === 'Paternity'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              Paternity
+                            </button>
+                          )}
                         </div>
                       </div>
                     </CardHeader>

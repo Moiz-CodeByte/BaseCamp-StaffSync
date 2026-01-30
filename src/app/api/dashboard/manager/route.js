@@ -28,7 +28,7 @@ export async function GET(req) {
     // Fetch all data in parallel - but only for the manager's department
     const [usersData, departmentData, pendingLeaves, recentApproved, allRecent, meData] = await Promise.all([
       // Users only from this department
-      User.find({ department: managerDepartmentId }, 'name email role department designation leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit createdAt')
+      User.find({ department: managerDepartmentId }, 'name email role department designation gender leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit createdAt')
         .populate({
           path: 'department',
           select: 'name hr',

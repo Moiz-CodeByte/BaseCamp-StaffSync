@@ -6,7 +6,7 @@ import { signToken } from '@/lib/auth';
 
 export async function POST(req) {
   await connectDB();
-  const { name, email, password, role, department, designation, leave_entitlement_date, leave_limit, sick_leave_limit, maternity_leave_limit, paternity_leave_limit } = await req.json();
+  const { name, email, password, role, department, designation, gender, leave_entitlement_date, leave_limit, sick_leave_limit, maternity_leave_limit, paternity_leave_limit } = await req.json();
 
   const exists = await User.findOne({ email });
   if (exists) {
@@ -33,6 +33,7 @@ export async function POST(req) {
       role, 
       department: department || undefined,
       designation: designation || undefined,
+      gender: gender || 'Male',
       leave_entitlement_date: entitlementDate || undefined,
       leave_limit: leave_limit !== undefined ? leave_limit : 10,
       sick_leave_limit: sick_leave_limit !== undefined ? sick_leave_limit : 3,

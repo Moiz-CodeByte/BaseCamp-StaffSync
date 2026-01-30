@@ -9,14 +9,14 @@ import UserManagementTable from '@/components/dashboard/UserManagementTable';
 export default function UsersTab({ users, departments = [], onUpdate }) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leave_entitlement_date: new Date().toISOString().split('T')[0] });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', gender: 'Male', leave_entitlement_date: new Date().toISOString().split('T')[0] });
 
   const addUser = async (e) => {
     e.preventDefault();
     try {
       const { api } = await import('@/lib/api');
       await api.post('/api/auth/register', newUser);
-      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', leave_entitlement_date: new Date().toISOString().split('T')[0] });
+      setNewUser({ name: '', email: '', password: '', role: 'Employee', department: '', designation: '', gender: 'Male', leave_entitlement_date: new Date().toISOString().split('T')[0] });
       setShowAddUser(false);
       onUpdate();
     } catch (e) {
@@ -60,6 +60,19 @@ export default function UsersTab({ users, departments = [], onUpdate }) {
                   onChange={e => setNewUser({ ...newUser, name: e.target.value })} 
                   required 
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Gender</label>
+                <select 
+                  className="w-full px-3 py-2 rounded-md border bg-background" 
+                  value={newUser.gender} 
+                  onChange={e => setNewUser({ ...newUser, gender: e.target.value })}
+                  required
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Email</label>
