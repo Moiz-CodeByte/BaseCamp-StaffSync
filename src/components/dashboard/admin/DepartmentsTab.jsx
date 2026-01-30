@@ -489,7 +489,7 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
                       <p className="text-sm font-medium break-words">{viewingUser.designation || '-'}</p>
                     </div>
-                    {(() => {
+                    {viewingUser.role === 'Employee' && (() => {
                       const calculatedLimits = getUserLeaveLimits(viewingUser);
                       return (
                         <>
@@ -509,13 +509,15 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
                             <p className="text-xl md:text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-xs md:text-sm font-normal text-muted-foreground">days/year</span></p>
                           </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                            <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
+                            <p className="text-xs text-muted-foreground">Date when leave calculation started</p>
+                          </div>
                         </>
                       );
-                    })()}                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
-                      <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
-                      <p className="text-xs text-muted-foreground">Date when leave calculation started</p>
-                    </div>                    {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
+                    })()}
+                    {viewingUser.role === 'Employee' && viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assigned HR</p>
                         <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
@@ -529,26 +531,13 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                         <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                       </div>
                     )}
-                    {viewingUser.leave_entitlement_date && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
-                        <p className="text-sm font-medium">{new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                      </div>
-                    )}
-                    {viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.reportingManager && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Manager</p>
-                        <span title={`${viewingUser.department.reportingManager.name} - ${viewingUser.department.reportingManager.email || 'No email'}`}>
-                          <Badge variant="outline" className="cursor-help">{viewingUser.department.reportingManager.name}</Badge>
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
               {/* Leave Statistics */}
-              {loadingStats ? (
+              {viewingUser.role === 'Employee' && (
+              loadingStats ? (
                 <div className="rounded-lg border bg-card shadow-sm">
                   <div className="p-12">
                     <div className="flex items-center justify-center">
@@ -846,7 +835,7 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                     </div>
                   </div>
                 </>
-              )}
+              ))}
             </div>
           </div>
         </div>

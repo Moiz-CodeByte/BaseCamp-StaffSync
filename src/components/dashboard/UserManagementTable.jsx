@@ -556,6 +556,12 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Designation</p>
                       <p className="text-sm font-medium">{viewingUser.designation || '-'}</p>
                     </div>
+                    {viewingUser.createdAt && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User Creation Date</p>
+                        <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    )}
                     {viewingUser.role === 'Employee' && (() => {
                       const calculatedLimits = getUserLeaveLimits(viewingUser);
                       return (
@@ -576,16 +582,14 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Paternity Leave Limit</p>
                             <p className="text-2xl font-bold text-blue-600">{calculatedLimits.paternity_leave} <span className="text-sm font-normal text-muted-foreground">days/year</span></p>
                           </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
+                            <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
+                            <p className="text-xs text-muted-foreground">Date when leave calculation started</p>
+                          </div>
                         </>
                       );
                     })()}
-                    {viewingUser.role === 'Employee' && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leave Entitlement Date</p>
-                        <p className="text-sm font-medium">{viewingUser.leave_entitlement_date ? new Date(viewingUser.leave_entitlement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'January 1, 2026'}</p>
-                        <p className="text-xs text-muted-foreground">Date when leave calculation started</p>
-                      </div>
-                    )}
                    
                     {viewingUser.role === 'Employee' && viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.hr && (
                       <div className="space-y-1">
@@ -593,13 +597,6 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
                           <Badge variant="secondary" className="cursor-help">{viewingUser.department.hr.name}</Badge>
                         </span>
-                      </div>
-                    )}
-                   
-                    {viewingUser.createdAt && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User Creation Date</p>
-                        <p className="text-sm font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                       </div>
                     )}
                   </div>
