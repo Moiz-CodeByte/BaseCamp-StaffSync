@@ -98,11 +98,26 @@ export default function ManagerDashboard() {
           setDepartments(deptList);
           setHrUsers(hrList);
           setLeaves(pendingList);
-          setPastLeaves([...recentList, ...allRecentList]);
+          
+          // Combine all non-pending leaves for pastLeaves (approved + rejected)
+          const allNonPendingLeaves = [...recentList, ...allRecentList];
+          // Remove duplicates based on leave _id
+          const uniquePastLeaves = Array.from(
+            new Map(allNonPendingLeaves.map(leave => [leave._id, leave])).values()
+          );
+          setPastLeaves(uniquePastLeaves);
+          
           setMe(userData);
           setProfileForm({ name: userData?.name || '', email: userData?.email || '', currentPassword: '', password: '' });
 
+          // Combine all leaves properly for stats
           const allLeaves = [...pendingList, ...recentList, ...allRecentList];
+          
+          // Remove duplicates (in case a leave appears in multiple lists)
+          const uniqueLeaves = Array.from(
+            new Map(allLeaves.map(leave => [leave._id, leave])).values()
+          );
+          
           const currentMonth = new Date().getMonth();
           const currentYear = new Date().getFullYear();
           
@@ -110,11 +125,11 @@ export default function ManagerDashboard() {
             totalUsers: userList.length,
             employees: userList.filter(u => u.role === 'Employee').length,
             totalDepartments: deptList.length,
-            pendingLeaves: pendingList.length,
-            approvedLeaves: recentList.filter(l => l.status === 'Approved').length,
-            rejectedLeaves: allRecentList.filter(l => l.status === 'Rejected').length,
-            totalRequests: allLeaves.length,
-            approvedThisMonth: allLeaves.filter(l => {
+            pendingLeaves: uniqueLeaves.filter(l => l.status === 'Pending').length,
+            approvedLeaves: uniqueLeaves.filter(l => l.status === 'Approved').length,
+            rejectedLeaves: uniqueLeaves.filter(l => l.status === 'Rejected').length,
+            totalRequests: uniqueLeaves.length,
+            approvedThisMonth: uniqueLeaves.filter(l => {
               const date = new Date(l.createdAt);
               return l.status === 'Approved' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
             }).length,
@@ -209,6 +224,7 @@ export default function ManagerDashboard() {
                 users={users}
                 departments={departments}
                 leaves={leaves}
+                pastLeaves={pastLeaves}
                 isLoadingStats={isLoadingStats}
                 isManager={true}
               />

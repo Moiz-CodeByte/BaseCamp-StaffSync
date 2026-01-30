@@ -9,9 +9,24 @@ import EmployeeDepartmentChart from '@/components/dashboard/charts/EmployeeDepar
 import LeaveTypeChart from '@/components/dashboard/charts/LeaveTypeChart';
 import MonthlyTrendChart from '@/components/dashboard/charts/MonthlyTrendChart';
 
-export default function OverviewTab({ stats, isLoading = false, leaves = [], pastLeaves = [], departments = [], users = [] }) {
+export default function OverviewTab({ stats = {}, isLoading = false, leaves = [], pastLeaves = [], departments = [], users = [], isManager = false }) {
   const [leaveFilter, setLeaveFilter] = useState('All'); // 'All', 'Annual', 'Sick', 'Maternity', or 'Paternity'
   const [monthFilter, setMonthFilter] = useState('All'); // 'All', 'This Month', 'Last Month', 'Last 3 Months'
+
+  // Calculate base stats from actual data (important for managers)
+  const baseStats = useMemo(() => {
+    const allLeaves = [...(leaves || []), ...(pastLeaves || [])];
+    
+    return {
+      totalUsers: stats.totalUsers ?? (users?.length || 0),
+      employees: stats.employees ?? (users?.filter(u => u.role === 'Employee').length || 0),
+      totalDepartments: stats.totalDepartments ?? (departments?.length || 0),
+      pendingLeaves: allLeaves.filter(l => l.status === 'Pending').length,
+      approvedLeaves: allLeaves.filter(l => l.status === 'Approved').length,
+      rejectedLeaves: allLeaves.filter(l => l.status === 'Rejected').length,
+      totalRequests: allLeaves.length,
+    };
+  }, [stats, leaves, pastLeaves, users, departments]);
 
   // Calculate filtered stats based on leave type and month
   const filteredStats = useMemo(() => {
@@ -66,7 +81,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
       rejectedLeaves: filtered.filter(l => l.status === 'Rejected').length,
       totalRequests: filtered.length,
     };
-  }, [leaveFilter, monthFilter, stats, leaves, pastLeaves]);
+  }, [leaveFilter, monthFilter, leaves, pastLeaves]);
 
   // Department-wise leave statistics
   const departmentStats = useMemo(() => {
@@ -225,8 +240,8 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
   // Additional statistics
   const additionalStats = useMemo(() => {
     const allLeaves = [...(leaves || []), ...(pastLeaves || [])];
-    const totalEmployees = users?.filter(u => u.role === 'Employee').length || 0;
-    const totalDepartments = departments?.length || 0;
+    const totalEmployees = baseStats.employees;
+    const totalDepartments = baseStats.totalDepartments;
     
     // Helper function to count business days (excluding weekends)
     const countBusinessDays = (startDate, endDate) => {
@@ -277,7 +292,7 @@ export default function OverviewTab({ stats, isLoading = false, leaves = [], pas
       utilizationRate,
       activeEmployees: uniqueEmployees.size
     };
-  }, [leaves, pastLeaves, users, departments]);
+  }, [leaves, pastLeaves, baseStats]);
 
   const statCards = [
     { 
