@@ -1,4 +1,5 @@
 import { Leave } from '@/models/Leave';
+import { User } from '@/models/User';
 import { connectDB } from '@/lib/db';
 import { getUserLeaveLimits } from '@/lib/leave-utils';
 
@@ -37,6 +38,22 @@ const calculateBusinessDays = (startDate, endDate) => {
 export async function calculateLeaveStats(userId, user = null) {
   await connectDB();
 
+  // Fetch user object if not provided (needed for leave limits calculation)
+  if (!user) {
+    user = await User.findById(userId).lean();
+    if (!user) {
+      console.error('User not found for leave stats calculation:', userId);
+      return {
+        thisYear: 0, thisMonth: 0, lastMonth: 0, thisQuarter: 0,
+        approvedLeavesCount: 0, leaveLimit: 0, earnedLeaves: 0, remainingLeaves: 0,
+        sickThisYear: 0, sickThisMonth: 0, sickLastMonth: 0, sickThisQuarter: 0,
+        approvedSickLeavesCount: 0, sickLeaveLimit: 0, earnedSickLeaves: 0, remainingSickLeaves: 0,
+        maternityLeaveLimit: 0, maternityThisYear: 0, maternityThisMonth: 0, maternityLastMonth: 0, remainingMaternityLeaves: 0,
+        paternityLeaveLimit: 0, paternityThisYear: 0, paternityThisMonth: 0, paternityLastMonth: 0, remainingPaternityLeaves: 0
+      };
+    }
+  }
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -67,9 +84,14 @@ export async function calculateLeaveStats(userId, user = null) {
     return calculateBusinessDays(leave.startDate, leave.endDate);
   };
 
-  // Separate regular and sick leaves
-  const regularLeaves = approvedLeaves.filter(leave => leave.type !== 'Sick Leave');
-  const sickLeaves = approvedLeaves.filter(leave => leave.type === 'Sick Leave');
+  // Separate regular and sick leaves (handle both 'Sick' and 'Sick Leave')
+  const sickLeaves = approvedLeaves.filter(leave => leave.type === 'Sick' || leave.type === 'Sick Leave');
+  const regularLeaves = approvedLeaves.filter(leave => 
+    leave.type !== 'Sick' && 
+    leave.type !== 'Sick Leave' && 
+    leave.type !== 'Maternity' && 
+    leave.type !== 'Paternity'
+  );
 
   // Filter and sum regular leaves by date range
   const thisMonthLeaves = regularLeaves.filter(leave => {

@@ -86,8 +86,8 @@ export async function POST(req) {
         const hrUser = await User.findById(employeeWithDept.department.hr);
         
         if (hrUser && hrUser.email) {
-          // Calculate leave statistics
-          const leaveStats = await calculateLeaveStats(user.id);
+          // Calculate leave statistics (pass employee object for proper limits calculation)
+          const leaveStats = await calculateLeaveStats(user.id, employeeWithDept);
           
           // Populate leave with user info for email
           const populatedLeave = await Leave.findById(leave._id).populate('user');
@@ -117,8 +117,8 @@ export async function POST(req) {
         const managerUser = await User.findById(employeeWithDept.department.reportingManager);
         
         if (managerUser && managerUser.email) {
-          // Calculate leave statistics
-          const leaveStats = await calculateLeaveStats(user.id);
+          // Calculate leave statistics (pass employee object for proper limits calculation)
+          const leaveStats = await calculateLeaveStats(user.id, employeeWithDept);
           
           // Populate leave with user info for email
           const populatedLeave = await Leave.findById(leave._id).populate('user');
