@@ -125,7 +125,6 @@ export async function PUT(req, { params }) {
               console.log(`✅ Reporting Manager notification sent to ${managerUser.email} (${status} - Dashboard)`);
             }
           }
-          }
         }
       } catch (managerEmailError) {
         console.error('Failed to send Reporting Manager notification:', managerEmailError);
