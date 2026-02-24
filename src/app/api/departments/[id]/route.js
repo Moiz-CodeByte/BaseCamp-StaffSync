@@ -15,26 +15,10 @@ export async function GET(req, { params }) {
     const { id } = await params;
     const department = await Department.findById(id)
       .populate('hr', 'name email role')
-      .populate('reportingManagers', 'name email role')
-      .populate('reportingManager', 'name email role');
+      .populate('reportingManagers', 'name email role');
     
     if (!department) {
       return NextResponse.json({ message: 'Department not found' }, { status: 404 });
-    }
-
-    // Merge old reportingManager (singular) with reportingManagers (plural) for backward compatibility
-    const deptObj = department.toObject();
-    if (deptObj.reportingManager && !deptObj.reportingManagers) {
-      deptObj.reportingManagers = [deptObj.reportingManager];
-    } else if (deptObj.reportingManager && deptObj.reportingManagers) {
-      const managerId = typeof deptObj.reportingManager === 'object' ? deptObj.reportingManager._id.toString() : deptObj.reportingManager.toString();
-      const exists = deptObj.reportingManagers.some(m => {
-        const mId = typeof m === 'object' ? m._id.toString() : m.toString();
-        return mId === managerId;
-      });
-      if (!exists) {
-        deptObj.reportingManagers.push(deptObj.reportingManager);
-      }
     }
 
     // Get employee count
@@ -45,7 +29,7 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({
       department: {
-        ...deptObj,
+        ...department.toObject(),
         employeeCount,
         employees
       }
@@ -115,10 +99,6 @@ export async function PUT(req, { params }) {
     if (name) department.name = name;
     if (reportingManagers !== undefined) {
       department.reportingManagers = reportingManagers;
-      // Remove old reportingManager field if it exists (migration cleanup)
-      if (department.reportingManager !== undefined) {
-        department.reportingManager = undefined;
-      }
     }
     if (hr) department.hr = hr;
 

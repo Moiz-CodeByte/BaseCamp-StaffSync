@@ -59,18 +59,9 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
   };
 
   const handleEdit = (dept) => {
-    // Get existing reporting managers (plural)
     const managerIds = Array.isArray(dept.reportingManagers) 
       ? dept.reportingManagers.map(m => typeof m === 'object' ? m._id : m).filter(Boolean)
       : [];
-    
-    // Check for old reportingManager field (singular) and add if exists and not already in list
-    if (dept.reportingManager) {
-      const oldManagerId = typeof dept.reportingManager === 'object' ? dept.reportingManager._id : dept.reportingManager;
-      if (oldManagerId && !managerIds.includes(oldManagerId)) {
-        managerIds.push(oldManagerId);
-      }
-    }
     
     setFormData({
       name: dept.name,
