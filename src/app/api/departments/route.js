@@ -50,11 +50,20 @@ export async function GET(req) {
           as: 'hrUser'
         }
       },
-      {  $lookup: {
+      {
+        $lookup: {
           from: 'users',
           localField: 'reportingManagers',
           foreignField: '_id',
           as: 'reportingManagersData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'reportingManager',
+          foreignField: '_id',
+          as: 'oldReportingManagerData'
         }
       },
       {
@@ -72,7 +81,20 @@ export async function GET(req) {
             email: '$hrUser.email',
             role: '$hrUser.role'
           },
-          reportingManagers: '$reportingManagersData'
+          // Merge old reportingManager (singular) with new reportingManagers (plural)
+          reportingManagers: {
+            $cond: {
+              if: { $gt: [{ $size: '$oldReportingManagerData' }, 0] },
+              then: {
+                $setUnion: [
+                  '$reportingManagersData',
+                  '$oldReportingManagerData'
+                ]
+              },
+              else: '$reportingManagersData'
+            }
+          },
+          reportingManager: { $arrayElemAt: ['$oldReportingManagerData', 0] }
         }
       },
       {
@@ -80,7 +102,8 @@ export async function GET(req) {
           employees: 0,
           hrUser: 0,
           managerUser: 0,
-          reportingManagersData: 0
+          reportingManagersData: 0,
+          oldReportingManagerData: 0
         }
       },
       { $sort: { createdAt: -1 } }

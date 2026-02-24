@@ -58,6 +58,14 @@ export async function GET(req) {
           }
         },
         {
+          $lookup: {
+            from: 'users',
+            localField: 'reportingManager',
+            foreignField: '_id',
+            as: 'oldReportingManagerData'
+          }
+        },
+        {
           $unwind: {
             path: '$hrUser',
             preserveNullAndEmptyArrays: true
@@ -72,14 +80,28 @@ export async function GET(req) {
               email: '$hrUser.email',
               role: '$hrUser.role'
             },
-            reportingManagers: '$reportingManagersData'
+            // Merge old reportingManager with new reportingManagers
+            reportingManagers: {
+              $cond: {
+                if: { $gt: [{ $size: '$oldReportingManagerData' }, 0] },
+                then: {
+                  $setUnion: [
+                    '$reportingManagersData',
+                    '$oldReportingManagerData'
+                  ]
+                },
+                else: '$reportingManagersData'
+              }
+            }
           }
         },
         {
           $project: {
             employees: 0,
             hrUser: 0,
-            reportingManagersData: 0
+            reportingManagersData: 0,
+            oldReportingManagerData: 0,
+            reportingManager: 0
           }
         },
         { $sort: { createdAt: -1 } }
