@@ -109,29 +109,35 @@ export async function POST(req) {
       // Don't fail the request if HR email fails
     }
 
-    // Send notification to reporting manager of the department
+    // Send notification to reporting managers of the department
     try {
       const employeeWithDept = await User.findById(user.id).populate('department');
       
-      if (employeeWithDept.department && employeeWithDept.department.reportingManager) {
-        const managerUser = await User.findById(employeeWithDept.department.reportingManager);
+      if (employeeWithDept.department && employeeWithDept.department.reportingManagers && 
+          Array.isArray(employeeWithDept.department.reportingManagers) && 
+          employeeWithDept.department.reportingManagers.length > 0) {
         
-        if (managerUser && managerUser.email) {
-          // Calculate leave statistics (pass employee object for proper limits calculation)
-          const leaveStats = await calculateLeaveStats(user.id, employeeWithDept);
+        // Calculate leave statistics (pass employee object for proper limits calculation)
+        const leaveStats = await calculateLeaveStats(user.id, employeeWithDept);
+        
+        // Populate leave with user info for email
+        const populatedLeave = await Leave.findById(leave._id).populate('user');
+        
+        // Send notification to each reporting manager
+        for (const managerId of employeeWithDept.department.reportingManagers) {
+          const managerUser = await User.findById(managerId);
           
-          // Populate leave with user info for email
-          const populatedLeave = await Leave.findById(leave._id).populate('user');
-          
-          await sendManagerLeaveNotificationEmail({
-            managerEmail: managerUser.email,
-            managerName: managerUser.name,
-            leave: populatedLeave,
-            employee: employeeWithDept,
-            leaveStats: leaveStats
-          });
-          
-          console.log(`✅ Reporting Manager notification sent to ${managerUser.email}`);
+          if (managerUser && managerUser.email) {
+            await sendManagerLeaveNotificationEmail({
+              managerEmail: managerUser.email,
+              managerName: managerUser.name,
+              leave: populatedLeave,
+              employee: employeeWithDept,
+              leaveStats: leaveStats
+            });
+            
+            console.log(`✅ Reporting Manager notification sent to ${managerUser.email}`);
+          }
         }
       }
     } catch (managerEmailError) {

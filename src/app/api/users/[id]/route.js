@@ -145,10 +145,11 @@ export async function GET(req, { params }) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
     
-    // Manually populate department with HR
+    // Manually populate department with HR and reportingManagers
     if (targetUser.department) {
       const department = await Department.findById(targetUser.department)
         .populate('hr', 'name email')
+        .populate('reportingManagers', 'name email')
         .lean();
       targetUser.department = department;
       

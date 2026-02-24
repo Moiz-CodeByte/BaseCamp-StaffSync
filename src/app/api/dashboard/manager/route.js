@@ -61,20 +61,14 @@ export async function GET(req) {
         {
           $lookup: {
             from: 'users',
-            localField: 'reportingManager',
+            localField: 'reportingManagers',
             foreignField: '_id',
-            as: 'reportingManagerUser'
+            as: 'reportingManagersData'
           }
         },
         {
           $unwind: {
             path: '$hrUser',
-            preserveNullAndEmptyArrays: true
-          }
-        },
-        {
-          $unwind: {
-            path: '$reportingManagerUser',
             preserveNullAndEmptyArrays: true
           }
         },
@@ -87,19 +81,14 @@ export async function GET(req) {
               email: '$hrUser.email',
               role: '$hrUser.role'
             },
-            reportingManager: {
-              _id: '$reportingManagerUser._id',
-              name: '$reportingManagerUser.name',
-              email: '$reportingManagerUser.email',
-              role: '$reportingManagerUser.role'
-            }
+            reportingManagers: '$reportingManagersData'
           }
         },
         {
           $project: {
             employees: 0,
             hrUser: 0,
-            reportingManagerUser: 0
+            reportingManagersData: 0
           }
         }
       ]),

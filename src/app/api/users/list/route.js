@@ -27,11 +27,17 @@ export async function GET(req) {
   const users = await User.find(userQuery, 'name email role department designation gender leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit leave_entitlement_date createdAt')
     .populate({
       path: 'department',
-      select: 'name hr',
-      populate: {
-        path: 'hr',
-        select: 'name email'
-      }
+      select: 'name hr reportingManagers',
+      populate: [
+        {
+          path: 'hr',
+          select: 'name email'
+        },
+        {
+          path: 'reportingManagers',
+          select: 'name email'
+        }
+      ]
     })
     .lean();
   

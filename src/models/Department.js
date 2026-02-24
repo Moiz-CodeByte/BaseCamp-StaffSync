@@ -17,10 +17,10 @@ const DepartmentSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'HR is required']
   },
-  reportingManager: {
+  reportingManagers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }
+  }]
 }, {
   timestamps: true,
   collection: 'departments'

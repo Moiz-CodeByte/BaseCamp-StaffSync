@@ -17,6 +17,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
   const [editForm, setEditForm] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [viewingUser, setViewingUser] = useState(null);
   const [userStats, setUserStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -177,7 +178,7 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
     };
   }, [departments]);
 
-  // Filter users based on search and department
+  // Filter users based on search, department, and role
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       // Search filter (name, email, department)
@@ -191,9 +192,12 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
       const userDeptId = typeof user.department === 'object' ? user.department?._id : user.department;
       const matchesDepartment = departmentFilter === 'all' || userDeptId === departmentFilter;
       
-      return matchesSearch && matchesDepartment;
+      // Role filter
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+      
+      return matchesSearch && matchesDepartment && matchesRole;
     });
-  }, [users, searchQuery, departmentFilter, getDepartmentName]);
+  }, [users, searchQuery, departmentFilter, roleFilter, getDepartmentName]);
 
   return (
     <div className="space-y-4">
@@ -212,7 +216,22 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
             />
           </div>
         </div>
-        <div className="w-full sm:w-64">
+        <div className="w-full sm:w-48">
+          <Label htmlFor="role">Role</Label>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger id="role">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="Admin">Admin</SelectItem>
+              <SelectItem value="HR">HR</SelectItem>
+              <SelectItem value="Reporting Manager">Reporting Manager</SelectItem>
+              <SelectItem value="Employee">Employee</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full sm:w-48">
           <Label htmlFor="department">Department</Label>
           <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
             <SelectTrigger id="department">
@@ -620,6 +639,23 @@ export default function UserManagementTable({ users, departments = [], onUpdate,
                         <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
                           <Badge variant="secondary" className="cursor-help">{viewingUser.department.hr.name}</Badge>
                         </span>
+                      </div>
+                    )}
+                    {viewingUser.role === 'Employee' && viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.reportingManagers && viewingUser.department.reportingManagers.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Manager{viewingUser.department.reportingManagers.length > 1 ? 's' : ''}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {viewingUser.department.reportingManagers.map((manager) => (
+                            <Badge 
+                              key={manager._id || manager}
+                              variant="secondary" 
+                              className="cursor-help"
+                              title={typeof manager === 'object' && manager.email ? `${manager.name} - ${manager.email}` : (typeof manager === 'object' ? manager.name : manager)}
+                            >
+                              {typeof manager === 'object' ? manager.name : manager}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

@@ -27,11 +27,17 @@ export async function GET(req) {
       User.find({}, 'name email role department designation gender leave_limit sick_leave_limit maternity_leave_limit paternity_leave_limit createdAt')
         .populate({
           path: 'department',
-          select: 'name hr reportingManager',
-          populate: {
-            path: 'reportingManager',
-            select: 'name email role'
-          }
+          select: 'name hr reportingManagers',
+          populate: [
+            {
+              path: 'hr',
+              select: 'name email role'
+            },
+            {
+              path: 'reportingManagers',
+              select: 'name email role'
+            }
+          ]
         })
         .lean(),
       
@@ -56,20 +62,14 @@ export async function GET(req) {
         {
           $lookup: {
             from: 'users',
-            localField: 'reportingManager',
+            localField: 'reportingManagers',
             foreignField: '_id',
-            as: 'reportingManagerUser'
+            as: 'reportingManagersData'
           }
         },
         {
           $unwind: {
             path: '$hrUser',
-            preserveNullAndEmptyArrays: true
-          }
-        },
-        {
-          $unwind: {
-            path: '$reportingManagerUser',
             preserveNullAndEmptyArrays: true
           }
         },
@@ -82,19 +82,14 @@ export async function GET(req) {
               email: '$hrUser.email',
               role: '$hrUser.role'
             },
-            reportingManager: {
-              _id: '$reportingManagerUser._id',
-              name: '$reportingManagerUser.name',
-              email: '$reportingManagerUser.email',
-              role: '$reportingManagerUser.role'
-            }
+            reportingManagers: '$reportingManagersData'
           }
         },
         {
           $project: {
             employees: 0,
             hrUser: 0,
-            reportingManagerUser: 0
+            reportingManagersData: 0
           }
         },
         { $sort: { createdAt: -1 } }

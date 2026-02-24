@@ -15,7 +15,7 @@ export async function GET(req, { params }) {
     const { id } = await params;
     const department = await Department.findById(id)
       .populate('hr', 'name email role')
-      .populate('reportingManager', 'name email role');
+      .populate('reportingManagers', 'name email role');
     
     if (!department) {
       return NextResponse.json({ message: 'Department not found' }, { status: 404 });
@@ -98,53 +98,7 @@ export async function PUT(req, { params }) {
     // Update fields
     if (name) department.name = name;
     if (reportingManagers !== undefined) {
-      const oldManagers = department.reportingManagers || [];
       department.reportingManagers = reportingManagers;
-      
-      // Get all users in this department who have reporting managers assigned
-      const usersInDept = await User.find({ 
-        department: id,
-        reportingManagers: { $exists: true, $ne: null, $not: { $size: 0 } }
-      });
-      
-      for (const user of usersInDept) {
-        let needsUpdate = false;
-        let updatedManagers = [...user.reportingManagers];
-        
-        // Update or remove managers based on department changes
-        updatedManagers = updatedManagers.filter((userMgr) => {
-          // Find if this manager still exists in department (by email)
-          const stillInDept = reportingManagers.find(deptMgr => deptMgr.email === userMgr.email);
-          
-          if (stillInDept) {
-            // Manager still in department, check if details changed
-            if (stillInDept.name !== userMgr.name || stillInDept.email !== userMgr.email) {
-              needsUpdate = true;
-            }
-            // Return the updated manager details
-            return true;
-          } else {
-            // Manager was removed from department, remove from user too
-            needsUpdate = true;
-            return false;
-          }
-        });
-
-        // Update manager details for remaining managers
-        updatedManagers = updatedManagers.map((userMgr) => {
-          const deptMgr = reportingManagers.find(m => m.email === userMgr.email);
-          if (deptMgr && (deptMgr.name !== userMgr.name || deptMgr.email !== userMgr.email)) {
-            needsUpdate = true;
-            return { ...deptMgr };
-          }
-          return userMgr;
-        });
-
-        if (needsUpdate) {
-          user.reportingManagers = updatedManagers;
-          await user.save();
-        }
-      }
     }
     if (hr) department.hr = hr;
 
@@ -152,7 +106,7 @@ export async function PUT(req, { params }) {
 
     const updatedDept = await Department.findById(id)
       .populate('hr', 'name email role')
-      .populate('reportingManager', 'name email role');
+      .populate('reportingManagers', 'name email role');
 
     return NextResponse.json({
       message: 'Department updated successfully',

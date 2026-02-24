@@ -90,34 +90,41 @@ export async function PUT(req, { params }) {
         // Don't fail the request if HR email fails
       }
 
-      // Send notification to reporting manager if status changed
+      // Send notification to reporting managers if status changed
       try {
         const employeeWithDept = await User.findById(leave.user._id).populate('department');
         
-        if (employeeWithDept.department && employeeWithDept.department.reportingManager) {
-          const managerUser = await User.findById(employeeWithDept.department.reportingManager);
+        if (employeeWithDept.department && employeeWithDept.department.reportingManagers && 
+            Array.isArray(employeeWithDept.department.reportingManagers) && 
+            employeeWithDept.department.reportingManagers.length > 0) {
           
           // Get the user who approved/rejected
           const approverUser = await User.findById(decoded.id);
           
-          if (managerUser && managerUser.email && managerUser._id.toString() !== decoded.id) {
-            // Calculate leave statistics
-            const leaveStats = await calculateLeaveStats(leave.user._id);
+          // Calculate leave statistics
+          const leaveStats = await calculateLeaveStats(leave.user._id);
+          
+          // Reload leave with updated data
+          const updatedLeave = await Leave.findById(leave._id).populate('user');
+          
+          // Send notification to each reporting manager
+          for (const managerId of employeeWithDept.department.reportingManagers) {
+            const managerUser = await User.findById(managerId);
             
-            // Reload leave with updated data
-            const updatedLeave = await Leave.findById(leave._id).populate('user');
-            
-            await sendHRNotificationEmail({
-              hrEmail: managerUser.email,
-              hrName: managerUser.name,
-              leave: updatedLeave,
-              employee: employeeWithDept,
-              leaveStats: leaveStats,
-              eventType: status === 'Approved' ? 'approved' : 'rejected',
-              managerName: approverUser?.name || 'Manager'
-            });
-            
-            console.log(`✅ Reporting Manager notification sent to ${managerUser.email} (${status} - Dashboard)`);
+            if (managerUser && managerUser.email && managerUser._id.toString() !== decoded.id) {
+              await sendHRNotificationEmail({
+                hrEmail: managerUser.email,
+                hrName: managerUser.name,
+                leave: updatedLeave,
+                employee: employeeWithDept,
+                leaveStats: leaveStats,
+                eventType: status === 'Approved' ? 'approved' : 'rejected',
+                managerName: approverUser?.name || 'Manager'
+              });
+              
+              console.log(`✅ Reporting Manager notification sent to ${managerUser.email} (${status} - Dashboard)`);
+            }
+          }
           }
         }
       } catch (managerEmailError) {

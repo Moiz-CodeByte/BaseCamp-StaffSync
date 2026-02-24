@@ -50,23 +50,16 @@ export async function GET(req) {
           as: 'hrUser'
         }
       },
-      {
-        $lookup: {
+      {  $lookup: {
           from: 'users',
-          localField: 'reportingManager',
+          localField: 'reportingManagers',
           foreignField: '_id',
-          as: 'managerUser'
+          as: 'reportingManagersData'
         }
       },
       {
         $unwind: {
           path: '$hrUser',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $unwind: {
-          path: '$managerUser',
           preserveNullAndEmptyArrays: true
         }
       },
@@ -79,19 +72,15 @@ export async function GET(req) {
             email: '$hrUser.email',
             role: '$hrUser.role'
           },
-          reportingManager: {
-            _id: '$managerUser._id',
-            name: '$managerUser.name',
-            email: '$managerUser.email',
-            role: '$managerUser.role'
-          }
+          reportingManagers: '$reportingManagersData'
         }
       },
       {
         $project: {
           employees: 0,
           hrUser: 0,
-          managerUser: 0
+          managerUser: 0,
+          reportingManagersData: 0
         }
       },
       { $sort: { createdAt: -1 } }
@@ -116,7 +105,7 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const { name, reportingManager, hr } = await req.json();
+    const { name, reportingManagers, hr } = await req.json();
 
     // Validate required fields
     if (!name || !hr) {
@@ -135,14 +124,16 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Selected user is not an HR' }, { status: 400 });
     }
 
-    // Verify reporting manager if provided
-    if (reportingManager) {
-      const manager = await User.findById(reportingManager);
-      if (!manager) {
-        return NextResponse.json({ message: 'Reporting Manager not found' }, { status: 404 });
-      }
-      if (manager.role !== 'Reporting Manager') {
-        return NextResponse.json({ message: 'Selected user is not a Reporting Manager' }, { status: 400 });
+    // Verify reporting managers if provided
+    if (reportingManagers && Array.isArray(reportingManagers) && reportingManagers.length > 0) {
+      for (const managerId of reportingManagers) {
+        const manager = await User.findById(managerId);
+        if (!manager) {
+          return NextResponse.json({ message: 'One or more reporting managers not found' }, { status: 404 });
+        }
+        if (manager.role !== 'Reporting Manager') {
+          return NextResponse.json({ message: 'One or more selected users are not Reporting Managers' }, { status: 400 });
+        }
       }
     }
 
@@ -160,15 +151,15 @@ export async function POST(req) {
       hr
     };
     
-    if (reportingManager) {
-      deptData.reportingManager = reportingManager;
+    if (reportingManagers && Array.isArray(reportingManagers) && reportingManagers.length > 0) {
+      deptData.reportingManagers = reportingManagers;
     }
 
     const department = await Department.create(deptData);
 
     const populatedDept = await Department.findById(department._id)
       .populate('hr', 'name email role')
-      .populate('reportingManager', 'name email role');
+      .populate('reportingManagers', 'name email role');
 
     return NextResponse.json(
       { message: 'Department created successfully', department: populatedDept },

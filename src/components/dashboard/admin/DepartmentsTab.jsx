@@ -18,7 +18,7 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
   const [formData, setFormData] = useState({
     name: '',
     hr: '',
-    reportingManager: ''
+    reportingManagers: []
   });
   const [viewingDept, setViewingDept] = useState(null);
   const [deptEmployees, setDeptEmployees] = useState([]);
@@ -52,17 +52,21 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
     setFormData({
       name: '',
       hr: '',
-      reportingManager: ''
+      reportingManagers: []
     });
     setEditingDept(null);
     setShowForm(false);
   };
 
   const handleEdit = (dept) => {
+    const managerIds = Array.isArray(dept.reportingManagers) 
+      ? dept.reportingManagers.map(m => typeof m === 'object' ? m._id : m).filter(Boolean)
+      : [];
+    
     setFormData({
       name: dept.name,
       hr: dept.hr._id,
-      reportingManager: dept.reportingManager?._id || ''
+      reportingManagers: managerIds
     });
     setEditingDept(dept);
     setShowForm(true);
@@ -138,15 +142,15 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
       
       const userData = userRes.data.user || user;
       
-      // Attach the department's reportingManager from viewingDept if available
-      if (viewingDept && viewingDept.reportingManager) {
+      // Attach the department's reportingManagers from viewingDept if available
+      if (viewingDept && viewingDept.reportingManagers) {
         if (typeof userData.department === 'object') {
-          userData.department.reportingManager = viewingDept.reportingManager;
+          userData.department.reportingManagers = viewingDept.reportingManagers;
         } else {
-          // If department is just an ID, create object with reportingManager
+          // If department is just an ID, create object with reportingManagers
           userData.department = {
             _id: userData.department,
-            reportingManager: viewingDept.reportingManager
+            reportingManagers: viewingDept.reportingManagers
           };
         }
       }
@@ -257,25 +261,65 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reportingManager">Reporting Manager (Optional)</Label>
-                <Select
-                  value={formData.reportingManager || 'none'}
-                  onValueChange={(value) => setFormData({ ...formData, reportingManager: value === 'none' ? '' : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Reporting Manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {managers.map((manager) => (
-                      <SelectItem key={manager._id} value={manager._id}>
-                        {manager.name} ({manager.email})
+                <Label htmlFor="reportingManagers">Reporting Managers (Optional)</Label>
+                <div className="space-y-2">
+                  {/* Selected Managers Display */}
+                  {formData.reportingManagers.length > 0 && (
+                    <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-muted/50">
+                      {formData.reportingManagers.map((managerId) => {
+                        const manager = managers.find(m => m._id === managerId);
+                        return manager ? (
+                          <Badge key={managerId} variant="secondary" className="flex items-center gap-1">
+                            {manager.name}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  reportingManagers: formData.reportingManagers.filter(id => id !== managerId)
+                                });
+                              }}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                  
+                  {/* Manager Selection Dropdown */}
+                  <Select
+                    value="add-manager"
+                    onValueChange={(value) => {
+                      if (value !== 'add-manager' && !formData.reportingManagers.includes(value)) {
+                        setFormData({
+                          ...formData,
+                          reportingManagers: [...formData.reportingManagers, value]
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Reporting Manager(s)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="add-manager" disabled>
+                        {formData.reportingManagers.length > 0 ? 'Add another manager...' : 'Select manager...'}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {managers
+                        .filter(m => !formData.reportingManagers.includes(m._id))
+                        .map((manager) => (
+                          <SelectItem key={manager._id} value={manager._id}>
+                            {manager.name} ({manager.email})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Assign a reporting manager to this department
+                  Assign one or more reporting managers to this department
                 </p>
               </div>
 
@@ -334,9 +378,35 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
             <CardContent className="space-y-3">
               <div className="pt-2 border-t">
                 <p className="text-xs text-muted-foreground mb-2">Assigned HR</p>
-                <Badge variant="secondary">
+                <Badge 
+                  variant="secondary" 
+                  className="cursor-help"
+                  title={dept.hr?.email ? `${dept.hr.name} - ${dept.hr.email}` : dept.hr?.name || 'Not assigned'}
+                >
                   {dept.hr?.name || 'Not assigned'}
                 </Badge>
+              </div>
+              
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground mb-2">Reporting Manager{dept.reportingManagers && dept.reportingManagers.length > 1 ? 's' : ''}</p>
+                {dept.reportingManagers && dept.reportingManagers.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {dept.reportingManagers.map((manager) => (
+                      <Badge 
+                        key={manager._id || manager} 
+                        variant="secondary"
+                        className="cursor-help"
+                        title={typeof manager === 'object' && manager.email ? `${manager.name} - ${manager.email}` : (typeof manager === 'object' ? manager.name : manager)}
+                      >
+                        {typeof manager === 'object' ? manager.name : manager}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground">
+                    Not assigned
+                  </Badge>
+                )}
               </div>
               
               <Button
@@ -531,6 +601,23 @@ export default function DepartmentsTab({ departments, hrUsers, onUpdate, isAdmin
                         <span title={`${viewingUser.department.hr.name} - ${viewingUser.department.hr.email || 'No email'}`}>
                           <Badge variant="secondary" className="cursor-help">{viewingUser.department.hr.name}</Badge>
                         </span>
+                      </div>
+                    )}
+                    {viewingUser.role === 'Employee' && viewingUser.department && typeof viewingUser.department === 'object' && viewingUser.department.reportingManagers && viewingUser.department.reportingManagers.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporting Manager{viewingUser.department.reportingManagers.length > 1 ? 's' : ''}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {viewingUser.department.reportingManagers.map((manager) => (
+                            <Badge 
+                              key={manager._id || manager}
+                              variant="secondary" 
+                              className="cursor-help"
+                              title={typeof manager === 'object' && manager.email ? `${manager.name} - ${manager.email}` : (typeof manager === 'object' ? manager.name : manager)}
+                            >
+                              {typeof manager === 'object' ? manager.name : manager}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {viewingUser.createdAt && (
